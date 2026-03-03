@@ -7,17 +7,33 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error("ログインに失敗しました: " + error.message);
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      setLoading(false);
+      if (error) {
+        toast.error("登録に失敗しました: " + error.message);
+      } else {
+        toast.success("確認メールを送信しました。メールを確認してください。");
+      }
     } else {
-      navigate("/");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (error) {
+        toast.error("ログインに失敗しました: " + error.message);
+      } else {
+        navigate("/");
+      }
     }
   };
 
@@ -26,10 +42,12 @@ const Login = () => {
       <div className="bg-card rounded-lg shadow-sm p-8 w-full max-w-sm animate-fade-in">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-primary">BeatBoard</h1>
-          <p className="text-sm text-muted-foreground mt-1">経営ダッシュボードにログイン</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isSignUp ? "新規アカウントを作成" : "経営ダッシュボードにログイン"}
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-medium text-muted-foreground">メールアドレス</label>
             <input
@@ -48,6 +66,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               required
+              minLength={6}
             />
           </div>
           <button
@@ -55,9 +74,19 @@ const Login = () => {
             disabled={loading}
             className="w-full py-2.5 bg-primary text-primary-foreground rounded-sm text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? "ログイン中..." : "ログイン"}
+            {loading ? "処理中..." : isSignUp ? "アカウント作成" : "ログイン"}
           </button>
         </form>
+
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          {isSignUp ? "すでにアカウントをお持ちですか？" : "アカウントをお持ちでないですか？"}{" "}
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-primary font-medium hover:underline"
+          >
+            {isSignUp ? "ログイン" : "新規登録"}
+          </button>
+        </p>
       </div>
     </div>
   );
