@@ -107,8 +107,8 @@ const Index = () => {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                domain={[0, 1200]}
-                ticks={[0, 200, 400, 600, 800, 1000]}
+                domain={[0, 12000]}
+                ticks={[0, 2000, 4000, 6000, 8000, 10000]}
                 tickFormatter={(v) => v.toLocaleString()}
               />
               <Tooltip
