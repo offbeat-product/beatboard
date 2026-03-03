@@ -1,59 +1,188 @@
+import { usePLData } from "@/hooks/usePLData";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, ReferenceLine,
 } from "recharts";
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter,
+} from "@/components/ui/table";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
-const plData = [
-  { name: "7月", 売上: 4200, 原価: 2300, 販管費: 1200 },
-  { name: "8月", 売上: 3800, 原価: 2100, 販管費: 1100 },
-  { name: "9月", 売上: 5100, 原価: 2700, 販管費: 1300 },
-  { name: "10月", 売上: 4700, 原価: 2500, 販管費: 1200 },
-  { name: "11月", 売上: 5500, 原価: 2800, 販管費: 1400 },
-  { name: "12月", 売上: 6200, 原価: 3100, 販管費: 1500 },
-];
+const fmt = (v: number) => `¥${(v / 10000).toLocaleString(undefined, { maximumFractionDigits: 0 })}万`;
+const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-const metrics = [
-  { label: "売上高", value: "¥6,200万", sub: "前月比 +12.7%" },
-  { label: "売上原価", value: "¥3,100万", sub: "原価率 50.0%" },
-  { label: "粗利", value: "¥3,100万", sub: "粗利率 50.0%" },
-  { label: "販管費", value: "¥1,500万", sub: "販管費率 24.2%" },
-  { label: "営業利益", value: "¥1,600万", sub: "営業利益率 25.8%" },
-];
+const PL = () => {
+  const {
+    isLoading, currentData, targetGrossMargin, targetGPH,
+    opMarginChange, grossMarginChange, gphChange,
+    chartData, gphChartData, monthlyPL, totals,
+  } = usePLData();
 
-const PL = () => (
-  <div className="space-y-6">
-    <div>
-      <h2 className="text-2xl font-bold tracking-tight">損益・生産性</h2>
-      <p className="text-muted-foreground text-sm mt-1">損益計算書と生産性指標</p>
-    </div>
-
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-      {metrics.map((m, i) => (
-        <div key={i} className="bg-card rounded-lg shadow-sm p-4 animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
-          <p className="text-xs text-muted-foreground mb-1">{m.label}</p>
-          <p className="text-lg font-bold font-mono-num">{m.value}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{m.sub}</p>
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold tracking-tight">損益・生産性</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="bg-card rounded-lg shadow-sm p-4 h-24 animate-pulse" />
+          ))}
         </div>
-      ))}
-    </div>
+      </div>
+    );
+  }
 
-    <div className="bg-card rounded-lg shadow-sm p-5">
-      <h3 className="text-sm font-semibold mb-4">月別損益推移</h3>
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={plData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-          <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-          <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v/100}億`} />
-          <Tooltip
-            contentStyle={{ borderRadius: 8, border: "1px solid hsl(220, 13%, 91%)", fontSize: 12 }}
-            formatter={(value: number) => [`¥${value}万`, undefined]}
-          />
-          <Bar dataKey="売上" fill="hsl(14, 78%, 54%)" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="原価" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="販管費" fill="hsl(38, 92%, 50%)" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+  const opMarginRate = currentData?.operatingMarginRate ?? 0;
+  const grossMarginRate = currentData?.grossMarginRate ?? 0;
+  const gph = currentData?.gph ?? 0;
+
+  const kpis = [
+    {
+      label: "営業利益率",
+      value: fmtPct(opMarginRate),
+      change: opMarginChange,
+      changeLabel: `${opMarginChange >= 0 ? "▲" : "▼"} ${Math.abs(opMarginChange).toFixed(1)}pt`,
+    },
+    {
+      label: "粗利率",
+      value: fmtPct(grossMarginRate),
+      target: `目標 ${fmtPct(targetGrossMargin)}`,
+      change: grossMarginChange,
+      changeLabel: `${grossMarginChange >= 0 ? "▲" : "▼"} ${Math.abs(grossMarginChange).toFixed(1)}pt`,
+    },
+    {
+      label: "粗利工数単価",
+      value: `¥${Math.round(gph).toLocaleString()}`,
+      target: `目標 ¥${targetGPH.toLocaleString()}`,
+      change: gphChange,
+      changeLabel: `${gphChange >= 0 ? "▲" : "▼"} ¥${Math.abs(Math.round(gphChange)).toLocaleString()}`,
+    },
+  ];
+
+  // GPH area chart with split coloring
+  const gphAreaData = gphChartData.map(d => ({
+    ...d,
+    above: d.粗利工数単価 >= d.目標 ? d.粗利工数単価 : d.目標,
+    below: d.粗利工数単価 < d.目標 ? d.粗利工数単価 : d.目標,
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">損益・生産性</h2>
+        <p className="text-muted-foreground text-sm mt-1">損益計算書と生産性指標</p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpis.map((k, i) => (
+          <div key={i} className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
+            <p className="text-xs text-muted-foreground mb-1">{k.label}</p>
+            <p className="text-2xl font-bold font-mono-num">{k.value}</p>
+            <div className="flex items-center gap-2 mt-1">
+              {k.target && <span className="text-xs text-muted-foreground">{k.target}</span>}
+              <span className={`text-xs font-medium flex items-center gap-0.5 ${k.change >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                {k.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                {k.changeLabel}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Left: PL Trend (3/5 = 60%) */}
+        <div className="lg:col-span-3 bg-card rounded-lg shadow-sm p-5">
+          <h3 className="text-sm font-semibold mb-4">月次損益推移</h3>
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="left" fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `${v}万`} />
+              <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }} />
+              <Bar yAxisId="left" dataKey="売上原価" stackId="a" fill="#E5E7EB" radius={[0, 0, 0, 0]} />
+              <Bar yAxisId="left" dataKey="販管費" stackId="a" fill="#9CA3AF" radius={[0, 0, 0, 0]} />
+              <Bar yAxisId="left" dataKey="営業利益" stackId="a" fill="#E85B2D" radius={[4, 4, 0, 0]} />
+              <Line yAxisId="right" type="monotone" dataKey="粗利率" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Right: GPH Trend (2/5 = 40%) */}
+        <div className="lg:col-span-2 bg-card rounded-lg shadow-sm p-5">
+          <h3 className="text-sm font-semibold mb-4">粗利工数単価推移</h3>
+          <ResponsiveContainer width="100%" height={320}>
+            <AreaChart data={gphAreaData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `¥${(v / 1000).toFixed(0)}k`} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }} formatter={(v: number) => [`¥${v.toLocaleString()}`, undefined]} />
+              <ReferenceLine y={targetGPH} stroke="#10B981" strokeDasharray="6 3" strokeWidth={2} label={{ value: `目標 ¥${targetGPH.toLocaleString()}`, position: "right", fontSize: 11, fill: "#10B981" }} />
+              <defs>
+                <linearGradient id="gphGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10B981" stopOpacity={0.3} />
+                  <stop offset="50%" stopColor="#10B981" stopOpacity={0.05} />
+                  <stop offset="50%" stopColor="#EF4444" stopOpacity={0.05} />
+                  <stop offset="100%" stopColor="#EF4444" stopOpacity={0.3} />
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="粗利工数単価" stroke="#E85B2D" strokeWidth={2} fill="url(#gphGrad)" dot={{ r: 3, fill: "#E85B2D" }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Monthly PL Table */}
+      <div className="bg-card rounded-lg shadow-sm p-5">
+        <h3 className="text-sm font-semibold mb-4">月次損益テーブル</h3>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>年月</TableHead>
+              <TableHead className="text-right">売上</TableHead>
+              <TableHead className="text-right">売上原価</TableHead>
+              <TableHead className="text-right">粗利</TableHead>
+              <TableHead className="text-right">粗利率</TableHead>
+              <TableHead className="text-right">販管費</TableHead>
+              <TableHead className="text-right">営業利益</TableHead>
+              <TableHead className="text-right">営業利益率</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {monthlyPL.map(m => {
+              const negOP = m.operatingProfit < 0;
+              const lowGM = m.grossMarginRate <= 60;
+              return (
+                <TableRow key={m.ym} className={negOP ? "bg-destructive/10" : ""}>
+                  <TableCell className="font-medium">{m.label}</TableCell>
+                  <TableCell className="text-right font-mono-num">{fmt(m.revenue)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{fmt(m.cost)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{fmt(m.grossProfit)}</TableCell>
+                  <TableCell className={`text-right font-mono-num ${lowGM ? "text-destructive font-semibold" : ""}`}>{fmtPct(m.grossMarginRate)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{fmt(m.sga)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{fmt(m.operatingProfit)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{fmtPct(m.operatingMarginRate)}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+          <TableFooter>
+            <TableRow className="font-bold">
+              <TableCell>合計</TableCell>
+              <TableCell className="text-right font-mono-num">{fmt(totals.revenue)}</TableCell>
+              <TableCell className="text-right font-mono-num">{fmt(totals.cost)}</TableCell>
+              <TableCell className="text-right font-mono-num">{fmt(totals.grossProfit)}</TableCell>
+              <TableCell className="text-right font-mono-num">{totals.revenue > 0 ? fmtPct((totals.grossProfit / totals.revenue) * 100) : "—"}</TableCell>
+              <TableCell className="text-right font-mono-num">{fmt(totals.sga)}</TableCell>
+              <TableCell className="text-right font-mono-num">{fmt(totals.operatingProfit)}</TableCell>
+              <TableCell className="text-right font-mono-num">{totals.revenue > 0 ? fmtPct((totals.operatingProfit / totals.revenue) * 100) : "—"}</TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default PL;
