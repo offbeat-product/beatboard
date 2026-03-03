@@ -1,48 +1,169 @@
-import { TrendingUp, Users, DollarSign, Zap } from "lucide-react";
-import { KpiCard } from "@/components/KpiCard";
-import { BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { DashboardKpiCard } from "@/components/DashboardKpiCard";
+import {
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+
+const MONTH_LABELS: Record<string, string> = {
+  "01": "1月", "02": "2月", "03": "3月", "04": "4月", "05": "5月", "06": "6月",
+  "07": "7月", "08": "8月", "09": "9月", "10": "10月", "11": "11月", "12": "12月",
+};
+
+function formatMan(v: number) {
+  return `¥${Math.round(v / 10000).toLocaleString()}万`;
+}
 
 const Index = () => {
+  const navigate = useNavigate();
+  const d = useDashboardData();
+
+  if (d.isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-muted-foreground text-sm">読み込み中...</span>
+      </div>
+    );
+  }
+
+  const chartData = d.monthlyTotals.map((m) => ({
+    name: MONTH_LABELS[m.ym.slice(5)] ?? m.ym,
+    売上実績: Math.round(m.revenue / 10000),
+    目標: Math.round(m.target / 10000),
+  }));
+
+  const achievementRate = d.currentTarget > 0 ? (d.currentRevenue / d.currentTarget) * 100 : 0;
+  const cumulativeRate = d.annualTarget > 0 ? (d.cumulativeRevenue / d.annualTarget) * 100 : 0;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">ダッシュボード</h2>
-        <p className="text-muted-foreground text-sm mt-1">経営指標の概要</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">ダッシュボード</h2>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-medium">2026年3月</p>
+          <p className="text-xs text-muted-foreground">データ更新: 2026/03/03 08:00</p>
+        </div>
       </div>
 
-      {/* KPI Cards - empty state */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="月間売上" value="—" icon={DollarSign} delay={0} />
-        <KpiCard title="粗利率" value="—" icon={TrendingUp} delay={100} />
-        <KpiCard title="アクティブ顧客" value="—" icon={Users} delay={200} />
-        <KpiCard title="一人当たり売上" value="—" icon={Zap} delay={300} />
+        <DashboardKpiCard
+          label="今月の売上"
+          value={formatMan(d.currentRevenue)}
+          target={formatMan(d.currentTarget)}
+          progress={achievementRate}
+          change={{
+            text: `${Math.abs(d.momChange).toFixed(1)}%`,
+            direction: d.momChange >= 0 ? "up" : "down",
+            positive: d.momChange >= 0,
+          }}
+          delay={0}
+        />
+        <DashboardKpiCard
+          label="累計売上（2025年度）"
+          value={formatMan(d.cumulativeRevenue)}
+          target={formatMan(d.annualTarget)}
+          progress={cumulativeRate}
+          subtext={`${d.monthsElapsed}/12ヶ月経過`}
+          delay={100}
+        />
+        <DashboardKpiCard
+          label="粗利率"
+          value={`${d.grossMarginRate.toFixed(1)}%`}
+          target={`目標 ${d.targetGrossMargin.toFixed(1)}%`}
+          change={{
+            text: `${Math.abs(d.marginChange).toFixed(1)}pt`,
+            direction: d.marginChange >= 0 ? "up" : "down",
+            positive: d.marginChange >= 0,
+          }}
+          delay={200}
+        />
+        <DashboardKpiCard
+          label="粗利工数単価"
+          value={`¥${Math.round(d.grossProfitPerHour).toLocaleString()}`}
+          target={`目標 ¥${d.targetGPH.toLocaleString()}`}
+          change={{
+            text: `¥${Math.abs(Math.round(d.gphChange)).toLocaleString()}`,
+            direction: d.gphChange >= 0 ? "up" : "down",
+            positive: d.gphChange >= 0,
+          }}
+          delay={300}
+        />
       </div>
 
-      {/* Charts - empty state */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <EmptyChart title="月別売上・粗利推移" delay={200} />
-        <EmptyChart title="顧客構成" delay={300} />
-        <div className="lg:col-span-2">
-          <EmptyChart title="生産性推移（一人当たり売上）" delay={400} />
+      {/* Chart + Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Revenue Chart */}
+        <div className="lg:col-span-4 bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <h3 className="text-sm font-semibold mb-4">月次売上推移</h3>
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                domain={[0, 1200]}
+                ticks={[0, 200, 400, 600, 800, 1000]}
+                tickFormatter={(v) => v.toLocaleString()}
+              />
+              <Tooltip
+                contentStyle={{ borderRadius: 8, border: "1px solid hsl(220, 13%, 91%)", fontSize: 12 }}
+                formatter={(value: number, name: string) => [
+                  `¥${value.toLocaleString()}万`,
+                  name,
+                ]}
+              />
+              <Bar
+                dataKey="売上実績"
+                fill="hsl(14, 78%, 54%)"
+                radius={[4, 4, 0, 0]}
+                barSize={28}
+              />
+              <Line
+                type="monotone"
+                dataKey="目標"
+                stroke="#9CA3AF"
+                strokeDasharray="6 4"
+                strokeWidth={2}
+                dot={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Alerts */}
+        <div className="lg:col-span-1 bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "300ms" }}>
+          <h3 className="text-sm font-semibold mb-4">アラート</h3>
+          <div className="space-y-3">
+            {d.alerts.length === 0 && (
+              <p className="text-xs text-muted-foreground">アラートはありません</p>
+            )}
+            {d.alerts.map((alert, i) => (
+              <button
+                key={i}
+                onClick={() => navigate(alert.href)}
+                className="w-full text-left flex items-start gap-2 group hover:bg-secondary/50 rounded-sm p-2 -mx-2 transition-colors"
+              >
+                <span
+                  className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${
+                    alert.type === "danger" ? "bg-chart-red" : "bg-chart-yellow"
+                  }`}
+                />
+                <span className="text-xs leading-relaxed text-foreground group-hover:text-primary transition-colors">
+                  {alert.text}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
-function EmptyChart({ title, delay = 0 }: { title: string; delay?: number }) {
-  return (
-    <div
-      className="bg-card rounded-lg shadow-sm p-5 animate-fade-in"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <h3 className="text-sm font-semibold mb-4">{title}</h3>
-      <div className="flex flex-col items-center justify-center h-[220px] text-muted-foreground">
-        <BarChart3 className="h-10 w-10 mb-3 opacity-30" />
-        <p className="text-sm">データがまだありません</p>
-      </div>
-    </div>
-  );
-}
 
 export default Index;
