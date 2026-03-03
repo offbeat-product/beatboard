@@ -14,7 +14,474 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_chat_logs: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          org_id: string
+          response: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          org_id: string
+          response?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          org_id?: string
+          response?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_reports: {
+        Row: {
+          content_json: Json | null
+          created_at: string
+          generated_at: string
+          id: string
+          org_id: string
+          report_type: string
+        }
+        Insert: {
+          content_json?: Json | null
+          created_at?: string
+          generated_at?: string
+          id?: string
+          org_id: string
+          report_type: string
+        }
+        Update: {
+          content_json?: Json | null
+          created_at?: string
+          generated_at?: string
+          id?: string
+          org_id?: string
+          report_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_reports_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          contract_start: string | null
+          created_at: string
+          id: string
+          monthly_fee: number
+          name: string
+          org_id: string
+          plan_type: string
+          status: string
+        }
+        Insert: {
+          contract_start?: string | null
+          created_at?: string
+          id?: string
+          monthly_fee?: number
+          name: string
+          org_id: string
+          plan_type: string
+          status?: string
+        }
+        Update: {
+          contract_start?: string | null
+          created_at?: string
+          id?: string
+          monthly_fee?: number
+          name?: string
+          org_id?: string
+          plan_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_worklogs: {
+        Row: {
+          created_at: string
+          date: string
+          hours: number
+          id: string
+          member_id: string | null
+          org_id: string
+          project_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          hours?: number
+          id?: string
+          member_id?: string | null
+          org_id: string
+          project_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          hours?: number
+          id?: string
+          member_id?: string | null
+          org_id?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_worklogs_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_worklogs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_worklogs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_snapshots: {
+        Row: {
+          actual_value: number
+          created_at: string
+          id: string
+          metric_name: string
+          org_id: string
+          snapshot_date: string
+        }
+        Insert: {
+          actual_value: number
+          created_at?: string
+          id?: string
+          metric_name: string
+          org_id: string
+          snapshot_date: string
+        }
+        Update: {
+          actual_value?: number
+          created_at?: string
+          id?: string
+          metric_name?: string
+          org_id?: string
+          snapshot_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_snapshots_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      members: {
+        Row: {
+          created_at: string
+          hourly_rate: number | null
+          id: string
+          name: string
+          org_id: string
+          role: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          name: string
+          org_id: string
+          role: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          name?: string
+          org_id?: string
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_sales: {
+        Row: {
+          client_id: string | null
+          cost: number
+          created_at: string
+          gross_profit: number
+          id: string
+          org_id: string
+          revenue: number
+          year_month: string
+        }
+        Insert: {
+          client_id?: string | null
+          cost?: number
+          created_at?: string
+          gross_profit?: number
+          id?: string
+          org_id: string
+          revenue?: number
+          year_month: string
+        }
+        Update: {
+          client_id?: string | null
+          cost?: number
+          created_at?: string
+          gross_profit?: number
+          id?: string
+          org_id?: string
+          revenue?: number
+          year_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_sales_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_sales_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          settings_json: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          settings_json?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          settings_json?: Json | null
+        }
+        Relationships: []
+      }
+      pl_records: {
+        Row: {
+          account_name: string
+          amount: number
+          created_at: string
+          id: string
+          org_id: string
+          year_month: string
+        }
+        Insert: {
+          account_name: string
+          amount?: number
+          created_at?: string
+          id?: string
+          org_id: string
+          year_month: string
+        }
+        Update: {
+          account_name?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          org_id?: string
+          year_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pl_records_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+          status: string
+          type: string
+          unit_price: number | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+          status?: string
+          type: string
+          unit_price?: number | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+          status?: string
+          type?: string
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_records: {
+        Row: {
+          created_at: string
+          first_pass_rate: number
+          id: string
+          org_id: string
+          project_id: string | null
+          revision_count: number
+          year_month: string
+        }
+        Insert: {
+          created_at?: string
+          first_pass_rate?: number
+          id?: string
+          org_id: string
+          project_id?: string | null
+          revision_count?: number
+          year_month: string
+        }
+        Update: {
+          created_at?: string
+          first_pass_rate?: number
+          id?: string
+          org_id?: string
+          project_id?: string | null
+          revision_count?: number
+          year_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_records_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_records_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      targets: {
+        Row: {
+          created_at: string
+          id: string
+          metric_name: string
+          org_id: string
+          target_value: number
+          year_month: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_name: string
+          org_id: string
+          target_value: number
+          year_month: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_name?: string
+          org_id?: string
+          target_value?: number
+          year_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "targets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
