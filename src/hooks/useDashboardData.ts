@@ -58,6 +58,7 @@ export function useDashboardData() {
   });
 
   const isLoading = monthlySalesQuery.isLoading || targetsQuery.isLoading || worklogsQuery.isLoading;
+  const isError = monthlySalesQuery.isError || targetsQuery.isError || worklogsQuery.isError;
   const sales = monthlySalesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
   const worklogs = worklogsQuery.data ?? [];
@@ -149,6 +150,7 @@ export function useDashboardData() {
 
   return {
     isLoading,
+    isError,
     currentRevenue,
     currentTarget,
     momChange,

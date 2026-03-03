@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -410,31 +411,34 @@ function DataTab() {
 /* Main Page                                       */
 /* ────────────────────────────────────────────── */
 
-const SettingsPage = () => (
-  <div className="space-y-6">
-    <div>
-      <h2 className="text-2xl font-bold tracking-tight">設定</h2>
-      <p className="text-muted-foreground text-sm mt-1">目標値・アラート・データ同期の管理</p>
+const SettingsPage = () => {
+  usePageTitle("設定");
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">設定</h2>
+        <p className="text-muted-foreground text-sm mt-1">目標値・アラート・データ同期の管理</p>
+      </div>
+
+      <Tabs defaultValue="targets">
+        <TabsList>
+          <TabsTrigger value="targets">目標値設定</TabsTrigger>
+          <TabsTrigger value="alerts">アラート閾値</TabsTrigger>
+          <TabsTrigger value="data">データ管理</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="targets">
+          <TargetsTab />
+        </TabsContent>
+        <TabsContent value="alerts">
+          <AlertsTab />
+        </TabsContent>
+        <TabsContent value="data">
+          <DataTab />
+        </TabsContent>
+      </Tabs>
     </div>
-
-    <Tabs defaultValue="targets">
-      <TabsList>
-        <TabsTrigger value="targets">目標値設定</TabsTrigger>
-        <TabsTrigger value="alerts">アラート閾値</TabsTrigger>
-        <TabsTrigger value="data">データ管理</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="targets">
-        <TargetsTab />
-      </TabsContent>
-      <TabsContent value="alerts">
-        <AlertsTab />
-      </TabsContent>
-      <TabsContent value="data">
-        <DataTab />
-      </TabsContent>
-    </Tabs>
-  </div>
-);
+  );
+};
 
 export default SettingsPage;

@@ -12,7 +12,11 @@ const menuItems = [
   { title: "設定", url: "/settings", icon: Settings },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  onNavigate?: () => void;
+}
+
+export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -40,6 +44,7 @@ export function AppSidebar() {
               key={item.url}
               to={item.url}
               end={item.url === "/"}
+              onClick={onNavigate}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition-colors relative ${
                 isActive
                   ? "bg-accent text-accent-foreground"

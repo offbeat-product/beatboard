@@ -75,6 +75,7 @@ export function usePLData() {
   });
 
   const isLoading = salesQuery.isLoading || plQuery.isLoading || worklogsQuery.isLoading || targetsQuery.isLoading;
+  const isError = salesQuery.isError || plQuery.isError || worklogsQuery.isError || targetsQuery.isError;
   const sales = salesQuery.data ?? [];
   const plRecords = plQuery.data ?? [];
   const worklogs = worklogsQuery.data ?? [];
@@ -153,6 +154,7 @@ export function usePLData() {
 
   return {
     isLoading,
+    isError,
     currentData,
     targetGrossMargin,
     targetGPH,

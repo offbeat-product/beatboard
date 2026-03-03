@@ -1,9 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { DashboardKpiCard } from "@/components/DashboardKpiCard";
+import { KpiCardSkeleton, ChartSkeleton } from "@/components/PageSkeleton";
+import { ErrorState } from "@/components/ErrorState";
+import { EmptyState } from "@/components/EmptyState";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { useQueryClient } from "@tanstack/react-query";
 
 const MONTH_LABELS: Record<string, string> = {
   "01": "1月", "02": "2月", "03": "3月", "04": "4月", "05": "5月", "06": "6月",
@@ -15,15 +20,28 @@ function formatMan(v: number) {
 }
 
 const Index = () => {
+  usePageTitle("ダッシュボード");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const d = useDashboardData();
 
   if (d.isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="text-muted-foreground text-sm">読み込み中...</span>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div><h2 className="text-2xl font-bold tracking-tight">ダッシュボード</h2></div>
+        </div>
+        <KpiCardSkeleton count={4} />
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-4"><ChartSkeleton /></div>
+          <div className="lg:col-span-1"><ChartSkeleton height={200} /></div>
+        </div>
       </div>
     );
+  }
+
+  if (d.isError) {
+    return <ErrorState onRetry={() => queryClient.invalidateQueries()} />;
   }
 
   const chartData = d.monthlyTotals.map((m) => ({
@@ -32,6 +50,7 @@ const Index = () => {
     目標: Math.round(m.target / 10000),
   }));
 
+  const hasData = d.monthlyTotals.some((m) => m.revenue > 0);
   const achievementRate = d.currentTarget > 0 ? (d.currentRevenue / d.currentTarget) * 100 : 0;
   const cumulativeRate = d.annualTarget > 0 ? (d.cumulativeRevenue / d.annualTarget) * 100 : 0;
 
@@ -49,7 +68,7 @@ const Index = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardKpiCard
           label="今月の売上"
           value={formatMan(d.currentRevenue)}
@@ -99,41 +118,45 @@ const Index = () => {
         {/* Revenue Chart */}
         <div className="lg:col-span-4 bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "200ms" }}>
           <h3 className="text-sm font-semibold mb-4">月次売上推移</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                domain={[0, 12000]}
-                ticks={[0, 2000, 4000, 6000, 8000, 10000]}
-                tickFormatter={(v) => v.toLocaleString()}
-              />
-              <Tooltip
-                contentStyle={{ borderRadius: 8, border: "1px solid hsl(220, 13%, 91%)", fontSize: 12 }}
-                formatter={(value: number, name: string) => [
-                  `¥${value.toLocaleString()}万`,
-                  name,
-                ]}
-              />
-              <Bar
-                dataKey="売上実績"
-                fill="hsl(14, 78%, 54%)"
-                radius={[4, 4, 0, 0]}
-                barSize={28}
-              />
-              <Line
-                type="monotone"
-                dataKey="目標"
-                stroke="#9CA3AF"
-                strokeDasharray="6 4"
-                strokeWidth={2}
-                dot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          {!hasData ? (
+            <EmptyState />
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <ComposedChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={[0, 12000]}
+                  ticks={[0, 2000, 4000, 6000, 8000, 10000]}
+                  tickFormatter={(v) => v.toLocaleString()}
+                />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, border: "1px solid hsl(220, 13%, 91%)", fontSize: 12 }}
+                  formatter={(value: number, name: string) => [
+                    `¥${value.toLocaleString()}万`,
+                    name,
+                  ]}
+                />
+                <Bar
+                  dataKey="売上実績"
+                  fill="hsl(14, 78%, 54%)"
+                  radius={[4, 4, 0, 0]}
+                  barSize={28}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="目標"
+                  stroke="#9CA3AF"
+                  strokeDasharray="6 4"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Alerts */}

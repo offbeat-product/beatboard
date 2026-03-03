@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Bot, Send, FileText } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,7 @@ function ReportCard({
 const AIAdvisor = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChat);
   const [input, setInput] = useState("");
+  usePageTitle("AIアドバイザー");
 
   const handleSend = () => {
     const text = input.trim();
