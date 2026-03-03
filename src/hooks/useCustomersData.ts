@@ -56,6 +56,7 @@ export function useCustomersData() {
   });
 
   const isLoading = salesQuery.isLoading || clientsQuery.isLoading || targetsQuery.isLoading;
+  const isError = salesQuery.isError || clientsQuery.isError || targetsQuery.isError;
   const sales = salesQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
@@ -129,6 +130,7 @@ export function useCustomersData() {
 
   return {
     isLoading,
+    isError,
     top1Pct,
     top3Pct,
     targetTop1,
