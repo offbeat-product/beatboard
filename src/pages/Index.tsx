@@ -119,7 +119,7 @@ const Index = () => {
           <DashboardKpiCard label="前月の粗利工数単価" value={`¥${Math.round(d.prevGPH).toLocaleString()}`} delay={400} />
           <DashboardKpiCard label="今月の粗利工数単価" value={`¥${Math.round(d.currentGPH).toLocaleString()}`} target={`目標 ¥${d.targetGPH.toLocaleString()}`} progress={d.targetGPH > 0 ? (d.currentGPH / d.targetGPH) * 100 : undefined} delay={450} />
           <DashboardKpiCard label="前月比成長率" value={`${d.gphMomChange >= 0 ? "+" : ""}${d.gphMomChange.toFixed(1)}%`} change={growthArrow(d.gphMomChange)} delay={500} />
-          <DashboardKpiCard label="通期平均粗利工数単価" value={`¥${Math.round(d.avgGPH).toLocaleString()}`} delay={550} />
+          <DashboardKpiCard label="通期平均粗利工数単価" value={`¥${Math.round(d.avgGPH).toLocaleString()}`} target={`目標 ¥${d.targetGPH.toLocaleString()}`} progress={d.targetGPH > 0 ? (d.avgGPH / d.targetGPH) * 100 : undefined} delay={550} />
         </div>
       </div>
 

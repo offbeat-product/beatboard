@@ -193,6 +193,8 @@ export function useDashboardData() {
     prevGrossProfit,
     grossProfitMomChange,
     cumulativeGrossProfit,
+    currentGrossProfitTarget,
+    annualGrossProfitTarget,
     // Margin
     grossMarginRate,
     targetGrossMargin: targetGrossMargin * 100,
