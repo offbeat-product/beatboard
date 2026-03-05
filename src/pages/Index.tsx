@@ -127,7 +127,7 @@ const Index = () => {
 
       {/* Row 4: Project GPH (Project Hours) */}
       <div>
-        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">案件単価（案件工数）</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">案件粗利工数単価（案件工数）</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <DashboardKpiCard label="前月の案件単価" value={`¥${Math.round(d.prevProjectGPH).toLocaleString()}`} delay={600} />
           <DashboardKpiCard label="今月の案件単価" value={`¥${Math.round(d.currentProjectGPH).toLocaleString()}`} target={`目標 ¥${d.targetProjectGPH.toLocaleString()}`} progress={d.targetProjectGPH > 0 ? (d.currentProjectGPH / d.targetProjectGPH) * 100 : undefined} delay={650} />
