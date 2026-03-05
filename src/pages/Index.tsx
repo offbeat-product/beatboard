@@ -191,7 +191,7 @@ const Index = () => {
               <ReferenceLine y={d.targetGPH} stroke="hsl(var(--chart-4))" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `目標 ¥${d.targetGPH.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--chart-4))" }} />
               <ReferenceLine y={d.targetProjectGPH} stroke="hsl(var(--chart-2))" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `目標 ¥${d.targetProjectGPH.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--chart-2))" }} />
               <Line type="monotone" dataKey="粗利工数単価" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--chart-4))" }} />
-              <Line type="monotone" dataKey="案件単価" stroke="hsl(var(--chart-2))" strokeWidth={2} strokeDasharray="8 4" dot={{ r: 3, fill: "hsl(var(--chart-2))" }} />
+              <Line type="monotone" dataKey="案件粗利工数単価" stroke="hsl(var(--chart-2))" strokeWidth={2} strokeDasharray="8 4" dot={{ r: 3, fill: "hsl(var(--chart-2))" }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
