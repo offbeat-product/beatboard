@@ -1,29 +1,23 @@
 import { useNavigate } from "react-router-dom";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { DashboardKpiCard } from "@/components/DashboardKpiCard";
 import { KpiCardSkeleton, ChartSkeleton } from "@/components/PageSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
+import { getMonthLabel } from "@/lib/fiscalYear";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { useQueryClient } from "@tanstack/react-query";
-
-const MONTH_LABELS: Record<string, string> = {
-  "01": "1月", "02": "2月", "03": "3月", "04": "4月", "05": "5月", "06": "6月",
-  "07": "7月", "08": "8月", "09": "9月", "10": "10月", "11": "11月", "12": "12月",
-};
-
-function formatMan(v: number) {
-  return `¥${Math.round(v / 10000).toLocaleString()}万`;
-}
 
 const Index = () => {
   usePageTitle("ダッシュボード");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const d = useDashboardData();
+  const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
 
   if (d.isLoading) {
     return (
@@ -45,14 +39,19 @@ const Index = () => {
   }
 
   const chartData = d.monthlyTotals.map((m) => ({
-    name: MONTH_LABELS[m.ym.slice(5)] ?? m.ym,
-    売上実績: Math.round(m.revenue / 10000),
-    目標: Math.round(m.target / 10000),
+    name: getMonthLabel(m.ym),
+    売上実績: toDisplayValue(m.revenue),
+    目標: toDisplayValue(m.target),
   }));
 
   const hasData = d.monthlyTotals.some((m) => m.revenue > 0);
   const achievementRate = d.currentTarget > 0 ? (d.currentRevenue / d.currentTarget) * 100 : 0;
   const cumulativeRate = d.annualTarget > 0 ? (d.cumulativeRevenue / d.annualTarget) * 100 : 0;
+
+  // Calculate sensible Y-axis domain from data
+  const allValues = chartData.flatMap((c) => [c.売上実績, c.目標]).filter(Boolean);
+  const maxVal = Math.max(...allValues, 1);
+  const yMax = Math.ceil(maxVal * 1.2 / (10 ** Math.floor(Math.log10(maxVal)))) * (10 ** Math.floor(Math.log10(maxVal)));
 
   return (
     <div className="space-y-6">
@@ -71,8 +70,8 @@ const Index = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardKpiCard
           label="今月の売上"
-          value={formatMan(d.currentRevenue)}
-          target={formatMan(d.currentTarget)}
+          value={formatAmount(d.currentRevenue)}
+          target={formatAmount(d.currentTarget)}
           progress={achievementRate}
           change={{
             text: `${Math.abs(d.momChange).toFixed(1)}%`,
@@ -82,9 +81,9 @@ const Index = () => {
           delay={0}
         />
         <DashboardKpiCard
-          label="累計売上（2025年度）"
-          value={formatMan(d.cumulativeRevenue)}
-          target={formatMan(d.annualTarget)}
+          label={`累計売上（${d.fyLabel}）`}
+          value={formatAmount(d.cumulativeRevenue)}
+          target={formatAmount(d.annualTarget)}
           progress={cumulativeRate}
           subtext={`${d.monthsElapsed}/12ヶ月経過`}
           delay={100}
@@ -129,14 +128,14 @@ const Index = () => {
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  domain={[0, 12000]}
-                  ticks={[0, 2000, 4000, 6000, 8000, 10000]}
+                  domain={[0, yMax]}
                   tickFormatter={(v) => v.toLocaleString()}
+                  label={{ value: unitSuffix, position: "insideTopLeft", offset: -5, fontSize: 11, fill: "#9CA3AF" }}
                 />
                 <Tooltip
                   contentStyle={{ borderRadius: 8, border: "1px solid hsl(220, 13%, 91%)", fontSize: 12 }}
                   formatter={(value: number, name: string) => [
-                    `¥${value.toLocaleString()}万`,
+                    `${value.toLocaleString()}${unitSuffix}`,
                     name,
                   ]}
                 />
