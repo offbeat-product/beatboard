@@ -16,7 +16,7 @@ import {
 import { ArrowUpDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-type SortKey = "name" | "plan_type" | "monthly_fee" | "pct" | "contract_start" | "status";
+type SortKey = "name" | "pct" | "revenue" | "status";
 
 const PLAN_COLORS: Record<string, string> = {
   enterprise: "bg-chart-orange text-primary-foreground",
