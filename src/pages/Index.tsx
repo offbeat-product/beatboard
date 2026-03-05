@@ -106,9 +106,9 @@ const Index = () => {
         <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">粗利</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <DashboardKpiCard label="前月の粗利" value={formatAmount(d.prevGrossProfit)} delay={200} />
-          <DashboardKpiCard label="今月の粗利" value={formatAmount(d.currentGrossProfit)} delay={250} />
+          <DashboardKpiCard label="今月の粗利" value={formatAmount(d.currentGrossProfit)} target={formatAmount(d.currentGrossProfitTarget)} progress={d.currentGrossProfitTarget > 0 ? (d.currentGrossProfit / d.currentGrossProfitTarget) * 100 : undefined} delay={250} />
           <DashboardKpiCard label="前月比成長率" value={`${d.grossProfitMomChange >= 0 ? "+" : ""}${d.grossProfitMomChange.toFixed(1)}%`} change={growthArrow(d.grossProfitMomChange)} delay={300} />
-          <DashboardKpiCard label={`累計粗利（${d.fyLabel}）`} value={formatAmount(d.cumulativeGrossProfit)} delay={350} />
+          <DashboardKpiCard label={`累計粗利（${d.fyLabel}）`} value={formatAmount(d.cumulativeGrossProfit)} target={formatAmount(d.annualGrossProfitTarget)} progress={d.annualGrossProfitTarget > 0 ? (d.cumulativeGrossProfit / d.annualGrossProfitTarget) * 100 : undefined} subtext={`${d.monthsElapsed}/12ヶ月経過`} delay={350} />
         </div>
       </div>
 
