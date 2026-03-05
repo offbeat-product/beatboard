@@ -35,7 +35,7 @@ export function useCustomersData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, plan_type, monthly_fee, contract_start, status")
+        .select("id, name, status")
         .eq("org_id", ORG_ID);
       if (error) throw error;
       return data;
@@ -87,7 +87,7 @@ export function useCustomersData() {
   const COLORS: Record<string, string> = {};
   const COLOR_LIST = ["#E85B2D", "#3B82F6", "#10B981", "#F59E0B", "#9CA3AF"];
   const pieData = sortedClientRevenues.map((c, i) => {
-    const client = clients.find((cl) => cl.id === c.id);
+    const client = clients.find((cl) => String(cl.id) === String(c.id));
     const name = client?.name ?? "その他";
     const color = COLOR_LIST[Math.min(i, COLOR_LIST.length - 1)];
     COLORS[name] = color;
@@ -103,7 +103,7 @@ export function useCustomersData() {
     // Group by client
     const clientRevs: Record<string, number> = {};
     rows.forEach((r) => {
-      const cl = clients.find((c) => c.id === r.client_id);
+      const cl = clients.find((c) => String(c.id) === String(r.client_id));
       const key = cl?.name ?? "その他";
       clientRevs[key] = (clientRevs[key] ?? 0) + r.revenue;
     });

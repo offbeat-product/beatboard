@@ -16,7 +16,7 @@ import {
 import { ArrowUpDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-type SortKey = "name" | "plan_type" | "monthly_fee" | "pct" | "contract_start" | "status";
+type SortKey = "name" | "pct" | "revenue" | "status";
 
 const PLAN_COLORS: Record<string, string> = {
   enterprise: "bg-chart-orange text-primary-foreground",
@@ -153,10 +153,8 @@ const Customers = () => {
               <TableHeader>
                 <TableRow className="bg-secondary">
                   <SortableHead label="顧客名" sortKey="name" current={sortKey} asc={sortAsc} onSort={toggleSort} />
-                  <SortableHead label="プラン" sortKey="plan_type" current={sortKey} asc={sortAsc} onSort={toggleSort} />
-                  <SortableHead label="月額" sortKey="monthly_fee" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
+                  <SortableHead label="売上" sortKey="revenue" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
                   <SortableHead label="構成比" sortKey="pct" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
-                  <SortableHead label="契約開始日" sortKey="contract_start" current={sortKey} asc={sortAsc} onSort={toggleSort} />
                   <SortableHead label="ステータス" sortKey="status" current={sortKey} asc={sortAsc} onSort={toggleSort} />
                 </TableRow>
               </TableHeader>
@@ -164,14 +162,8 @@ const Customers = () => {
                 {sorted.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell>
-                      <Badge className={PLAN_COLORS[c.plan_type] ?? PLAN_COLORS.other}>
-                        {PLAN_LABELS[c.plan_type] ?? c.plan_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono-num">¥{(c.monthly_fee / 10000).toLocaleString()}万</TableCell>
+                    <TableCell className="text-right font-mono-num">¥{Math.round(c.revenue / 10000).toLocaleString()}万</TableCell>
                     <TableCell className="text-right font-mono-num">{c.pct.toFixed(1)}%</TableCell>
-                    <TableCell>{c.contract_start ?? "-"}</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center gap-1.5 text-xs ${c.status === "active" ? "text-chart-green" : "text-muted-foreground"}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${c.status === "active" ? "bg-chart-green" : "bg-muted-foreground"}`} />
