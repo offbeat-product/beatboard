@@ -8,7 +8,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { CurrencyUnitProvider } from "@/hooks/useCurrencyUnit";
 import Index from "./pages/Index";
 import Customers from "./pages/Customers";
-import PL from "./pages/PL";
+import Management from "./pages/Management";
+import Productivity from "./pages/Productivity";
+import Quality from "./pages/Quality";
 import AIAdvisor from "./pages/AIAdvisor";
 import SettingsPage from "./pages/SettingsPage";
 import Login from "./pages/Login";
@@ -30,14 +32,19 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-        <Route path="/" element={<Index />} />
+        <Route path="/dashboard" element={<Index />} />
+        <Route path="/management" element={<Management />} />
+        <Route path="/productivity" element={<Productivity />} />
         <Route path="/customers" element={<Customers />} />
-        <Route path="/pl" element={<PL />} />
+        <Route path="/quality" element={<Quality />} />
         <Route path="/ai" element={<AIAdvisor />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
+      {/* Redirect old routes */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/pl" element={<Navigate to="/management" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

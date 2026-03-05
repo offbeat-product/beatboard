@@ -1,13 +1,15 @@
-import { Home, Users, BarChart3, Bot, Settings, LogOut } from "lucide-react";
+import { Home, TrendingUp, BarChart3, Users, CheckCircle, Bot, Settings, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const menuItems = [
-  { title: "ダッシュボード", url: "/", icon: Home },
-  { title: "顧客分析", url: "/customers", icon: Users },
-  { title: "損益・生産性", url: "/pl", icon: BarChart3 },
+  { title: "ダッシュボード", url: "/dashboard", icon: Home },
+  { title: "経営指標", url: "/management", icon: TrendingUp },
+  { title: "生産性指標", url: "/productivity", icon: BarChart3 },
+  { title: "顧客指標", url: "/customers", icon: Users },
+  { title: "品質指標", url: "/quality", icon: CheckCircle },
   { title: "AIアドバイザー", url: "/ai", icon: Bot },
   { title: "設定", url: "/settings", icon: Settings },
 ];
@@ -36,14 +38,14 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1">
         {menuItems.map((item) => {
-          const isActive = item.url === "/" 
-            ? location.pathname === "/" 
+          const isActive = item.url === "/dashboard"
+            ? location.pathname === "/dashboard"
             : location.pathname.startsWith(item.url);
           return (
             <NavLink
               key={item.url}
               to={item.url}
-              end={item.url === "/"}
+              end={item.url === "/dashboard"}
               onClick={onNavigate}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition-colors relative ${
                 isActive
