@@ -1,5 +1,6 @@
 import { usePLData } from "@/hooks/usePLData";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
@@ -13,12 +14,12 @@ import {
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-const fmt = (v: number) => `¥${(v / 10000).toLocaleString(undefined, { maximumFractionDigits: 0 })}万`;
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
 const PL = () => {
   usePageTitle("損益・生産性");
   const queryClient = useQueryClient();
+  const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const {
     isLoading, isError, currentData, targetGrossMargin, targetGPH,
     opMarginChange, grossMarginChange, gphChange,
@@ -53,6 +54,15 @@ const PL = () => {
     { label: "粗利率", value: fmtPct(grossMarginRate), target: `目標 ${fmtPct(targetGrossMargin)}`, change: grossMarginChange, changeLabel: `${grossMarginChange >= 0 ? "▲" : "▼"} ${Math.abs(grossMarginChange).toFixed(1)}pt` },
     { label: "粗利工数単価", value: `¥${Math.round(gph).toLocaleString()}`, target: `目標 ¥${targetGPH.toLocaleString()}`, change: gphChange, changeLabel: `${gphChange >= 0 ? "▲" : "▼"} ¥${Math.abs(Math.round(gphChange)).toLocaleString()}` },
   ];
+
+  // Chart data converted to display units
+  const displayChartData = chartData.map((d) => ({
+    name: d.name,
+    売上原価: toDisplayValue(d.売上原価),
+    販管費: toDisplayValue(d.販管費),
+    営業利益: toDisplayValue(d.営業利益),
+    粗利率: d.粗利率,
+  }));
 
   const gphAreaData = gphChartData.map(d => ({
     ...d,
@@ -93,12 +103,15 @@ const PL = () => {
             <div className="lg:col-span-3 bg-card rounded-lg shadow-sm p-5">
               <h3 className="text-sm font-semibold mb-4">月次損益推移</h3>
               <ResponsiveContainer width="100%" height={320}>
-                <ComposedChart data={chartData}>
+                <ComposedChart data={displayChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="left" fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `${v}万`} />
+                  <YAxis yAxisId="left" fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => v.toLocaleString()} label={{ value: unitSuffix, position: "insideTopLeft", offset: -5, fontSize: 11, fill: "#9CA3AF" }} />
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }} formatter={(value: number, name: string) => {
+                    if (name === "粗利率") return [`${value}%`, name];
+                    return [`${value.toLocaleString()}${unitSuffix}`, name];
+                  }} />
                   <Bar yAxisId="left" dataKey="売上原価" stackId="a" fill="#E5E7EB" />
                   <Bar yAxisId="left" dataKey="販管費" stackId="a" fill="#9CA3AF" />
                   <Bar yAxisId="left" dataKey="営業利益" stackId="a" fill="#E85B2D" radius={[4, 4, 0, 0]} />
@@ -153,12 +166,12 @@ const PL = () => {
                   return (
                     <TableRow key={m.ym} className={negOP ? "bg-destructive/10" : ""}>
                       <TableCell className="font-medium">{m.label}</TableCell>
-                      <TableCell className="text-right font-mono-num">{fmt(m.revenue)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{fmt(m.cost)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{fmt(m.grossProfit)}</TableCell>
+                      <TableCell className="text-right font-mono-num">{formatAmount(m.revenue)}</TableCell>
+                      <TableCell className="text-right font-mono-num">{formatAmount(m.cost)}</TableCell>
+                      <TableCell className="text-right font-mono-num">{formatAmount(m.grossProfit)}</TableCell>
                       <TableCell className={`text-right font-mono-num ${lowGM ? "text-destructive font-semibold" : ""}`}>{fmtPct(m.grossMarginRate)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{fmt(m.sga)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{fmt(m.operatingProfit)}</TableCell>
+                      <TableCell className="text-right font-mono-num">{formatAmount(m.sga)}</TableCell>
+                      <TableCell className="text-right font-mono-num">{formatAmount(m.operatingProfit)}</TableCell>
                       <TableCell className="text-right font-mono-num">{fmtPct(m.operatingMarginRate)}</TableCell>
                     </TableRow>
                   );
@@ -167,12 +180,12 @@ const PL = () => {
               <TableFooter>
                 <TableRow className="font-bold">
                   <TableCell>合計</TableCell>
-                  <TableCell className="text-right font-mono-num">{fmt(totals.revenue)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{fmt(totals.cost)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{fmt(totals.grossProfit)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{formatAmount(totals.revenue)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{formatAmount(totals.cost)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{formatAmount(totals.grossProfit)}</TableCell>
                   <TableCell className="text-right font-mono-num">{totals.revenue > 0 ? fmtPct((totals.grossProfit / totals.revenue) * 100) : "—"}</TableCell>
-                  <TableCell className="text-right font-mono-num">{fmt(totals.sga)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{fmt(totals.operatingProfit)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{formatAmount(totals.sga)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{formatAmount(totals.operatingProfit)}</TableCell>
                   <TableCell className="text-right font-mono-num">{totals.revenue > 0 ? fmtPct((totals.operatingProfit / totals.revenue) * 100) : "—"}</TableCell>
                 </TableRow>
               </TableFooter>

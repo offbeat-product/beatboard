@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
 import { useCustomersData } from "@/hooks/useCustomersData";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
@@ -18,28 +17,11 @@ import { useQueryClient } from "@tanstack/react-query";
 
 type SortKey = "name" | "pct" | "revenue" | "status";
 
-const PLAN_COLORS: Record<string, string> = {
-  enterprise: "bg-chart-orange text-primary-foreground",
-  pro: "bg-chart-blue text-primary-foreground",
-  standard: "bg-secondary text-secondary-foreground",
-  other: "bg-muted text-muted-foreground",
-};
-
-const PLAN_LABELS: Record<string, string> = {
-  enterprise: "Enterprise",
-  pro: "Pro",
-  standard: "Standard",
-  other: "Other",
-};
-
-function formatMan(v: number) {
-  return `¥${Math.round(v / 10000).toLocaleString()}万`;
-}
-
 const Customers = () => {
   usePageTitle("顧客分析");
   const d = useCustomersData();
   const queryClient = useQueryClient();
+  const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const [sortKey, setSortKey] = useState<SortKey>("pct");
   const [sortAsc, setSortAsc] = useState(false);
 
@@ -82,6 +64,23 @@ const Customers = () => {
   const isTop1Over = d.top1Pct > d.targetTop1;
   const isTop3Over = d.top3Pct > d.targetTop3;
 
+  // Pie data with display values
+  const pieDisplayData = d.pieData.map((p) => ({
+    ...p,
+    displayValue: toDisplayValue(p.value),
+  }));
+
+  // Stacked bar data with display values
+  const barDisplayData = d.monthlyByClient.map((entry) => {
+    const converted: Record<string, number | string> = { name: entry.name };
+    d.clientNames.forEach((n) => {
+      converted[n] = toDisplayValue((entry[n] as number) ?? 0);
+    });
+    converted["top1"] = entry["top1"];
+    converted["top3"] = entry["top3"];
+    return converted;
+  });
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
@@ -99,15 +98,15 @@ const Customers = () => {
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
-              <h3 className="text-sm font-semibold mb-4">顧客別売上構成（今月）</h3>
+              <h3 className="text-sm font-semibold mb-4">顧客別売上構成（{d.latestMonth}）</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
-                  <Pie data={d.pieData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} dataKey="value" paddingAngle={2} label={({ name, pct }) => `${name} ${pct.toFixed(1)}%`} labelLine={false} fontSize={11}>
-                    {d.pieData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
+                  <Pie data={pieDisplayData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} dataKey="displayValue" paddingAngle={2} label={({ name, pct }) => `${name} ${pct.toFixed(1)}%`} labelLine={false} fontSize={11}>
+                    {pieDisplayData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => [`¥${v.toLocaleString()}万`, "売上"]} />
-                  <text x="50%" y="48%" textAnchor="middle" className="fill-muted-foreground text-xs">今月の売上</text>
-                  <text x="50%" y="56%" textAnchor="middle" className="fill-foreground text-sm font-semibold">{formatMan(d.totalCurrentRevenue)}</text>
+                  <Tooltip formatter={(v: number) => [`${v.toLocaleString()}${unitSuffix}`, "売上"]} />
+                  <text x="50%" y="48%" textAnchor="middle" className="fill-muted-foreground text-xs">売上合計</text>
+                  <text x="50%" y="56%" textAnchor="middle" className="fill-foreground text-sm font-semibold">{formatAmount(d.totalCurrentRevenue)}</text>
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -134,11 +133,11 @@ const Customers = () => {
           <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "200ms" }}>
             <h3 className="text-sm font-semibold mb-4">顧客別月次売上推移</h3>
             <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={d.monthlyByClient}>
+              <BarChart data={barDisplayData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
-                <Tooltip formatter={(v: number, name: string) => [`¥${v.toLocaleString()}万`, name]} />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} label={{ value: unitSuffix, position: "insideTopLeft", offset: -5, fontSize: 11, fill: "#9CA3AF" }} />
+                <Tooltip formatter={(v: number, name: string) => [`${v.toLocaleString()}${unitSuffix}`, name]} />
                 <Legend />
                 {d.clientNames.map((name) => (
                   <Bar key={name} dataKey={name} stackId="a" fill={d.clientColors[name]} radius={0} />
@@ -162,7 +161,7 @@ const Customers = () => {
                 {sorted.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell className="text-right font-mono-num">¥{Math.round(c.revenue / 10000).toLocaleString()}万</TableCell>
+                    <TableCell className="text-right font-mono-num">{formatAmount(c.revenue)}</TableCell>
                     <TableCell className="text-right font-mono-num">{c.pct.toFixed(1)}%</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center gap-1.5 text-xs ${c.status === "active" ? "text-chart-green" : "text-muted-foreground"}`}>
