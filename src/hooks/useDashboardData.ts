@@ -142,7 +142,7 @@ export function useDashboardData() {
 
   // Targets
   const targetGrossMargin = targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.63;
-  const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 22000;
+  const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 25000;
   const targetTop1 = targets.find((t) => t.metric_name === "top1_concentration")?.target_value ?? 0.25;
   const targetTop3 = targets.find((t) => t.metric_name === "top3_concentration")?.target_value ?? 0.60;
 

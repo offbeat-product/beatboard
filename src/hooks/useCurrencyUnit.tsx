@@ -20,7 +20,7 @@ const STORAGE_KEY = "beatboard_currency_unit";
 export function CurrencyUnitProvider({ children }: { children: ReactNode }) {
   const [unit, setUnit] = useState<CurrencyUnit>(() => {
     try {
-      return (localStorage.getItem(STORAGE_KEY) as CurrencyUnit) || "thousand";
+      return (localStorage.getItem(STORAGE_KEY) as CurrencyUnit) || "yen";
     } catch {
       return "thousand";
     }
