@@ -235,7 +235,7 @@ const Index = () => {
               <p>・<strong>累計売上</strong> = 会計年度（5月〜当月）のrevenue合計</p>
               <p>・<strong>累計粗利</strong> = 会計年度（5月〜当月）のgross_profit合計</p>
               <p>・<strong>通期平均粗利工数単価</strong> = 会計年度（5月〜当月）の各月粗利工数単価の単純平均</p>
-              <p>・<strong>通期平均案件単価</strong> = 会計年度（5月〜当月）の各月案件単価の単純平均</p>
+              <p>・<strong>通期平均案件粗利工数単価</strong> = 会計年度（5月〜当月）の各月案件粗利工数単価の単純平均</p>
               <p>・<strong>顧客集中度（上位1社）</strong> = 売上1位顧客の売上 ÷ 全顧客売上合計 × 100</p>
               <p>・<strong>顧客集中度（上位3社）</strong> = 売上上位3社合計 ÷ 全顧客売上合計 × 100</p>
               <p>・<strong>営業利益率</strong> = 営業利益 ÷ 売上 × 100（営業利益 = 粗利 - 販管費、販管費はfreee_monthly_plテーブルのsga_total）</p>
