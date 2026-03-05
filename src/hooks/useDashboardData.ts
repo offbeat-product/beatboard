@@ -51,7 +51,7 @@ export function useDashboardData() {
         .from("kpi_snapshots")
         .select("snapshot_date, metric_name, actual_value")
         .eq("org_id", ORG_ID)
-        .eq("metric_name", "gross_profit_per_hour");
+        .in("metric_name", ["gross_profit_per_hour", "gross_profit_per_project_hour", "project_hours"]);
       if (error) throw error;
       return data;
     },
@@ -107,9 +107,9 @@ export function useDashboardData() {
   const prevGrossMargin = prevRevenue > 0 ? (prevGrossProfit / prevRevenue) * 100 : 0;
   const marginChange = grossMarginRate - prevGrossMargin;
 
-  // GPH helper: get GPH for a given month from kpi_snapshots, fallback to grossProfit / hours (or 160h)
+  // GPH helper (total labor hours): get GPH from kpi_snapshots, fallback to grossProfit / hours
   const getGPH = (ym: string): number => {
-    const snapshot = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym));
+    const snapshot = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "gross_profit_per_hour");
     if (snapshot) return snapshot.actual_value;
     const mData = monthlyTotals.find((m) => m.ym === ym);
     if (!mData || mData.grossProfit === 0) return 0;
@@ -118,19 +118,41 @@ export function useDashboardData() {
     return mData.grossProfit / (totalHours > 0 ? totalHours : 160);
   };
 
+  // Project GPH helper (project hours = total - internal hours)
+  const getProjectGPH = (ym: string): number => {
+    const snapshot = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "gross_profit_per_project_hour");
+    if (snapshot) return snapshot.actual_value;
+    // Fallback: compute from GPH * totalHours / projectHours
+    const mData = monthlyTotals.find((m) => m.ym === ym);
+    if (!mData || mData.grossProfit === 0) return 0;
+    const projectHoursSnapshot = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "project_hours");
+    if (projectHoursSnapshot) return mData.grossProfit / projectHoursSnapshot.actual_value;
+    // Default fallback based on staffing rules
+    const projectHours = ym >= "2026-02" ? 440 : 360;
+    return mData.grossProfit / projectHours;
+  };
+
   const currentGPH = getGPH(currentMonth);
   const prevGPH = getGPH(previousMonth);
   const gphMomChange = prevGPH > 0 ? ((currentGPH - prevGPH) / prevGPH) * 100 : 0;
 
-  // Monthly GPH array for chart
+  const currentProjectGPH = getProjectGPH(currentMonth);
+  const prevProjectGPH = getProjectGPH(previousMonth);
+  const projectGphMomChange = prevProjectGPH > 0 ? ((currentProjectGPH - prevProjectGPH) / prevProjectGPH) * 100 : 0;
+
+  // Monthly GPH arrays for chart
   const monthlyGPH = fiscalMonths.map((ym) => ({
     ym,
     gph: getGPH(ym),
+    projectGph: getProjectGPH(ym),
   }));
 
   // Average GPH for fiscal year up to current month
   const gphValues = monthlyGPH.slice(0, currentIdx + 1).filter((m) => m.gph > 0);
   const avgGPH = gphValues.length > 0 ? gphValues.reduce((s, m) => s + m.gph, 0) / gphValues.length : 0;
+
+  const projectGphValues = monthlyGPH.slice(0, currentIdx + 1).filter((m) => m.projectGph > 0);
+  const avgProjectGPH = projectGphValues.length > 0 ? projectGphValues.reduce((s, m) => s + m.projectGph, 0) / projectGphValues.length : 0;
 
   // Customer concentration
   const currentClientSales = sales
@@ -147,7 +169,8 @@ export function useDashboardData() {
 
   // Targets
   const targetGrossMargin = targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.70;
-  const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 25000;
+  const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 21552;
+  const targetProjectGPH = targets.find((t) => t.metric_name === "gross_profit_per_project_hour")?.target_value ?? 25000;
   const targetTop1 = targets.find((t) => t.metric_name === "top1_concentration")?.target_value ?? 0.25;
   const targetTop3 = targets.find((t) => t.metric_name === "top3_concentration")?.target_value ?? 0.60;
 
@@ -171,6 +194,13 @@ export function useDashboardData() {
     alerts.push({
       type: "warning",
       text: `粗利工数単価 ¥${Math.round(currentGPH).toLocaleString()} - 目標¥${targetGPH.toLocaleString()}を下回り`,
+      href: "/pl",
+    });
+  }
+  if (currentProjectGPH < targetProjectGPH && currentProjectGPH > 0) {
+    alerts.push({
+      type: "warning",
+      text: `案件単価 ¥${Math.round(currentProjectGPH).toLocaleString()} - 目標¥${targetProjectGPH.toLocaleString()}を下回り`,
       href: "/pl",
     });
   }
@@ -199,12 +229,19 @@ export function useDashboardData() {
     grossMarginRate,
     targetGrossMargin: targetGrossMargin * 100,
     marginChange,
-    // GPH
+    // GPH (total labor hours)
     currentGPH,
     prevGPH,
     gphMomChange,
     avgGPH,
     targetGPH,
+    // Project GPH (project hours)
+    currentProjectGPH,
+    prevProjectGPH,
+    projectGphMomChange,
+    avgProjectGPH,
+    targetProjectGPH,
+    // Chart data
     monthlyGPH,
     // General
     monthsElapsed,
