@@ -170,7 +170,7 @@ const Index = () => {
 
         {/* GPH Chart (dual lines) */}
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "300ms" }}>
-          <h3 className="text-sm font-semibold mb-4">粗利工数単価・案件単価推移</h3>
+          <h3 className="text-sm font-semibold mb-4">粗利工数単価・案件粗利工数単価推移</h3>
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart data={gphChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
