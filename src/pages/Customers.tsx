@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useCustomersData } from "@/hooks/useCustomersData";
+import { useCustomersData, CustomerDateRange } from "@/hooks/useCustomersData";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
@@ -9,27 +9,63 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   PieChart, Pie, Cell, LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
 } from "recharts";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, CalendarDays } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getFiscalYearMonths } from "@/lib/fiscalYear";
 
-type SortKey = "name" | "pct" | "revenue" | "status";
+type SortKey = "name" | "pct" | "revenue" | "grossProfit" | "grossProfitRate" | "status";
+
+/** Generate month options for selectors */
+function generateMonthOptions(): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [];
+  // from 2024-05 to 2027-04
+  for (let y = 2024; y <= 2027; y++) {
+    for (let m = 1; m <= 12; m++) {
+      const val = `${y}-${String(m).padStart(2, "0")}`;
+      options.push({ value: val, label: `${y}年${m}月` });
+    }
+  }
+  return options;
+}
+
+const MONTH_OPTIONS = generateMonthOptions();
+
+const PRESET_RANGES = [
+  { label: "2026年4月期（通期）", start: "2025-05", end: "2026-04" },
+  { label: "2025年4月期（通期）", start: "2024-05", end: "2025-04" },
+  { label: "直近3ヶ月", start: "2026-01", end: "2026-03" },
+  { label: "直近6ヶ月", start: "2025-10", end: "2026-03" },
+  { label: "カスタム", start: "", end: "" },
+];
 
 const Customers = () => {
   usePageTitle("顧客分析");
-  const d = useCustomersData();
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
-  const [sortKey, setSortKey] = useState<SortKey>("pct");
+
+  // Default to current fiscal year
+  const defaultMonths = getFiscalYearMonths(2026);
+  const [startMonth, setStartMonth] = useState(defaultMonths[0]);
+  const [endMonth, setEndMonth] = useState(defaultMonths[defaultMonths.length - 1]);
+  const [presetIndex, setPresetIndex] = useState(0);
+
+  const dateRange: CustomerDateRange = { startMonth, endMonth };
+  const d = useCustomersData(dateRange);
+
+  const [sortKey, setSortKey] = useState<SortKey>("revenue");
   const [sortAsc, setSortAsc] = useState(false);
 
   const sorted = useMemo(() => {
     const list = [...d.clientTable];
     list.sort((a, b) => {
-      let va: string | number = a[sortKey] ?? "";
-      let vb: string | number = b[sortKey] ?? "";
+      const va = a[sortKey] ?? "";
+      const vb = b[sortKey] ?? "";
       if (typeof va === "number" && typeof vb === "number") return sortAsc ? va - vb : vb - va;
       return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
     });
@@ -39,6 +75,15 @@ const Customers = () => {
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
+  };
+
+  const handlePresetChange = (idx: string) => {
+    const i = Number(idx);
+    setPresetIndex(i);
+    if (PRESET_RANGES[i].start) {
+      setStartMonth(PRESET_RANGES[i].start);
+      setEndMonth(PRESET_RANGES[i].end);
+    }
   };
 
   if (d.isLoading) {
@@ -64,13 +109,11 @@ const Customers = () => {
   const isTop1Over = d.top1Pct > d.targetTop1;
   const isTop3Over = d.top3Pct > d.targetTop3;
 
-  // Pie data with display values
   const pieDisplayData = d.pieData.map((p) => ({
     ...p,
     displayValue: toDisplayValue(p.value),
   }));
 
-  // Stacked bar data with display values
   const barDisplayData = d.monthlyByClient.map((entry) => {
     const converted: Record<string, number | string> = { name: entry.name };
     d.clientNames.forEach((n) => {
@@ -81,9 +124,56 @@ const Customers = () => {
     return converted;
   });
 
+  const periodLabel = `${startMonth} 〜 ${endMonth}`;
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
+      </div>
+
+      {/* Period Selector */}
+      <div className="bg-card rounded-lg shadow-sm p-4 animate-fade-in">
+        <div className="flex flex-wrap items-center gap-3">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">期間:</span>
+          <Select value={String(presetIndex)} onValueChange={handlePresetChange}>
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PRESET_RANGES.map((p, i) => (
+                <SelectItem key={i} value={String(i)}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {presetIndex === PRESET_RANGES.length - 1 && (
+            <>
+              <Select value={startMonth} onValueChange={setStartMonth}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground">〜</span>
+              <Select value={endMonth} onValueChange={setEndMonth}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Concentration KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -98,7 +188,7 @@ const Customers = () => {
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
-              <h3 className="text-sm font-semibold mb-4">顧客別売上構成（{d.latestMonth}）</h3>
+              <h3 className="text-sm font-semibold mb-4">顧客別売上構成（{periodLabel}）</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie data={pieDisplayData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} dataKey="displayValue" paddingAngle={2} label={({ name, pct }) => `${name} ${pct.toFixed(1)}%`} labelLine={false} fontSize={11}>
@@ -153,6 +243,8 @@ const Customers = () => {
                 <TableRow className="bg-secondary">
                   <SortableHead label="顧客名" sortKey="name" current={sortKey} asc={sortAsc} onSort={toggleSort} />
                   <SortableHead label="売上" sortKey="revenue" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
+                  <SortableHead label="粗利" sortKey="grossProfit" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
+                  <SortableHead label="粗利率" sortKey="grossProfitRate" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
                   <SortableHead label="構成比" sortKey="pct" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
                   <SortableHead label="ステータス" sortKey="status" current={sortKey} asc={sortAsc} onSort={toggleSort} />
                 </TableRow>
@@ -162,6 +254,10 @@ const Customers = () => {
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.name}</TableCell>
                     <TableCell className="text-right font-mono-num">{formatAmount(c.revenue)}</TableCell>
+                    <TableCell className="text-right font-mono-num">{formatAmount(c.grossProfit)}</TableCell>
+                    <TableCell className={`text-right font-mono-num ${c.grossProfitRate >= 70 ? "text-chart-green" : c.grossProfitRate < 50 ? "text-destructive" : ""}`}>
+                      {c.grossProfitRate.toFixed(1)}%
+                    </TableCell>
                     <TableCell className="text-right font-mono-num">{c.pct.toFixed(1)}%</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center gap-1.5 text-xs ${c.status === "active" ? "text-chart-green" : "text-muted-foreground"}`}>
@@ -171,6 +267,17 @@ const Customers = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* Total row */}
+                <TableRow className="bg-secondary font-semibold">
+                  <TableCell>合計</TableCell>
+                  <TableCell className="text-right font-mono-num">{formatAmount(d.totalCurrentRevenue)}</TableCell>
+                  <TableCell className="text-right font-mono-num">{formatAmount(d.totalGrossProfit)}</TableCell>
+                  <TableCell className="text-right font-mono-num">
+                    {d.totalCurrentRevenue > 0 ? ((d.totalGrossProfit / d.totalCurrentRevenue) * 100).toFixed(1) : "0.0"}%
+                  </TableCell>
+                  <TableCell className="text-right font-mono-num">100.0%</TableCell>
+                  <TableCell />
+                </TableRow>
               </TableBody>
             </Table>
           </div>
