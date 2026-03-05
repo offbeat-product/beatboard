@@ -35,7 +35,7 @@ export function useCustomersData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, plan_type, monthly_fee, contract_start, status")
+        .select("id, name, status")
         .eq("org_id", ORG_ID);
       if (error) throw error;
       return data;
