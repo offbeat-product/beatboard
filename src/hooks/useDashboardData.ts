@@ -200,7 +200,7 @@ export function useDashboardData() {
   if (currentProjectGPH < targetProjectGPH && currentProjectGPH > 0) {
     alerts.push({
       type: "warning",
-      text: `案件単価 ¥${Math.round(currentProjectGPH).toLocaleString()} - 目標¥${targetProjectGPH.toLocaleString()}を下回り`,
+      text: `案件粗利工数単価 ¥${Math.round(currentProjectGPH).toLocaleString()} - 目標¥${targetProjectGPH.toLocaleString()}を下回り`,
       href: "/pl",
     });
   }
