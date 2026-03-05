@@ -88,7 +88,7 @@ const Index = () => {
         <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">売上</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <DashboardKpiCard label="前月の売上" value={formatAmount(d.prevRevenue)} delay={0} />
-          <DashboardKpiCard label="今月の売上" value={formatAmount(d.currentRevenue)} target={formatAmount(d.currentTarget)} delay={50} />
+          <DashboardKpiCard label="今月の売上" value={formatAmount(d.currentRevenue)} target={formatAmount(d.currentTarget)} progress={d.currentTarget > 0 ? (d.currentRevenue / d.currentTarget) * 100 : undefined} delay={50} />
           <DashboardKpiCard label="前月比成長率" value={`${d.revenueMomChange >= 0 ? "+" : ""}${d.revenueMomChange.toFixed(1)}%`} change={growthArrow(d.revenueMomChange)} delay={100} />
           <DashboardKpiCard
             label={`累計売上（${d.fyLabel}）`}
