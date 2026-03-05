@@ -129,10 +129,10 @@ const Index = () => {
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">案件粗利工数単価（案件工数）</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <DashboardKpiCard label="前月の案件単価" value={`¥${Math.round(d.prevProjectGPH).toLocaleString()}`} delay={600} />
-          <DashboardKpiCard label="今月の案件単価" value={`¥${Math.round(d.currentProjectGPH).toLocaleString()}`} target={`目標 ¥${d.targetProjectGPH.toLocaleString()}`} progress={d.targetProjectGPH > 0 ? (d.currentProjectGPH / d.targetProjectGPH) * 100 : undefined} delay={650} />
+          <DashboardKpiCard label="前月の案件粗利工数単価" value={`¥${Math.round(d.prevProjectGPH).toLocaleString()}`} delay={600} />
+          <DashboardKpiCard label="今月の案件粗利工数単価" value={`¥${Math.round(d.currentProjectGPH).toLocaleString()}`} target={`目標 ¥${d.targetProjectGPH.toLocaleString()}`} progress={d.targetProjectGPH > 0 ? (d.currentProjectGPH / d.targetProjectGPH) * 100 : undefined} delay={650} />
           <DashboardKpiCard label="前月比成長率" value={`${d.projectGphMomChange >= 0 ? "+" : ""}${d.projectGphMomChange.toFixed(1)}%`} change={growthArrow(d.projectGphMomChange)} delay={700} />
-          <DashboardKpiCard label="通期平均案件単価" value={`¥${Math.round(d.avgProjectGPH).toLocaleString()}`} target={`目標 ¥${d.targetProjectGPH.toLocaleString()}`} progress={d.targetProjectGPH > 0 ? (d.avgProjectGPH / d.targetProjectGPH) * 100 : undefined} delay={750} />
+          <DashboardKpiCard label="通期平均案件粗利工数単価" value={`¥${Math.round(d.avgProjectGPH).toLocaleString()}`} target={`目標 ¥${d.targetProjectGPH.toLocaleString()}`} progress={d.targetProjectGPH > 0 ? (d.avgProjectGPH / d.targetProjectGPH) * 100 : undefined} delay={750} />
         </div>
       </div>
 
