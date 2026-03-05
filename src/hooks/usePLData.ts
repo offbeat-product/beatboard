@@ -65,8 +65,8 @@ export function usePLData() {
   const worklogs = worklogsQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
 
-  const targetGrossMargin = (targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.63) * 100;
-  const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 22000;
+  const targetGrossMargin = (targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.70) * 100;
+  const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 25000;
 
   const monthlyPL = fiscalMonths.map((ym) => {
     const salesRows = sales.filter((s) => s.year_month === ym);
