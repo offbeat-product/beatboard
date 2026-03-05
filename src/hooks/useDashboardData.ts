@@ -97,6 +97,11 @@ export function useDashboardData() {
     return s + (t?.target_value ?? 0);
   }, 0);
 
+  // Gross profit target (revenue target * target gross margin)
+  const rawTargetGrossMargin = targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.63;
+  const currentGrossProfitTarget = currentTarget * rawTargetGrossMargin;
+  const annualGrossProfitTarget = annualTarget * rawTargetGrossMargin;
+
   // Gross margin
   const grossMarginRate = currentRevenue > 0 ? (currentGrossProfit / currentRevenue) * 100 : 0;
   const prevGrossMargin = prevRevenue > 0 ? (prevGrossProfit / prevRevenue) * 100 : 0;
@@ -188,6 +193,8 @@ export function useDashboardData() {
     prevGrossProfit,
     grossProfitMomChange,
     cumulativeGrossProfit,
+    currentGrossProfitTarget,
+    annualGrossProfitTarget,
     // Margin
     grossMarginRate,
     targetGrossMargin: targetGrossMargin * 100,

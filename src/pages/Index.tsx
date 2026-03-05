@@ -106,9 +106,9 @@ const Index = () => {
         <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">粗利</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <DashboardKpiCard label="前月の粗利" value={formatAmount(d.prevGrossProfit)} delay={200} />
-          <DashboardKpiCard label="今月の粗利" value={formatAmount(d.currentGrossProfit)} delay={250} />
+          <DashboardKpiCard label="今月の粗利" value={formatAmount(d.currentGrossProfit)} target={formatAmount(d.currentGrossProfitTarget)} progress={d.currentGrossProfitTarget > 0 ? (d.currentGrossProfit / d.currentGrossProfitTarget) * 100 : undefined} delay={250} />
           <DashboardKpiCard label="前月比成長率" value={`${d.grossProfitMomChange >= 0 ? "+" : ""}${d.grossProfitMomChange.toFixed(1)}%`} change={growthArrow(d.grossProfitMomChange)} delay={300} />
-          <DashboardKpiCard label={`累計粗利（${d.fyLabel}）`} value={formatAmount(d.cumulativeGrossProfit)} delay={350} />
+          <DashboardKpiCard label={`累計粗利（${d.fyLabel}）`} value={formatAmount(d.cumulativeGrossProfit)} target={formatAmount(d.annualGrossProfitTarget)} progress={d.annualGrossProfitTarget > 0 ? (d.cumulativeGrossProfit / d.annualGrossProfitTarget) * 100 : undefined} subtext={`${d.monthsElapsed}/12ヶ月経過`} delay={350} />
         </div>
       </div>
 
@@ -119,7 +119,7 @@ const Index = () => {
           <DashboardKpiCard label="前月の粗利工数単価" value={`¥${Math.round(d.prevGPH).toLocaleString()}`} delay={400} />
           <DashboardKpiCard label="今月の粗利工数単価" value={`¥${Math.round(d.currentGPH).toLocaleString()}`} target={`目標 ¥${d.targetGPH.toLocaleString()}`} progress={d.targetGPH > 0 ? (d.currentGPH / d.targetGPH) * 100 : undefined} delay={450} />
           <DashboardKpiCard label="前月比成長率" value={`${d.gphMomChange >= 0 ? "+" : ""}${d.gphMomChange.toFixed(1)}%`} change={growthArrow(d.gphMomChange)} delay={500} />
-          <DashboardKpiCard label="通期平均粗利工数単価" value={`¥${Math.round(d.avgGPH).toLocaleString()}`} delay={550} />
+          <DashboardKpiCard label="通期平均粗利工数単価" value={`¥${Math.round(d.avgGPH).toLocaleString()}`} target={`目標 ¥${d.targetGPH.toLocaleString()}`} progress={d.targetGPH > 0 ? (d.avgGPH / d.targetGPH) * 100 : undefined} delay={550} />
         </div>
       </div>
 
