@@ -143,52 +143,77 @@ const PL = () => {
             </div>
           </div>
 
-          {/* Monthly PL Table */}
+          {/* Monthly PL Table (transposed: months as columns) */}
           <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto">
             <h3 className="text-sm font-semibold mb-4">月次損益テーブル</h3>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>年月</TableHead>
-                  <TableHead className="text-right">売上</TableHead>
-                  <TableHead className="text-right">売上原価</TableHead>
-                  <TableHead className="text-right">粗利</TableHead>
-                  <TableHead className="text-right">粗利率</TableHead>
-                  <TableHead className="text-right">販管費</TableHead>
-                  <TableHead className="text-right">営業利益</TableHead>
-                  <TableHead className="text-right">営業利益率</TableHead>
+                  <TableHead className="sticky left-0 bg-card z-10">項目</TableHead>
+                  {monthlyPL.map(m => (
+                    <TableHead key={m.ym} className="text-right whitespace-nowrap">{m.label}</TableHead>
+                  ))}
+                  <TableHead className="text-right font-bold">合計</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthlyPL.map(m => {
-                  const negOP = m.operatingProfit < 0;
-                  const lowGM = m.grossMarginRate <= 60;
-                  return (
-                    <TableRow key={m.ym} className={negOP ? "bg-destructive/10" : ""}>
-                      <TableCell className="font-medium">{m.label}</TableCell>
-                      <TableCell className="text-right font-mono-num">{formatAmount(m.revenue)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{formatAmount(m.cost)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{formatAmount(m.grossProfit)}</TableCell>
-                      <TableCell className={`text-right font-mono-num ${lowGM ? "text-destructive font-semibold" : ""}`}>{fmtPct(m.grossMarginRate)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{formatAmount(m.sga)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{formatAmount(m.operatingProfit)}</TableCell>
-                      <TableCell className="text-right font-mono-num">{fmtPct(m.operatingMarginRate)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-              <TableFooter>
-                <TableRow className="font-bold">
-                  <TableCell>合計</TableCell>
-                  <TableCell className="text-right font-mono-num">{formatAmount(totals.revenue)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{formatAmount(totals.cost)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{formatAmount(totals.grossProfit)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{totals.revenue > 0 ? fmtPct((totals.grossProfit / totals.revenue) * 100) : "—"}</TableCell>
-                  <TableCell className="text-right font-mono-num">{formatAmount(totals.sga)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{formatAmount(totals.operatingProfit)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{totals.revenue > 0 ? fmtPct((totals.operatingProfit / totals.revenue) * 100) : "—"}</TableCell>
+                {/* 売上 */}
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">売上</TableCell>
+                  {monthlyPL.map(m => (
+                    <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.revenue)}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{formatAmount(totals.revenue)}</TableCell>
                 </TableRow>
-              </TableFooter>
+                {/* 売上原価 */}
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">売上原価</TableCell>
+                  {monthlyPL.map(m => (
+                    <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.cost)}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{formatAmount(totals.cost)}</TableCell>
+                </TableRow>
+                {/* 粗利 */}
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">粗利</TableCell>
+                  {monthlyPL.map(m => (
+                    <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.grossProfit)}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{formatAmount(totals.grossProfit)}</TableCell>
+                </TableRow>
+                {/* 粗利率 */}
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">粗利率</TableCell>
+                  {monthlyPL.map(m => (
+                    <TableCell key={m.ym} className={`text-right font-mono-num whitespace-nowrap ${m.grossMarginRate <= 60 ? "text-destructive font-semibold" : ""}`}>{fmtPct(m.grossMarginRate)}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{totals.revenue > 0 ? fmtPct((totals.grossProfit / totals.revenue) * 100) : "—"}</TableCell>
+                </TableRow>
+                {/* 販管費 */}
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">販管費</TableCell>
+                  {monthlyPL.map(m => (
+                    <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.sga)}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{formatAmount(totals.sga)}</TableCell>
+                </TableRow>
+                {/* 営業利益 */}
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">営業利益</TableCell>
+                  {monthlyPL.map(m => (
+                    <TableCell key={m.ym} className={`text-right font-mono-num whitespace-nowrap ${m.operatingProfit < 0 ? "text-destructive font-semibold" : ""}`}>{formatAmount(m.operatingProfit)}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{formatAmount(totals.operatingProfit)}</TableCell>
+                </TableRow>
+                {/* 営業利益率 */}
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">営業利益率</TableCell>
+                  {monthlyPL.map(m => (
+                    <TableCell key={m.ym} className={`text-right font-mono-num whitespace-nowrap ${m.operatingMarginRate < 0 ? "text-destructive font-semibold" : ""}`}>{fmtPct(m.operatingMarginRate)}</TableCell>
+                  ))}
+                  <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{totals.revenue > 0 ? fmtPct((totals.operatingProfit / totals.revenue) * 100) : "—"}</TableCell>
+                </TableRow>
+              </TableBody>
             </Table>
           </div>
         </>
