@@ -98,7 +98,7 @@ export function useDashboardData() {
   }, 0);
 
   // Gross profit target (revenue target * target gross margin)
-  const rawTargetGrossMargin = targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.63;
+  const rawTargetGrossMargin = targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.70;
   const currentGrossProfitTarget = currentTarget * rawTargetGrossMargin;
   const annualGrossProfitTarget = annualTarget * rawTargetGrossMargin;
 
