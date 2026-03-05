@@ -87,7 +87,7 @@ export function useCustomersData() {
   const COLORS: Record<string, string> = {};
   const COLOR_LIST = ["#E85B2D", "#3B82F6", "#10B981", "#F59E0B", "#9CA3AF"];
   const pieData = sortedClientRevenues.map((c, i) => {
-    const client = clients.find((cl) => cl.id === c.id);
+    const client = clients.find((cl) => String(cl.id) === String(c.id));
     const name = client?.name ?? "その他";
     const color = COLOR_LIST[Math.min(i, COLOR_LIST.length - 1)];
     COLORS[name] = color;
