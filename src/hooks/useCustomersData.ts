@@ -1,30 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-const ORG_ID = "00000000-0000-0000-0000-000000000001";
-
-function getFiscalYearMonths() {
-  const months: string[] = [];
-  for (let i = 0; i < 12; i++) {
-    const y = i < 8 ? 2025 : 2026;
-    const m = ((i + 4) % 12) + 1;
-    months.push(`${y}-${String(m).padStart(2, "0")}`);
-  }
-  return months;
-}
+import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getMonthLabel } from "@/lib/fiscalYear";
 
 export function useCustomersData() {
-  const fiscalMonths = getFiscalYearMonths();
-  const currentMonth = "2026-03";
+  const fiscalMonths = getFiscalYearMonths(2026);
 
-  const salesQuery = useQuery({
-    queryKey: ["monthly_sales", "customers"],
+  // Use project_pl for client-level breakdown
+  const projectPlQuery = useQuery({
+    queryKey: ["project_pl", "customers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("monthly_sales")
-        .select("year_month, revenue, cost, gross_profit, client_id")
+        .from("project_pl")
+        .select("year_month, revenue, client_id, client_name")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fiscalMonths)
+        .not("client_id", "is", null);
       if (error) throw error;
       return data;
     },
@@ -55,62 +45,82 @@ export function useCustomersData() {
     },
   });
 
-  const isLoading = salesQuery.isLoading || clientsQuery.isLoading || targetsQuery.isLoading;
-  const isError = salesQuery.isError || clientsQuery.isError || targetsQuery.isError;
-  const sales = salesQuery.data ?? [];
+  const isLoading = projectPlQuery.isLoading || clientsQuery.isLoading || targetsQuery.isLoading;
+  const isError = projectPlQuery.isError || clientsQuery.isError || targetsQuery.isError;
+  const projectPl = projectPlQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
 
   const targetTop1 = (targets.find((t) => t.metric_name === "top1_concentration")?.target_value ?? 0.25) * 100;
   const targetTop3 = (targets.find((t) => t.metric_name === "top3_concentration")?.target_value ?? 0.60) * 100;
 
-  // Current month client breakdown
-  const currentSales = sales.filter((s) => s.year_month === currentMonth);
-  const totalCurrentRevenue = currentSales.reduce((s, r) => s + r.revenue, 0);
+  // Find the latest month with data for "current" display
+  const monthsWithData = [...new Set(projectPl.map((p) => p.year_month))].sort().reverse();
+  const latestMonth = monthsWithData[0] ?? CURRENT_MONTH;
 
-  // Build client revenue map for current month
-  const clientRevenueMap: Record<string, number> = {};
+  // Current month client breakdown from project_pl
+  const currentSales = projectPl.filter((s) => s.year_month === latestMonth);
+  const clientRevenueMap: Record<string, { revenue: number; name: string }> = {};
   currentSales.forEach((s) => {
-    const key = s.client_id ?? "other";
-    clientRevenueMap[key] = (clientRevenueMap[key] ?? 0) + s.revenue;
+    const key = String(s.client_id);
+    if (!clientRevenueMap[key]) {
+      clientRevenueMap[key] = { revenue: 0, name: s.client_name ?? "不明" };
+    }
+    clientRevenueMap[key].revenue += (s.revenue ?? 0);
   });
+
+  const totalCurrentRevenue = Object.values(clientRevenueMap).reduce((s, c) => s + c.revenue, 0);
 
   // Sort by revenue desc
   const sortedClientRevenues = Object.entries(clientRevenueMap)
-    .map(([id, revenue]) => ({ id, revenue, pct: totalCurrentRevenue > 0 ? (revenue / totalCurrentRevenue) * 100 : 0 }))
+    .map(([id, { revenue, name }]) => ({
+      id,
+      revenue,
+      name,
+      pct: totalCurrentRevenue > 0 ? (revenue / totalCurrentRevenue) * 100 : 0,
+    }))
     .sort((a, b) => b.revenue - a.revenue);
 
   const top1Pct = sortedClientRevenues[0]?.pct ?? 0;
   const top3Pct = sortedClientRevenues.slice(0, 3).reduce((s, c) => s + c.pct, 0);
 
-  // Pie chart data
-  const COLORS: Record<string, string> = {};
-  const COLOR_LIST = ["#E85B2D", "#3B82F6", "#10B981", "#F59E0B", "#9CA3AF"];
-  const pieData = sortedClientRevenues.map((c, i) => {
-    const client = clients.find((cl) => String(cl.id) === String(c.id));
-    const name = client?.name ?? "その他";
-    const color = COLOR_LIST[Math.min(i, COLOR_LIST.length - 1)];
-    COLORS[name] = color;
-    return { name, value: Math.round(c.revenue / 10000), pct: c.pct, color };
-  });
+  // Pie chart data - top 5 + others
+  const COLOR_LIST = ["#E85B2D", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#9CA3AF"];
+  const top5 = sortedClientRevenues.slice(0, 5);
+  const othersRevenue = sortedClientRevenues.slice(5).reduce((s, c) => s + c.revenue, 0);
+  const pieData = top5.map((c, i) => ({
+    name: c.name,
+    value: c.revenue,
+    pct: c.pct,
+    color: COLOR_LIST[i],
+  }));
+  if (othersRevenue > 0) {
+    pieData.push({
+      name: "その他",
+      value: othersRevenue,
+      pct: totalCurrentRevenue > 0 ? (othersRevenue / totalCurrentRevenue) * 100 : 0,
+      color: COLOR_LIST[5],
+    });
+  }
 
   // Monthly breakdown by client (for stacked bar & line)
+  const allClientNames = pieData.map((p) => p.name);
   const monthlyByClient = fiscalMonths.map((ym) => {
-    const rows = sales.filter((s) => s.year_month === ym);
-    const totalRev = rows.reduce((s, r) => s + r.revenue, 0);
-    const entry: Record<string, number | string> = { name: ym.slice(5).replace(/^0/, "") + "月" };
+    const rows = projectPl.filter((s) => s.year_month === ym);
+    const totalRev = rows.reduce((s, r) => s + (r.revenue ?? 0), 0);
+    const entry: Record<string, number | string> = { name: getMonthLabel(ym) };
 
     // Group by client
     const clientRevs: Record<string, number> = {};
     rows.forEach((r) => {
-      const cl = clients.find((c) => String(c.id) === String(r.client_id));
-      const key = cl?.name ?? "その他";
-      clientRevs[key] = (clientRevs[key] ?? 0) + r.revenue;
+      const clientId = String(r.client_id);
+      const matchedTop = sortedClientRevenues.find((c) => c.id === clientId);
+      const key = matchedTop && top5.some((t) => t.id === clientId) ? matchedTop.name : "その他";
+      clientRevs[key] = (clientRevs[key] ?? 0) + (r.revenue ?? 0);
     });
 
-    // Add each client value in 万円
-    pieData.forEach((p) => {
-      entry[p.name] = Math.round((clientRevs[p.name] ?? 0) / 10000);
+    allClientNames.forEach((name) => {
+      entry[name] = clientRevs[name] ?? 0;
     });
 
     // Concentration
@@ -122,11 +132,16 @@ export function useCustomersData() {
   });
 
   // Client table data
-  const clientTable = clients.map((c) => {
-    const rev = clientRevenueMap[c.id] ?? 0;
-    const pct = totalCurrentRevenue > 0 ? (rev / totalCurrentRevenue) * 100 : 0;
-    return { ...c, revenue: rev, pct };
-  }).sort((a, b) => b.revenue - a.revenue);
+  const clientTable = sortedClientRevenues.map((c) => {
+    const client = clients.find((cl) => String(cl.id) === c.id);
+    return {
+      id: c.id,
+      name: c.name,
+      revenue: c.revenue,
+      pct: c.pct,
+      status: client?.status ?? "unknown",
+    };
+  });
 
   return {
     isLoading,
@@ -136,10 +151,11 @@ export function useCustomersData() {
     targetTop1,
     targetTop3,
     totalCurrentRevenue,
+    latestMonth,
     pieData,
     monthlyByClient,
     clientTable,
-    clientNames: pieData.map((p) => p.name),
+    clientNames: allClientNames,
     clientColors: pieData.reduce((acc, p) => { acc[p.name] = p.color; return acc; }, {} as Record<string, string>),
   };
 }

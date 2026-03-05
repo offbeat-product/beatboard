@@ -1,23 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-const ORG_ID = "00000000-0000-0000-0000-000000000001";
-
-// Fiscal year: May to April. Current month = 2026-03
-function getFiscalYearMonths() {
-  // FY2025: 2025-05 to 2026-04
-  const months: string[] = [];
-  for (let i = 0; i < 12; i++) {
-    const y = i < 8 ? 2025 : 2026;
-    const m = ((i + 4) % 12) + 1; // 5,6,7,8,9,10,11,12,1,2,3,4
-    months.push(`${y}-${String(m).padStart(2, "0")}`);
-  }
-  return months;
-}
+import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber } from "@/lib/fiscalYear";
 
 export function useDashboardData() {
-  const fiscalMonths = getFiscalYearMonths();
-  const currentMonth = "2026-03"; // hardcoded as per spec
+  const fiscalMonths = getFiscalYearMonths(2026);
+  const currentMonth = CURRENT_MONTH;
   const previousMonth = "2026-02";
 
   const monthlySalesQuery = useQuery({
@@ -76,7 +63,6 @@ export function useDashboardData() {
   const currentData = monthlyTotals.find((m) => m.ym === currentMonth);
   const previousData = monthlyTotals.find((m) => m.ym === previousMonth);
 
-  // Current month revenue
   const currentRevenue = currentData?.revenue ?? 0;
   const currentTarget = currentData?.target ?? 0;
   const prevRevenue = previousData?.revenue ?? 0;
@@ -85,9 +71,10 @@ export function useDashboardData() {
   // Cumulative (fiscal year up to current month)
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const cumulativeRevenue = monthlyTotals.slice(0, currentIdx + 1).reduce((s, m) => s + m.revenue, 0);
-  const annualTarget = targets
-    .filter((t) => t.metric_name === "monthly_revenue")
-    .reduce((s, t) => s + t.target_value, 0);
+  const annualTarget = fiscalMonths.reduce((s, ym) => {
+    const t = targets.find((t) => t.year_month === ym && t.metric_name === "monthly_revenue");
+    return s + (t?.target_value ?? 0);
+  }, 0);
 
   // Gross margin
   const currentGrossProfit = currentData?.grossProfit ?? 0;
@@ -96,7 +83,7 @@ export function useDashboardData() {
   const prevGrossMargin = prevRevenue > 0 ? (prevGrossProfit / prevRevenue) * 100 : 0;
   const marginChange = grossMarginRate - prevGrossMargin;
 
-  // Gross profit per hour (current month worklogs)
+  // Gross profit per hour
   const currentMonthWorklogs = worklogs.filter((w) => w.date.startsWith(currentMonth));
   const totalHours = currentMonthWorklogs.reduce((s, w) => s + w.hours, 0);
   const grossProfitPerHour = totalHours > 0 ? currentGrossProfit / totalHours : 0;
@@ -118,7 +105,7 @@ export function useDashboardData() {
     ? sortedClients.slice(0, 3).reduce((s, v) => s + v, 0) / currentRevenue
     : 0;
 
-  // Target values for concentration & gph
+  // Targets
   const targetGrossMargin = targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.63;
   const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 22000;
   const targetTop1 = targets.find((t) => t.metric_name === "top1_concentration")?.target_value ?? 0.25;
@@ -148,6 +135,9 @@ export function useDashboardData() {
     });
   }
 
+  const fyLabel = getFiscalYearLabel(currentMonth);
+  const monthsElapsed = getFiscalMonthNumber(currentMonth);
+
   return {
     isLoading,
     isError,
@@ -156,7 +146,8 @@ export function useDashboardData() {
     momChange,
     cumulativeRevenue,
     annualTarget,
-    monthsElapsed: currentIdx + 1,
+    monthsElapsed,
+    fyLabel,
     grossMarginRate,
     targetGrossMargin: targetGrossMargin * 100,
     marginChange,

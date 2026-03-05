@@ -1,26 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-const ORG_ID = "00000000-0000-0000-0000-000000000001";
-
-function getFiscalYearMonths() {
-  const months: string[] = [];
-  for (let i = 0; i < 12; i++) {
-    const y = i < 8 ? 2025 : 2026;
-    const m = ((i + 4) % 12) + 1;
-    months.push(`${y}-${String(m).padStart(2, "0")}`);
-  }
-  return months;
-}
-
-const MONTH_LABELS: Record<string, string> = {
-  "01": "1月", "02": "2月", "03": "3月", "04": "4月", "05": "5月", "06": "6月",
-  "07": "7月", "08": "8月", "09": "9月", "10": "10月", "11": "11月", "12": "12月",
-};
+import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getMonthLabel } from "@/lib/fiscalYear";
 
 export function usePLData() {
-  const fiscalMonths = getFiscalYearMonths();
-  const currentMonth = "2026-03";
+  const fiscalMonths = getFiscalYearMonths(2026);
+  const currentMonth = CURRENT_MONTH;
   const previousMonth = "2026-02";
 
   const salesQuery = useQuery({
@@ -84,7 +68,6 @@ export function usePLData() {
   const targetGrossMargin = (targets.find((t) => t.metric_name === "gross_margin_rate")?.target_value ?? 0.63) * 100;
   const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 22000;
 
-  // Build monthly PL rows
   const monthlyPL = fiscalMonths.map((ym) => {
     const salesRows = sales.filter((s) => s.year_month === ym);
     const revenue = salesRows.reduce((s, r) => s + r.revenue, 0);
@@ -97,27 +80,19 @@ export function usePLData() {
     const operatingProfit = grossProfit - sga;
     const operatingMarginRate = revenue > 0 ? (operatingProfit / revenue) * 100 : 0;
 
-    // Hours for GPH
     const monthWorklogs = worklogs.filter((w) => w.date.startsWith(ym));
     const totalHours = monthWorklogs.reduce((s, w) => s + w.hours, 0);
     const gph = totalHours > 0 ? grossProfit / totalHours : 0;
 
     return {
       ym,
-      label: MONTH_LABELS[ym.slice(5)] ?? ym,
-      revenue,
-      cost,
-      grossProfit,
-      grossMarginRate,
-      sga,
-      operatingProfit,
-      operatingMarginRate,
-      gph,
-      totalHours,
+      label: getMonthLabel(ym),
+      revenue, cost, grossProfit, grossMarginRate,
+      sga, operatingProfit, operatingMarginRate,
+      gph, totalHours,
     };
   });
 
-  // Totals
   const totals = monthlyPL.reduce(
     (acc, m) => ({
       revenue: acc.revenue + m.revenue,
@@ -137,12 +112,11 @@ export function usePLData() {
   const grossMarginChange = (currentData?.grossMarginRate ?? 0) - (prevData?.grossMarginRate ?? 0);
   const gphChange = (currentData?.gph ?? 0) - (prevData?.gph ?? 0);
 
-  // Chart data
   const chartData = monthlyPL.map((m) => ({
     name: m.label,
-    売上原価: Math.round(m.cost / 10000),
-    販管費: Math.round(m.sga / 10000),
-    営業利益: Math.round(m.operatingProfit / 10000),
+    売上原価: m.cost,
+    販管費: m.sga,
+    営業利益: m.operatingProfit,
     粗利率: Number(m.grossMarginRate.toFixed(1)),
   }));
 
@@ -153,17 +127,8 @@ export function usePLData() {
   }));
 
   return {
-    isLoading,
-    isError,
-    currentData,
-    targetGrossMargin,
-    targetGPH,
-    opMarginChange,
-    grossMarginChange,
-    gphChange,
-    chartData,
-    gphChartData,
-    monthlyPL,
-    totals,
+    isLoading, isError, currentData, targetGrossMargin, targetGPH,
+    opMarginChange, grossMarginChange, gphChange,
+    chartData, gphChartData, monthlyPL, totals,
   };
 }

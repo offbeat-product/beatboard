@@ -165,6 +165,51 @@ export type Database = {
           },
         ]
       }
+      freee_monthly_pl: {
+        Row: {
+          cost_of_sales: number | null
+          created_at: string | null
+          gross_profit: number | null
+          gross_profit_rate: number | null
+          id: string
+          operating_profit: number | null
+          org_id: string
+          revenue: number | null
+          sga_details: Json | null
+          sga_total: number | null
+          updated_at: string | null
+          year_month: string
+        }
+        Insert: {
+          cost_of_sales?: number | null
+          created_at?: string | null
+          gross_profit?: number | null
+          gross_profit_rate?: number | null
+          id?: string
+          operating_profit?: number | null
+          org_id: string
+          revenue?: number | null
+          sga_details?: Json | null
+          sga_total?: number | null
+          updated_at?: string | null
+          year_month: string
+        }
+        Update: {
+          cost_of_sales?: number | null
+          created_at?: string | null
+          gross_profit?: number | null
+          gross_profit_rate?: number | null
+          id?: string
+          operating_profit?: number | null
+          org_id?: string
+          revenue?: number | null
+          sga_details?: Json | null
+          sga_total?: number | null
+          updated_at?: string | null
+          year_month?: string
+        }
+        Relationships: []
+      }
       kpi_snapshots: {
         Row: {
           actual_value: number
