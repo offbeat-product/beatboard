@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import { getMonthLabel } from "@/lib/fiscalYear";
 import {
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
 } from "recharts";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
@@ -30,6 +30,7 @@ const Index = () => {
         <div className="flex items-center justify-between">
           <div><h2 className="text-2xl font-bold tracking-tight">ダッシュボード</h2></div>
         </div>
+        <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
@@ -57,13 +58,14 @@ const Index = () => {
   const revMaxVal = Math.max(...allRevChartValues, 1);
   const revYMax = Math.ceil(revMaxVal * 1.2 / (10 ** Math.floor(Math.log10(revMaxVal)))) * (10 ** Math.floor(Math.log10(revMaxVal)));
 
-  // GPH chart data
+  // GPH chart data (dual lines)
   const gphChartData = d.monthlyGPH.map((m) => ({
     name: getMonthLabel(m.ym),
     粗利工数単価: Math.round(m.gph),
+    案件単価: Math.round(m.projectGph),
   }));
 
-  const gphMax = Math.max(...gphChartData.map((c) => c.粗利工数単価), d.targetGPH, 1);
+  const gphMax = Math.max(...gphChartData.map((c) => Math.max(c.粗利工数単価, c.案件単価)), d.targetGPH, d.targetProjectGPH, 1);
   const gphYMax = Math.ceil(gphMax * 1.2 / 1000) * 1000;
 
   const growthArrow = (val: number) => ({
@@ -112,14 +114,25 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Row 3: GPH */}
+      {/* Row 3: GPH (Total Labor Hours) */}
       <div>
-        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">粗利工数単価</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">粗利工数単価（総労働時間）</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <DashboardKpiCard label="前月の粗利工数単価" value={`¥${Math.round(d.prevGPH).toLocaleString()}`} delay={400} />
           <DashboardKpiCard label="今月の粗利工数単価" value={`¥${Math.round(d.currentGPH).toLocaleString()}`} target={`目標 ¥${d.targetGPH.toLocaleString()}`} progress={d.targetGPH > 0 ? (d.currentGPH / d.targetGPH) * 100 : undefined} delay={450} />
           <DashboardKpiCard label="前月比成長率" value={`${d.gphMomChange >= 0 ? "+" : ""}${d.gphMomChange.toFixed(1)}%`} change={growthArrow(d.gphMomChange)} delay={500} />
           <DashboardKpiCard label="通期平均粗利工数単価" value={`¥${Math.round(d.avgGPH).toLocaleString()}`} target={`目標 ¥${d.targetGPH.toLocaleString()}`} progress={d.targetGPH > 0 ? (d.avgGPH / d.targetGPH) * 100 : undefined} delay={550} />
+        </div>
+      </div>
+
+      {/* Row 4: Project GPH (Project Hours) */}
+      <div>
+        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">案件単価（案件工数）</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <DashboardKpiCard label="前月の案件単価" value={`¥${Math.round(d.prevProjectGPH).toLocaleString()}`} delay={600} />
+          <DashboardKpiCard label="今月の案件単価" value={`¥${Math.round(d.currentProjectGPH).toLocaleString()}`} target={`目標 ¥${d.targetProjectGPH.toLocaleString()}`} progress={d.targetProjectGPH > 0 ? (d.currentProjectGPH / d.targetProjectGPH) * 100 : undefined} delay={650} />
+          <DashboardKpiCard label="前月比成長率" value={`${d.projectGphMomChange >= 0 ? "+" : ""}${d.projectGphMomChange.toFixed(1)}%`} change={growthArrow(d.projectGphMomChange)} delay={700} />
+          <DashboardKpiCard label="通期平均案件単価" value={`¥${Math.round(d.avgProjectGPH).toLocaleString()}`} target={`目標 ¥${d.targetProjectGPH.toLocaleString()}`} progress={d.targetProjectGPH > 0 ? (d.avgProjectGPH / d.targetProjectGPH) * 100 : undefined} delay={750} />
         </div>
       </div>
 
@@ -155,9 +168,9 @@ const Index = () => {
           )}
         </div>
 
-        {/* GPH Chart */}
+        {/* GPH Chart (dual lines) */}
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "300ms" }}>
-          <h3 className="text-sm font-semibold mb-4">粗利工数単価推移</h3>
+          <h3 className="text-sm font-semibold mb-4">粗利工数単価・案件単価推移</h3>
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart data={gphChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -172,10 +185,13 @@ const Index = () => {
               />
               <Tooltip
                 contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12, backgroundColor: "hsl(var(--card))" }}
-                formatter={(value: number) => [`¥${value.toLocaleString()}`, "粗利工数単価"]}
+                formatter={(value: number, name: string) => [`¥${value.toLocaleString()}`, name]}
               />
-              <ReferenceLine y={d.targetGPH} stroke="hsl(var(--muted-foreground))" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `目標 ¥${d.targetGPH.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <Legend fontSize={12} />
+              <ReferenceLine y={d.targetGPH} stroke="hsl(var(--chart-4))" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `目標 ¥${d.targetGPH.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--chart-4))" }} />
+              <ReferenceLine y={d.targetProjectGPH} stroke="hsl(var(--chart-2))" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `目標 ¥${d.targetProjectGPH.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--chart-2))" }} />
               <Line type="monotone" dataKey="粗利工数単価" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--chart-4))" }} />
+              <Line type="monotone" dataKey="案件単価" stroke="hsl(var(--chart-2))" strokeWidth={2} strokeDasharray="8 4" dot={{ r: 3, fill: "hsl(var(--chart-2))" }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -212,11 +228,14 @@ const Index = () => {
               <p>・<strong>売上</strong> = monthly_salesテーブルのrevenue（Board計上日基準、受注確定+受注済）</p>
               <p>・<strong>粗利</strong> = 売上 - 案件原価 - 発注原価（Board計上データより）</p>
               <p>・<strong>粗利率</strong> = 粗利 ÷ 売上 × 100</p>
-              <p>・<strong>粗利工数単価</strong> = 月間粗利 ÷ 月間総労働時間（kpi_snapshotsより。未登録の場合は想定160h/月で計算）</p>
+              <p>・<strong>粗利工数単価（総労働時間）</strong> = 月間粗利 ÷ 月間総労働時間（正社員×160h + パート時間合計）。目標¥21,552</p>
+              <p>・<strong>案件単価（案件工数）</strong> = 月間粗利 ÷ 月間案件工数時間（総労働時間 - 社内業務時間）。目標¥25,000</p>
+              <p>・<strong>社内業務時間</strong> = 正社員1人あたり40h/月 + パート1人あたり20h/月</p>
               <p>・<strong>前月比成長率</strong> = (当月値 - 前月値) ÷ 前月値 × 100</p>
               <p>・<strong>累計売上</strong> = 会計年度（5月〜当月）のrevenue合計</p>
               <p>・<strong>累計粗利</strong> = 会計年度（5月〜当月）のgross_profit合計</p>
               <p>・<strong>通期平均粗利工数単価</strong> = 会計年度（5月〜当月）の各月粗利工数単価の単純平均</p>
+              <p>・<strong>通期平均案件単価</strong> = 会計年度（5月〜当月）の各月案件単価の単純平均</p>
               <p>・<strong>顧客集中度（上位1社）</strong> = 売上1位顧客の売上 ÷ 全顧客売上合計 × 100</p>
               <p>・<strong>顧客集中度（上位3社）</strong> = 売上上位3社合計 ÷ 全顧客売上合計 × 100</p>
               <p>・<strong>営業利益率</strong> = 営業利益 ÷ 売上 × 100（営業利益 = 粗利 - 販管費、販管費はfreee_monthly_plテーブルのsga_total）</p>
