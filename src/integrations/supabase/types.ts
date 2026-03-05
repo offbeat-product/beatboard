@@ -86,44 +86,39 @@ export type Database = {
       }
       clients: {
         Row: {
-          contract_start: string | null
-          created_at: string
-          id: string
-          monthly_fee: number
-          name: string
+          created_at: string | null
+          custom_no: string | null
+          id: number
+          name: string | null
+          name_disp: string | null
           org_id: string
-          plan_type: string
-          status: string
+          status: string | null
+          status_name: string | null
+          updated_at: string | null
         }
         Insert: {
-          contract_start?: string | null
-          created_at?: string
-          id?: string
-          monthly_fee?: number
-          name: string
+          created_at?: string | null
+          custom_no?: string | null
+          id: number
+          name?: string | null
+          name_disp?: string | null
           org_id: string
-          plan_type: string
-          status?: string
+          status?: string | null
+          status_name?: string | null
+          updated_at?: string | null
         }
         Update: {
-          contract_start?: string | null
-          created_at?: string
-          id?: string
-          monthly_fee?: number
-          name?: string
+          created_at?: string | null
+          custom_no?: string | null
+          id?: number
+          name?: string | null
+          name_disp?: string | null
           org_id?: string
-          plan_type?: string
-          status?: string
+          status?: string | null
+          status_name?: string | null
+          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "clients_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       daily_worklogs: {
         Row: {
@@ -168,13 +163,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "daily_worklogs_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
         ]
       }
       kpi_snapshots: {
@@ -217,6 +205,7 @@ export type Database = {
           created_at: string
           hourly_rate: number | null
           id: string
+          member_type: string
           name: string
           org_id: string
           role: string
@@ -226,6 +215,7 @@ export type Database = {
           created_at?: string
           hourly_rate?: number | null
           id?: string
+          member_type?: string
           name: string
           org_id: string
           role: string
@@ -235,6 +225,7 @@ export type Database = {
           created_at?: string
           hourly_rate?: number | null
           id?: string
+          member_type?: string
           name?: string
           org_id?: string
           role?: string
@@ -254,8 +245,10 @@ export type Database = {
         Row: {
           client_id: string | null
           cost: number
+          cost_total: number | null
           created_at: string
           gross_profit: number
+          gross_profit_rate: number | null
           id: string
           org_id: string
           revenue: number
@@ -264,8 +257,10 @@ export type Database = {
         Insert: {
           client_id?: string | null
           cost?: number
+          cost_total?: number | null
           created_at?: string
           gross_profit?: number
+          gross_profit_rate?: number | null
           id?: string
           org_id: string
           revenue?: number
@@ -274,21 +269,16 @@ export type Database = {
         Update: {
           client_id?: string | null
           cost?: number
+          cost_total?: number | null
           created_at?: string
           gross_profit?: number
+          gross_profit_rate?: number | null
           id?: string
           org_id?: string
           revenue?: number
           year_month?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "monthly_sales_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "monthly_sales_org_id_fkey"
             columns: ["org_id"]
@@ -354,53 +344,104 @@ export type Database = {
           },
         ]
       }
-      projects: {
+      project_pl: {
         Row: {
-          client_id: string | null
-          created_at: string
+          client_id: number | null
+          client_name: string | null
+          cost_expenditure: number | null
+          cost_project: number | null
+          cost_total: number | null
+          created_at: string | null
+          gross_profit: number | null
+          gross_profit_rate: number | null
           id: string
-          name: string
           org_id: string
-          status: string
-          type: string
-          unit_price: number | null
+          project_id: number
+          project_name: string | null
+          project_no: number | null
+          report_date: string | null
+          revenue: number | null
+          updated_at: string | null
+          year_month: string
         }
         Insert: {
-          client_id?: string | null
-          created_at?: string
+          client_id?: number | null
+          client_name?: string | null
+          cost_expenditure?: number | null
+          cost_project?: number | null
+          cost_total?: number | null
+          created_at?: string | null
+          gross_profit?: number | null
+          gross_profit_rate?: number | null
           id?: string
-          name: string
-          org_id: string
-          status?: string
-          type: string
-          unit_price?: number | null
+          org_id?: string
+          project_id: number
+          project_name?: string | null
+          project_no?: number | null
+          report_date?: string | null
+          revenue?: number | null
+          updated_at?: string | null
+          year_month: string
         }
         Update: {
-          client_id?: string | null
-          created_at?: string
+          client_id?: number | null
+          client_name?: string | null
+          cost_expenditure?: number | null
+          cost_project?: number | null
+          cost_total?: number | null
+          created_at?: string | null
+          gross_profit?: number | null
+          gross_profit_rate?: number | null
           id?: string
-          name?: string
           org_id?: string
-          status?: string
-          type?: string
-          unit_price?: number | null
+          project_id?: number
+          project_name?: string | null
+          project_no?: number | null
+          report_date?: string | null
+          revenue?: number | null
+          updated_at?: string | null
+          year_month?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          client_id: number | null
+          created_at: string | null
+          id: number
+          name: string | null
+          org_id: string
+          project_no: string | null
+          status: string | null
+          type: string | null
+          unit_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: number | null
+          created_at?: string | null
+          id: number
+          name?: string | null
+          org_id: string
+          project_no?: string | null
+          status?: string | null
+          type?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: number | null
+          created_at?: string | null
+          id?: number
+          name?: string | null
+          org_id?: string
+          project_no?: string | null
+          status?: string | null
+          type?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       quality_records: {
         Row: {
@@ -436,13 +477,6 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quality_records_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
