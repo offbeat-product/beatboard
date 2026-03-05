@@ -103,7 +103,7 @@ export function useCustomersData() {
     // Group by client
     const clientRevs: Record<string, number> = {};
     rows.forEach((r) => {
-      const cl = clients.find((c) => c.id === r.client_id);
+      const cl = clients.find((c) => String(c.id) === String(r.client_id));
       const key = cl?.name ?? "その他";
       clientRevs[key] = (clientRevs[key] ?? 0) + r.revenue;
     });
