@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { CurrencyUnitProvider } from "@/hooks/useCurrencyUnit";
 import Index from "./pages/Index";
 import Customers from "./pages/Customers";
 import PL from "./pages/PL";
