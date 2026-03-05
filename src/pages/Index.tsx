@@ -65,7 +65,7 @@ const Index = () => {
     案件粗利工数単価: Math.round(m.projectGph),
   }));
 
-  const gphMax = Math.max(...gphChartData.map((c) => Math.max(c.粗利工数単価, c.案件単価)), d.targetGPH, d.targetProjectGPH, 1);
+  const gphMax = Math.max(...gphChartData.map((c) => Math.max(c.粗利工数単価, c.案件粗利工数単価)), d.targetGPH, d.targetProjectGPH, 1);
   const gphYMax = Math.ceil(gphMax * 1.2 / 1000) * 1000;
 
   const growthArrow = (val: number) => ({
