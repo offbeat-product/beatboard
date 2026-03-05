@@ -2,18 +2,37 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getMonthLabel } from "@/lib/fiscalYear";
 
-export function useCustomersData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
+export interface CustomerDateRange {
+  startMonth: string; // "YYYY-MM"
+  endMonth: string;   // "YYYY-MM"
+}
 
-  // Use project_pl for client-level breakdown
+/** Generate array of YYYY-MM strings between start and end inclusive */
+function getMonthRange(start: string, end: string): string[] {
+  const months: string[] = [];
+  const [sy, sm] = start.split("-").map(Number);
+  const [ey, em] = end.split("-").map(Number);
+  let y = sy, m = sm;
+  while (y < ey || (y === ey && m <= em)) {
+    months.push(`${y}-${String(m).padStart(2, "0")}`);
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  return months;
+}
+
+export function useCustomersData(dateRange?: CustomerDateRange) {
+  const fiscalMonths = getFiscalYearMonths(2026);
+  const queryMonths = dateRange ? getMonthRange(dateRange.startMonth, dateRange.endMonth) : fiscalMonths;
+
   const projectPlQuery = useQuery({
-    queryKey: ["project_pl", "customers"],
+    queryKey: ["project_pl", "customers", queryMonths],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_pl")
-        .select("year_month, revenue, client_id, client_name")
+        .select("year_month, revenue, gross_profit, gross_profit_rate, client_id, client_name")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths)
+        .in("year_month", queryMonths)
         .not("client_id", "is", null);
       if (error) throw error;
       return data;
@@ -54,30 +73,33 @@ export function useCustomersData() {
   const targetTop1 = (targets.find((t) => t.metric_name === "top1_concentration")?.target_value ?? 0.25) * 100;
   const targetTop3 = (targets.find((t) => t.metric_name === "top3_concentration")?.target_value ?? 0.60) * 100;
 
-  // Find the latest month with data for "current" display
+  // Find the latest month with data
   const monthsWithData = [...new Set(projectPl.map((p) => p.year_month))].sort().reverse();
   const latestMonth = monthsWithData[0] ?? CURRENT_MONTH;
 
-  // Current month client breakdown from project_pl
-  const currentSales = projectPl.filter((s) => s.year_month === latestMonth);
-  const clientRevenueMap: Record<string, { revenue: number; name: string }> = {};
-  currentSales.forEach((s) => {
+  // Aggregate across ALL selected months for client breakdown
+  const clientAggMap: Record<string, { revenue: number; grossProfit: number; name: string }> = {};
+  projectPl.forEach((s) => {
     const key = String(s.client_id);
-    if (!clientRevenueMap[key]) {
-      clientRevenueMap[key] = { revenue: 0, name: s.client_name ?? "不明" };
+    if (!clientAggMap[key]) {
+      clientAggMap[key] = { revenue: 0, grossProfit: 0, name: s.client_name ?? "不明" };
     }
-    clientRevenueMap[key].revenue += (s.revenue ?? 0);
+    clientAggMap[key].revenue += Number(s.revenue ?? 0);
+    clientAggMap[key].grossProfit += Number(s.gross_profit ?? 0);
   });
 
-  const totalCurrentRevenue = Object.values(clientRevenueMap).reduce((s, c) => s + c.revenue, 0);
+  const totalRevenue = Object.values(clientAggMap).reduce((s, c) => s + c.revenue, 0);
+  const totalGrossProfit = Object.values(clientAggMap).reduce((s, c) => s + c.grossProfit, 0);
 
   // Sort by revenue desc
-  const sortedClientRevenues = Object.entries(clientRevenueMap)
-    .map(([id, { revenue, name }]) => ({
+  const sortedClientRevenues = Object.entries(clientAggMap)
+    .map(([id, { revenue, grossProfit, name }]) => ({
       id,
       revenue,
+      grossProfit,
+      grossProfitRate: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
       name,
-      pct: totalCurrentRevenue > 0 ? (revenue / totalCurrentRevenue) * 100 : 0,
+      pct: totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0,
     }))
     .sort((a, b) => b.revenue - a.revenue);
 
@@ -98,32 +120,30 @@ export function useCustomersData() {
     pieData.push({
       name: "その他",
       value: othersRevenue,
-      pct: totalCurrentRevenue > 0 ? (othersRevenue / totalCurrentRevenue) * 100 : 0,
+      pct: totalRevenue > 0 ? (othersRevenue / totalRevenue) * 100 : 0,
       color: COLOR_LIST[5],
     });
   }
 
   // Monthly breakdown by client (for stacked bar & line)
   const allClientNames = pieData.map((p) => p.name);
-  const monthlyByClient = fiscalMonths.map((ym) => {
+  const monthlyByClient = queryMonths.map((ym) => {
     const rows = projectPl.filter((s) => s.year_month === ym);
-    const totalRev = rows.reduce((s, r) => s + (r.revenue ?? 0), 0);
+    const totalRev = rows.reduce((s, r) => s + Number(r.revenue ?? 0), 0);
     const entry: Record<string, number | string> = { name: getMonthLabel(ym) };
 
-    // Group by client
     const clientRevs: Record<string, number> = {};
     rows.forEach((r) => {
       const clientId = String(r.client_id);
       const matchedTop = sortedClientRevenues.find((c) => c.id === clientId);
       const key = matchedTop && top5.some((t) => t.id === clientId) ? matchedTop.name : "その他";
-      clientRevs[key] = (clientRevs[key] ?? 0) + (r.revenue ?? 0);
+      clientRevs[key] = (clientRevs[key] ?? 0) + Number(r.revenue ?? 0);
     });
 
     allClientNames.forEach((name) => {
       entry[name] = clientRevs[name] ?? 0;
     });
 
-    // Concentration
     const sorted = Object.values(clientRevs).sort((a, b) => b - a);
     entry["top1"] = totalRev > 0 ? Number(((sorted[0] ?? 0) / totalRev * 100).toFixed(1)) : 0;
     entry["top3"] = totalRev > 0 ? Number((sorted.slice(0, 3).reduce((s, v) => s + v, 0) / totalRev * 100).toFixed(1)) : 0;
@@ -138,6 +158,8 @@ export function useCustomersData() {
       id: c.id,
       name: c.name,
       revenue: c.revenue,
+      grossProfit: c.grossProfit,
+      grossProfitRate: c.grossProfitRate,
       pct: c.pct,
       status: client?.status ?? "unknown",
     };
@@ -150,7 +172,8 @@ export function useCustomersData() {
     top3Pct,
     targetTop1,
     targetTop3,
-    totalCurrentRevenue,
+    totalCurrentRevenue: totalRevenue,
+    totalGrossProfit,
     latestMonth,
     pieData,
     monthlyByClient,
