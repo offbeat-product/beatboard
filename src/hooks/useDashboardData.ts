@@ -44,11 +44,25 @@ export function useDashboardData() {
     },
   });
 
-  const isLoading = monthlySalesQuery.isLoading || targetsQuery.isLoading || worklogsQuery.isLoading;
-  const isError = monthlySalesQuery.isError || targetsQuery.isError || worklogsQuery.isError;
+  const kpiSnapshotsQuery = useQuery({
+    queryKey: ["kpi_snapshots", "dashboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kpi_snapshots")
+        .select("snapshot_date, metric_name, actual_value")
+        .eq("org_id", ORG_ID)
+        .eq("metric_name", "gross_profit_per_hour");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isLoading = monthlySalesQuery.isLoading || targetsQuery.isLoading || worklogsQuery.isLoading || kpiSnapshotsQuery.isLoading;
+  const isError = monthlySalesQuery.isError || targetsQuery.isError || worklogsQuery.isError || kpiSnapshotsQuery.isError;
   const sales = monthlySalesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
   const worklogs = worklogsQuery.data ?? [];
+  const kpiSnapshots = kpiSnapshotsQuery.data ?? [];
 
   // Aggregate monthly totals
   const monthlyTotals = fiscalMonths.map((ym) => {
@@ -63,34 +77,55 @@ export function useDashboardData() {
   const currentData = monthlyTotals.find((m) => m.ym === currentMonth);
   const previousData = monthlyTotals.find((m) => m.ym === previousMonth);
 
+  // Revenue metrics
   const currentRevenue = currentData?.revenue ?? 0;
-  const currentTarget = currentData?.target ?? 0;
   const prevRevenue = previousData?.revenue ?? 0;
-  const momChange = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+  const currentTarget = currentData?.target ?? 0;
+  const revenueMomChange = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+
+  // Gross profit metrics
+  const currentGrossProfit = currentData?.grossProfit ?? 0;
+  const prevGrossProfit = previousData?.grossProfit ?? 0;
+  const grossProfitMomChange = prevGrossProfit > 0 ? ((currentGrossProfit - prevGrossProfit) / prevGrossProfit) * 100 : 0;
 
   // Cumulative (fiscal year up to current month)
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const cumulativeRevenue = monthlyTotals.slice(0, currentIdx + 1).reduce((s, m) => s + m.revenue, 0);
+  const cumulativeGrossProfit = monthlyTotals.slice(0, currentIdx + 1).reduce((s, m) => s + m.grossProfit, 0);
   const annualTarget = fiscalMonths.reduce((s, ym) => {
     const t = targets.find((t) => t.year_month === ym && t.metric_name === "monthly_revenue");
     return s + (t?.target_value ?? 0);
   }, 0);
 
   // Gross margin
-  const currentGrossProfit = currentData?.grossProfit ?? 0;
   const grossMarginRate = currentRevenue > 0 ? (currentGrossProfit / currentRevenue) * 100 : 0;
-  const prevGrossProfit = previousData?.grossProfit ?? 0;
   const prevGrossMargin = prevRevenue > 0 ? (prevGrossProfit / prevRevenue) * 100 : 0;
   const marginChange = grossMarginRate - prevGrossMargin;
 
-  // Gross profit per hour
-  const currentMonthWorklogs = worklogs.filter((w) => w.date.startsWith(currentMonth));
-  const totalHours = currentMonthWorklogs.reduce((s, w) => s + w.hours, 0);
-  const grossProfitPerHour = totalHours > 0 ? currentGrossProfit / totalHours : 0;
-  const prevMonthWorklogs = worklogs.filter((w) => w.date.startsWith(previousMonth));
-  const prevTotalHours = prevMonthWorklogs.reduce((s, w) => s + w.hours, 0);
-  const prevGrossProfitPerHour = prevTotalHours > 0 ? prevGrossProfit / prevTotalHours : 0;
-  const gphChange = grossProfitPerHour - prevGrossProfitPerHour;
+  // GPH helper: get GPH for a given month from kpi_snapshots, fallback to grossProfit / hours (or 160h)
+  const getGPH = (ym: string): number => {
+    const snapshot = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym));
+    if (snapshot) return snapshot.actual_value;
+    const mData = monthlyTotals.find((m) => m.ym === ym);
+    if (!mData || mData.grossProfit === 0) return 0;
+    const monthWorklogs = worklogs.filter((w) => w.date.startsWith(ym));
+    const totalHours = monthWorklogs.reduce((s, w) => s + w.hours, 0);
+    return mData.grossProfit / (totalHours > 0 ? totalHours : 160);
+  };
+
+  const currentGPH = getGPH(currentMonth);
+  const prevGPH = getGPH(previousMonth);
+  const gphMomChange = prevGPH > 0 ? ((currentGPH - prevGPH) / prevGPH) * 100 : 0;
+
+  // Monthly GPH array for chart
+  const monthlyGPH = fiscalMonths.map((ym) => ({
+    ym,
+    gph: getGPH(ym),
+  }));
+
+  // Average GPH for fiscal year up to current month
+  const gphValues = monthlyGPH.slice(0, currentIdx + 1).filter((m) => m.gph > 0);
+  const avgGPH = gphValues.length > 0 ? gphValues.reduce((s, m) => s + m.gph, 0) / gphValues.length : 0;
 
   // Customer concentration
   const currentClientSales = sales
@@ -127,10 +162,10 @@ export function useDashboardData() {
       href: "/customers",
     });
   }
-  if (grossProfitPerHour < targetGPH) {
+  if (currentGPH < targetGPH && currentGPH > 0) {
     alerts.push({
       type: "warning",
-      text: `粗利工数単価 ¥${Math.round(grossProfitPerHour).toLocaleString()} - 目標¥${targetGPH.toLocaleString()}を下回り`,
+      text: `粗利工数単価 ¥${Math.round(currentGPH).toLocaleString()} - 目標¥${targetGPH.toLocaleString()}を下回り`,
       href: "/pl",
     });
   }
@@ -141,19 +176,32 @@ export function useDashboardData() {
   return {
     isLoading,
     isError,
+    // Revenue
     currentRevenue,
+    prevRevenue,
     currentTarget,
-    momChange,
+    revenueMomChange,
     cumulativeRevenue,
     annualTarget,
-    monthsElapsed,
-    fyLabel,
+    // Gross profit
+    currentGrossProfit,
+    prevGrossProfit,
+    grossProfitMomChange,
+    cumulativeGrossProfit,
+    // Margin
     grossMarginRate,
     targetGrossMargin: targetGrossMargin * 100,
     marginChange,
-    grossProfitPerHour,
+    // GPH
+    currentGPH,
+    prevGPH,
+    gphMomChange,
+    avgGPH,
     targetGPH,
-    gphChange,
+    monthlyGPH,
+    // General
+    monthsElapsed,
+    fyLabel,
     monthlyTotals,
     alerts,
     fiscalMonths,
