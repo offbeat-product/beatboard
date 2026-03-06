@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-export function usePageTitle(title: string) {
+export function usePageTitle(title?: string) {
   useEffect(() => {
-    document.title = `BeatBoard | ${title}`;
+    if (title) document.title = `BeatBoard | ${title}`;
   }, [title]);
 }

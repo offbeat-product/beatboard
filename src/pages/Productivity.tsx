@@ -24,8 +24,8 @@ import { toast } from "sonner";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-const Productivity = () => {
-  usePageTitle("生産性指標");
+const Productivity = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "生産性指標");
   const queryClient = useQueryClient();
   const { formatAmount } = useCurrencyUnit();
   const d = useProductivityData();
@@ -193,10 +193,10 @@ const Productivity = () => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        <div>
+        {!embedded && <div>
           <h2 className="text-2xl font-bold tracking-tight">生産性指標</h2>
           <p className="text-sm text-muted-foreground mt-1">局長向け - 工数あたりの収益性・リソース効率</p>
-        </div>
+        </div>}
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <ChartSkeleton />
@@ -226,10 +226,10 @@ const Productivity = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      {!embedded && <div>
         <h2 className="text-2xl font-bold tracking-tight">生産性指標</h2>
         <p className="text-sm text-muted-foreground mt-1">局長向け - 工数あたりの収益性・リソース効率</p>
-      </div>
+      </div>}
 
       {/* Row 1: GPH (Total Labor Hours) */}
       <div>

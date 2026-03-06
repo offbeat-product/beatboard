@@ -16,8 +16,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMonthLabel } from "@/lib/fiscalYear";
 
-const Customers = () => {
-  usePageTitle("顧客分析");
+const Customers = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "顧客分析");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useCustomersData();
@@ -45,7 +45,7 @@ const Customers = () => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
+        {!embedded && <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>}
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -92,7 +92,7 @@ const Customers = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
+      {!embedded && <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>}
 
       {/* Section 1: Customer KPIs */}
       <div className="space-y-2">

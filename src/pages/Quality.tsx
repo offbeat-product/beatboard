@@ -21,8 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 
-const Quality = () => {
-  usePageTitle("品質指標");
+const Quality = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "品質指標");
   const queryClient = useQueryClient();
   const d = useQualityData();
 
@@ -154,7 +154,7 @@ const Quality = () => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>
+        {!embedded && <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>}
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
@@ -172,7 +172,7 @@ const Quality = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>
+      {!embedded && <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>}
 
       {/* Section 1: KPI Cards */}
       {/* Row 1: 案件数 */}
