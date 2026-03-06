@@ -434,7 +434,7 @@ function KpiMiniCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-card rounded-lg shadow-sm p-4 animate-fade-in">
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <p className={cn("text-lg font-bold font-mono tabular-nums", alert && "text-destructive")}>{value}</p>
+      <p className="text-lg font-bold font-mono tabular-nums">{value}</p>
     </div>
   );
 }
