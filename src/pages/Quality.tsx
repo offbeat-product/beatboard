@@ -173,7 +173,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
 
   return (
     <div className="space-y-6">
-      {!embedded && <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>}
+      {!embedded && <PageHeader title="品質指標" />}
 
       {/* Section 1: KPI Cards */}
       {/* Row 1: 案件数 */}

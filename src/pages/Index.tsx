@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TrendingUp, BarChart3, Users, CheckCircle } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import Management from "./Management";
 import Productivity from "./Productivity";
 import Customers from "./Customers";
