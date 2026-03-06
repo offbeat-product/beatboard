@@ -389,6 +389,36 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          invited_at: string | null
+          role: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          id: string
+          invited_at?: string | null
+          role?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          invited_at?: string | null
+          role?: string
+          status?: string
+        }
+        Relationships: []
+      }
       project_pl: {
         Row: {
           client_id: number | null
@@ -602,7 +632,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
