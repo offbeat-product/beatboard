@@ -438,6 +438,60 @@ function DataTab() {
 }
 
 /* ────────────────────────────────────────────── */
+/* Tab 4: メンバー招待                               */
+/* ────────────────────────────────────────────── */
+
+function MembersTab() {
+  const [email, setEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+
+  const handleInvite = async () => {
+    if (!email.trim()) return;
+    setInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("invite-member", {
+        body: { email: email.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`${email} に招待メールを送信しました`);
+      setEmail("");
+    } catch (err: any) {
+      toast.error("招待に失敗しました: " + (err.message || "不明なエラー"));
+    }
+    setInviting(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+        <h3 className="text-sm font-semibold mb-1 flex items-center gap-2">
+          <UserPlus className="h-4 w-4" />
+          メンバーを招待
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          招待メールが送信され、リンクからアカウントを作成できます。
+        </p>
+        <div className="flex gap-2">
+          <Input
+            type="email"
+            placeholder="メールアドレスを入力"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleInvite()}
+            className="flex-1"
+          />
+          <Button onClick={handleInvite} disabled={inviting || !email.trim()} size="sm">
+            <Mail className="h-4 w-4 mr-1.5" />
+            {inviting ? "送信中..." : "招待を送信"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────── */
 /* Main Page                                       */
 /* ────────────────────────────────────────────── */
 
@@ -447,7 +501,7 @@ const SettingsPage = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">設定</h2>
-        <p className="text-muted-foreground text-sm mt-1">目標値・アラート・データ同期の管理</p>
+        <p className="text-muted-foreground text-sm mt-1">目標値・アラート・データ同期・メンバー管理</p>
       </div>
 
       <Tabs defaultValue="targets">
@@ -455,6 +509,7 @@ const SettingsPage = () => {
           <TabsTrigger value="targets">目標値設定</TabsTrigger>
           <TabsTrigger value="alerts">アラート閾値</TabsTrigger>
           <TabsTrigger value="data">データ管理</TabsTrigger>
+          <TabsTrigger value="members">メンバー招待</TabsTrigger>
         </TabsList>
 
         <TabsContent value="targets">
@@ -465,6 +520,9 @@ const SettingsPage = () => {
         </TabsContent>
         <TabsContent value="data">
           <DataTab />
+        </TabsContent>
+        <TabsContent value="members">
+          <MembersTab />
         </TabsContent>
       </Tabs>
     </div>
