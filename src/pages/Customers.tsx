@@ -157,6 +157,12 @@ const Customers = () => {
               >
                 粗利
               </button>
+              <button
+                onClick={() => setTableMode("grossProfitRate")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-t-md transition-colors ${tableMode === "grossProfitRate" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
+              >
+                粗利率
+              </button>
             </div>
             <div className="overflow-x-auto relative">
               <table className="w-full text-sm border-collapse min-w-[900px]">
