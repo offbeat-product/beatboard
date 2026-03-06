@@ -49,6 +49,14 @@ const Customers = () => {
     projectCount: m.projectCount,
   }));
 
+  // Averages for reference lines (only months with data)
+  const withCustomers = chartData.filter((c) => c.customerCount > 0);
+  const withProjects = chartData.filter((c) => c.projectCount > 0);
+  const avgCustomerCount = withCustomers.length > 0 ? Math.round(withCustomers.reduce((s, c) => s + c.customerCount, 0) / withCustomers.length * 10) / 10 : 0;
+  const avgProjectCount = withProjects.length > 0 ? Math.round(withProjects.reduce((s, c) => s + c.projectCount, 0) / withProjects.length * 10) / 10 : 0;
+  const avgCustomerUnitPrice = withCustomers.length > 0 ? Math.round(withCustomers.reduce((s, c) => s + c.customerUnitPrice, 0) / withCustomers.length) : 0;
+  const avgProjectUnitPrice = withProjects.length > 0 ? Math.round(withProjects.reduce((s, c) => s + c.projectUnitPrice, 0) / withProjects.length) : 0;
+
   // Rank colors for top 5
   const rankBg = (idx: number) => {
     if (idx === 0) return "bg-amber-50 dark:bg-amber-950/30";
