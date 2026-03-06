@@ -9,7 +9,9 @@ import {
   BarChart, Bar, LineChart, Line, ComposedChart, ReferenceLine,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { TrendingUp, TrendingDown, Users, Briefcase, ChevronDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Briefcase, ChevronDown, Bot, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMonthLabel } from "@/lib/fiscalYear";
@@ -20,6 +22,25 @@ const Customers = () => {
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useCustomersData();
   const [tableMode, setTableMode] = useState<"revenue" | "grossProfit" | "grossProfitRate">("revenue");
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
+
+  const presetQuestions = [
+    "顧客ポートフォリオの分析は？",
+    "売上集中リスクはある？",
+    "新規開拓の優先度は？",
+  ];
+
+  const handleSendChat = (text?: string) => {
+    const msg = text ?? chatInput.trim();
+    if (!msg) return;
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "user", content: msg },
+      { role: "ai", content: "ただいま分析中です。この機能は近日中に実装予定です。" },
+    ]);
+    setChatInput("");
+  };
 
   if (d.isLoading) {
     return (
@@ -296,6 +317,56 @@ const Customers = () => {
           </div>
         </>
       )}
+
+      {/* AI Advisor */}
+      <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-7 w-7 rounded-sm bg-accent flex items-center justify-center">
+            <Bot className="h-3.5 w-3.5 text-accent-foreground" />
+          </div>
+          <h3 className="text-sm font-semibold">AIアドバイザー</h3>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {presetQuestions.map((q) => (
+            <Button key={q} variant="outline" size="sm" className="text-xs" onClick={() => handleSendChat(q)}>{q}</Button>
+          ))}
+        </div>
+        {chatMessages.length > 0 && (
+          <div className="space-y-3 mb-3 max-h-60 overflow-y-auto">
+            {chatMessages.map((msg, i) =>
+              msg.role === "ai" ? (
+                <div key={i} className="flex gap-2 items-start">
+                  <div className="h-6 w-6 rounded-sm bg-accent flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="h-3 w-3 text-accent-foreground" />
+                  </div>
+                  <div className="bg-secondary rounded-lg px-3 py-2 max-w-[85%]">
+                    <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                  </div>
+                </div>
+              ) : (
+                <div key={i} className="flex justify-end">
+                  <div className="bg-primary text-primary-foreground rounded-lg px-3 py-2 max-w-[85%]">
+                    <p className="text-xs whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Textarea
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); } }}
+            placeholder="顧客に関する質問を入力..."
+            className="min-h-[40px] max-h-24 resize-none text-xs"
+            rows={1}
+          />
+          <Button onClick={() => handleSendChat()} size="icon" className="shrink-0 h-[40px] w-[40px]" disabled={!chatInput.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
       {/* Calculation Logic */}
       <Collapsible>
