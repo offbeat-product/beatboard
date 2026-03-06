@@ -292,7 +292,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
               <h3 className="text-sm font-semibold mb-1">販管費内訳</h3>
               <p className="text-xs text-muted-foreground mb-4">{d.sgaBreakdownMonth}のfreeeデータ</p>
               <ResponsiveContainer width="100%" height={Math.max(sgaBarData.length * 36, 150)}>
-                <BarChart data={sgaBarData} layout="vertical" margin={{ left: 100, right: 20 }}>
+                <BarChart data={sgaBarData} layout="vertical" margin={{ left: 60, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                   <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
                   <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} width={100} />
