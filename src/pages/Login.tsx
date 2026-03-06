@@ -76,7 +76,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-primary text-primary-foreground rounded-sm text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full py-2.5 bg-foreground text-background rounded-sm text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading ? "処理中..." : isSignUp ? "アカウント作成" : "ログイン"}
           </button>
