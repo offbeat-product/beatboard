@@ -19,7 +19,7 @@ const Customers = () => {
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useCustomersData();
-  const [tableMode, setTableMode] = useState<"revenue" | "grossProfit">("revenue");
+  const [tableMode, setTableMode] = useState<"revenue" | "grossProfit" | "grossProfitRate">("revenue");
 
   if (d.isLoading) {
     return (
