@@ -174,10 +174,10 @@ const Quality = () => {
           <Clock className="h-4 w-4" /> 納期遵守数 / 率
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 遵守数/率" value={`${kpis.prevOnTime}件 / ${kpis.prevOnTimeRate.toFixed(1)}%`} />
-          <KpiMiniCard label="今月 遵守数/率" value={`${kpis.currOnTime}件 / ${kpis.currOnTimeRate.toFixed(1)}%`} />
+          <KpiMiniCard label="前月 遵守数/率" value={`${kpis.prevOnTime}件 / ${kpis.prevOnTimeRate.toFixed(1)}%`} alert={kpis.prevDel > 0 && kpis.prevOnTimeRate < 95} />
+          <KpiMiniCard label="今月 遵守数/率" value={`${kpis.currOnTime}件 / ${kpis.currOnTimeRate.toFixed(1)}%`} alert={kpis.currDel > 0 && kpis.currOnTimeRate < 95} />
           <DiffCard label="前月比" value={kpis.onTimeRateDiff} positiveIsGood={true} />
-          <KpiMiniCard label="通期 平均遵守率" value={`${kpis.ytdAvgOnTimeRate.toFixed(1)}%`} />
+          <KpiMiniCard label="通期 平均遵守率" value={`${kpis.ytdAvgOnTimeRate.toFixed(1)}%`} alert={kpis.ytdAvgOnTimeRate > 0 && kpis.ytdAvgOnTimeRate < 95} />
         </div>
       </div>
 
@@ -187,10 +187,10 @@ const Quality = () => {
           <AlertTriangle className="h-4 w-4" /> 修正発生数 / 率
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 修正数/率" value={`${kpis.prevRevisions}件 / ${kpis.prevRevisionRate.toFixed(1)}%`} />
-          <KpiMiniCard label="今月 修正数/率" value={`${kpis.currRevisions}件 / ${kpis.currRevisionRate.toFixed(1)}%`} />
+          <KpiMiniCard label="前月 修正数/率" value={`${kpis.prevRevisions}件 / ${kpis.prevRevisionRate.toFixed(1)}%`} alert={kpis.prevDel > 0 && kpis.prevRevisionRate > 20} />
+          <KpiMiniCard label="今月 修正数/率" value={`${kpis.currRevisions}件 / ${kpis.currRevisionRate.toFixed(1)}%`} alert={kpis.currDel > 0 && kpis.currRevisionRate > 20} />
           <DiffCard label="前月比" value={kpis.revisionRateDiff} positiveIsGood={false} />
-          <KpiMiniCard label="通期 平均修正率" value={`${kpis.ytdAvgRevisionRate.toFixed(1)}%`} />
+          <KpiMiniCard label="通期 平均修正率" value={`${kpis.ytdAvgRevisionRate.toFixed(1)}%`} alert={kpis.ytdAvgRevisionRate > 0 && kpis.ytdAvgRevisionRate > 20} />
         </div>
       </div>
 
@@ -360,11 +360,11 @@ const Quality = () => {
 
 /* ── Sub-components ── */
 
-function KpiMiniCard({ label, value }: { label: string; value: string }) {
+function KpiMiniCard({ label, value, alert }: { label: string; value: string; alert?: boolean }) {
   return (
-    <div className="bg-card rounded-lg shadow-sm p-4 animate-fade-in">
+    <div className={cn("bg-card rounded-lg shadow-sm p-4 animate-fade-in", alert && "border border-destructive/30 bg-destructive/5")}>
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <p className="text-lg font-bold font-mono tabular-nums">{value}</p>
+      <p className={cn("text-lg font-bold font-mono tabular-nums", alert && "text-destructive")}>{value}</p>
     </div>
   );
 }
