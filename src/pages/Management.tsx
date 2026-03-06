@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/PageHeader";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
