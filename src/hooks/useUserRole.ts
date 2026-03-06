@@ -6,22 +6,43 @@ export type UserRole = "admin" | "manager" | "viewer";
 export function useUserRole() {
   const [role, setRole] = useState<UserRole>("viewer");
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<string>("active");
+  const [profileExists, setProfileExists] = useState(true);
 
   const fetchRole = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, status")
       .eq("id", user.id)
       .single();
 
-    if (data?.role) setRole(data.role as UserRole);
+    if (error || !data) {
+      // No profile found → treat as admin (initial user)
+      setRole("admin");
+      setProfileExists(false);
+      setLoading(false);
+      return;
+    }
+
+    setProfileExists(true);
+    setStatus(data.status || "active");
+    if (data.role) setRole(data.role as UserRole);
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchRole(); }, [fetchRole]);
 
-  return { role, loading, isAdmin: role === "admin", isViewer: role === "viewer" };
+  return {
+    role,
+    loading,
+    status,
+    profileExists,
+    isAdmin: role === "admin",
+    isViewer: role === "viewer",
+    isDeleted: status === "deleted",
+    refetch: fetchRole,
+  };
 }
