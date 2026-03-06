@@ -468,6 +468,17 @@ const Productivity = () => {
                 </TableCell>
               ))}
             </TableRow>
+            <TableRow className="border-t-2 border-border bg-muted/30">
+              <TableCell className="font-semibold sticky left-0 bg-muted/30 z-10">人件費予算</TableCell>
+              {editedMonthlyData.map((m) => {
+                const laborBudget = m.grossProfit - (m.revenue * 0.5);
+                return (
+                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", laborBudget < 0 && "text-destructive")}>
+                    {formatAmount(Math.round(laborBudget))}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
           </TableBody>
         </Table>
       </div>
