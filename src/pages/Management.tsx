@@ -68,7 +68,7 @@ const Management = () => {
   }
 
   const hasData = d.monthlyData.some((m) => m.revenue > 0);
-  const cumulativeRate = d.annualTarget > 0 ? (d.cumulativeRevenue / d.annualTarget) * 100 : 0;
+  // totals are used directly for cumulative values
 
   // Chart data converted
   const displayChartData = d.chartData.map((c) => ({
