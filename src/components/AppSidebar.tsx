@@ -1,4 +1,5 @@
 import { Home, TrendingUp, BarChart3, Users, CheckCircle, FileText, Settings, LogOut } from "lucide-react";
+import offbeatLogo from "@/assets/offbeat-logo.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
