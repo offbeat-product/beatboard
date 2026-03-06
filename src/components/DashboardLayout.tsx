@@ -38,7 +38,7 @@ export function DashboardLayout() {
                 <Menu className="h-5 w-5" />
               </button>
             )}
-            {isMobile && <h1 className="text-base font-bold text-primary tracking-tight">BeatBoard</h1>}
+            {isMobile && <h1 className="text-base font-bold text-foreground tracking-tight">BeatBoard</h1>}
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground hidden sm:inline">
