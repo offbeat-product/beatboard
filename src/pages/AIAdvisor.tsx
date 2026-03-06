@@ -149,7 +149,7 @@ const AIAdvisor = () => {
       {/* Two-column layout */}
       <div className="grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-6 md:h-[calc(100%-5rem)]">
         {/* ── Left: Reports ── */}
-        <div className="flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <div className="flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden min-h-[300px] md:min-h-0">
           <Tabs defaultValue="weekly" className="flex flex-col flex-1 overflow-hidden">
             <div className="px-4 pt-4">
               <TabsList className="w-full">
