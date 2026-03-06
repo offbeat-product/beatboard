@@ -109,7 +109,36 @@ const Customers = () => {
         <>
           {/* Section 3: Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 顧客数推移 */}
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
+              <h3 className="text-sm font-semibold mb-4">顧客数推移</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip formatter={(v: number) => [`${v}社`, "顧客数"]} />
+                  <Bar dataKey="customerCount" name="顧客数" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 案件数推移 */}
+            <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "50ms" }}>
+              <h3 className="text-sm font-semibold mb-4">案件数推移</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip formatter={(v: number) => [`${v}件`, "案件数"]} />
+                  <Bar dataKey="projectCount" name="案件数" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 顧客単価推移 */}
+            <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
               <h3 className="text-sm font-semibold mb-4">顧客単価推移</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={chartData}>
