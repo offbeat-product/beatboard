@@ -13,7 +13,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { RefreshCw, Save, Zap, UserPlus, Mail } from "lucide-react";
+import { RefreshCw, Save, Zap, UserPlus, Mail, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUserRole } from "@/hooks/useUserRole";
 import { getFiscalYearMonths, getMonthLabel, ORG_ID } from "@/lib/fiscalYear";
 
 /* ── helpers ── */
