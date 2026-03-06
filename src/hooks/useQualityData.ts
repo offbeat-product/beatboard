@@ -9,15 +9,9 @@ function prevMonth(ym: string): string {
   return `${py}-${String(pm).padStart(2, "0")}`;
 }
 
-export interface QualityRow {
-  id: string;
-  org_id: string;
-  year_month: string;
-  client_id: string | null;
-  client_name: string | null;
-  total_deliveries: number;
-  on_time_deliveries: number;
-  revision_count: number;
+export interface QualityMonthlyInput {
+  onTimeDeliveries: number;
+  revisionCount: number;
 }
 
 export function useQualityData() {
@@ -26,7 +20,23 @@ export function useQualityData() {
   const previousMonth = prevMonth(currentMonth);
   const fiscalMonthsToDate = fiscalMonths.filter((m) => m <= currentMonth);
 
-  const query = useQuery({
+  // Get project counts from project_pl (same as customers page)
+  const projectPlQuery = useQuery({
+    queryKey: ["project_pl", "quality_deliveries", fiscalMonths],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_pl")
+        .select("year_month, revenue, project_id")
+        .eq("org_id", ORG_ID)
+        .in("year_month", fiscalMonths)
+        .gt("revenue", 0);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Get quality manual data
+  const qualityQuery = useQuery({
     queryKey: ["quality_monthly", fiscalMonths],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,120 +45,85 @@ export function useQualityData() {
         .eq("org_id", ORG_ID)
         .in("year_month", fiscalMonths);
       if (error) throw error;
-      return data as QualityRow[];
+      return data;
     },
   });
 
-  const isLoading = query.isLoading;
-  const isError = query.isError;
-  const rows = query.data ?? [];
+  const isLoading = projectPlQuery.isLoading || qualityQuery.isLoading;
+  const isError = projectPlQuery.isError || qualityQuery.isError;
+  const projectPl = projectPlQuery.data ?? [];
+  const qualityRows = qualityQuery.data ?? [];
 
-  const rowsForMonth = (ym: string) => rows.filter((r) => r.year_month === ym);
-  const sumField = (rs: QualityRow[], field: "total_deliveries" | "on_time_deliveries" | "revision_count") =>
-    rs.reduce((s, r) => s + (r[field] ?? 0), 0);
+  // Project counts per month (from project_pl)
+  const projectCountForMonth = (ym: string) => projectPl.filter((r) => r.year_month === ym).length;
 
-  // --- Monthly aggregates ---
-  const prev = rowsForMonth(previousMonth);
-  const curr = rowsForMonth(currentMonth);
-  const ytdRows = rows.filter((r) => fiscalMonthsToDate.includes(r.year_month));
-
-  // Deliveries (案件数)
-  const prevDeliveries = sumField(prev, "total_deliveries");
-  const currDeliveries = sumField(curr, "total_deliveries");
-  const ytdDeliveries = sumField(ytdRows, "total_deliveries");
+  const prevDeliveries = projectCountForMonth(previousMonth);
+  const currDeliveries = projectCountForMonth(currentMonth);
+  const ytdDeliveries = projectPl.filter((r) => fiscalMonthsToDate.includes(r.year_month)).length;
   const deliveriesGrowth = prevDeliveries > 0 ? ((currDeliveries - prevDeliveries) / prevDeliveries) * 100 : 0;
 
-  // On-time rate (納期遵守率)
-  const prevOnTime = sumField(prev, "on_time_deliveries");
-  const currOnTime = sumField(curr, "on_time_deliveries");
-  const prevOnTimeRate = prevDeliveries > 0 ? (prevOnTime / prevDeliveries) * 100 : 0;
-  const currOnTimeRate = currDeliveries > 0 ? (currOnTime / currDeliveries) * 100 : 0;
+  // Quality data per month (from quality_monthly, aggregated)
+  const qualityForMonth = (ym: string) => {
+    const rows = qualityRows.filter((r) => r.year_month === ym);
+    return {
+      onTime: rows.reduce((s, r) => s + (r.on_time_deliveries ?? 0), 0),
+      revisions: rows.reduce((s, r) => s + (r.revision_count ?? 0), 0),
+    };
+  };
+
+  // Default editable values from DB
+  const defaultInputMap: Record<string, QualityMonthlyInput> = {};
+  fiscalMonths.forEach((ym) => {
+    const q = qualityForMonth(ym);
+    defaultInputMap[ym] = {
+      onTimeDeliveries: q.onTime,
+      revisionCount: q.revisions,
+    };
+  });
+
+  // Compute monthly row from inputs
+  const computeMonthlyRow = (ym: string, input: QualityMonthlyInput) => {
+    const deliveries = projectCountForMonth(ym);
+    const onTimeRate = deliveries > 0 ? (input.onTimeDeliveries / deliveries) * 100 : 0;
+    const revisionRate = deliveries > 0 ? (input.revisionCount / deliveries) * 100 : 0;
+    return {
+      ym,
+      month: getMonthLabel(ym),
+      deliveries,
+      onTimeDeliveries: input.onTimeDeliveries,
+      revisionCount: input.revisionCount,
+      onTimeRate: Math.round(onTimeRate * 10) / 10,
+      revisionRate: Math.round(revisionRate * 10) / 10,
+    };
+  };
+
+  // KPIs using default values
+  const prev = qualityForMonth(previousMonth);
+  const curr = qualityForMonth(currentMonth);
+
+  const prevOnTimeRate = prevDeliveries > 0 ? (prev.onTime / prevDeliveries) * 100 : 0;
+  const currOnTimeRate = currDeliveries > 0 ? (curr.onTime / currDeliveries) * 100 : 0;
   const onTimeRateDiff = currOnTimeRate - prevOnTimeRate;
 
-  // Revision rate (修正発生率)
-  const prevRevisions = sumField(prev, "revision_count");
-  const currRevisions = sumField(curr, "revision_count");
-  const prevRevisionRate = prevDeliveries > 0 ? (prevRevisions / prevDeliveries) * 100 : 0;
-  const currRevisionRate = currDeliveries > 0 ? (currRevisions / currDeliveries) * 100 : 0;
+  const prevRevisionRate = prevDeliveries > 0 ? (prev.revisions / prevDeliveries) * 100 : 0;
+  const currRevisionRate = currDeliveries > 0 ? (curr.revisions / currDeliveries) * 100 : 0;
   const revisionRateDiff = currRevisionRate - prevRevisionRate;
 
-  // YTD averages (月平均)
+  // YTD averages
   const monthlyRates = fiscalMonthsToDate.map((ym) => {
-    const mr = rowsForMonth(ym);
-    const td = sumField(mr, "total_deliveries");
-    const ot = sumField(mr, "on_time_deliveries");
-    const rv = sumField(mr, "revision_count");
+    const del = projectCountForMonth(ym);
+    const q = qualityForMonth(ym);
     return {
-      onTimeRate: td > 0 ? (ot / td) * 100 : null,
-      revisionRate: td > 0 ? (rv / td) * 100 : null,
+      onTimeRate: del > 0 ? (q.onTime / del) * 100 : null,
+      revisionRate: del > 0 ? (q.revisions / del) * 100 : null,
     };
   });
-  const validOnTimeRates = monthlyRates.filter((r) => r.onTimeRate !== null);
-  const validRevisionRates = monthlyRates.filter((r) => r.revisionRate !== null);
-  const ytdAvgOnTimeRate = validOnTimeRates.length > 0
-    ? validOnTimeRates.reduce((s, r) => s + r.onTimeRate!, 0) / validOnTimeRates.length : 0;
-  const ytdAvgRevisionRate = validRevisionRates.length > 0
-    ? validRevisionRates.reduce((s, r) => s + r.revisionRate!, 0) / validRevisionRates.length : 0;
-
-  // --- Monthly chart data ---
-  const monthlyData = fiscalMonths.map((ym) => {
-    const mr = rowsForMonth(ym);
-    const td = sumField(mr, "total_deliveries");
-    const ot = sumField(mr, "on_time_deliveries");
-    const rv = sumField(mr, "revision_count");
-    return {
-      month: getMonthLabel(ym),
-      yearMonth: ym,
-      deliveries: td,
-      onTimeRate: td > 0 ? Math.round((ot / td) * 1000) / 10 : 0,
-      revisionRate: td > 0 ? Math.round((rv / td) * 1000) / 10 : 0,
-    };
-  });
-
-  // --- Client-level aggregation ---
-  const clientAgg: Record<string, {
-    name: string;
-    monthly: Record<string, { total: number; onTime: number; revisions: number }>;
-    totalDeliveries: number;
-    totalOnTime: number;
-    totalRevisions: number;
-  }> = {};
-
-  rows.forEach((r) => {
-    const cid = r.client_id ?? "unknown";
-    if (!clientAgg[cid]) {
-      clientAgg[cid] = {
-        name: r.client_name ?? "不明",
-        monthly: {},
-        totalDeliveries: 0,
-        totalOnTime: 0,
-        totalRevisions: 0,
-      };
-    }
-    const c = clientAgg[cid];
-    c.totalDeliveries += r.total_deliveries;
-    c.totalOnTime += r.on_time_deliveries;
-    c.totalRevisions += r.revision_count;
-    if (!c.monthly[r.year_month]) {
-      c.monthly[r.year_month] = { total: 0, onTime: 0, revisions: 0 };
-    }
-    c.monthly[r.year_month].total += r.total_deliveries;
-    c.monthly[r.year_month].onTime += r.on_time_deliveries;
-    c.monthly[r.year_month].revisions += r.revision_count;
-  });
-
-  const clientOnTimeData = Object.entries(clientAgg)
-    .map(([id, d]) => ({
-      id,
-      name: d.name,
-      monthly: d.monthly,
-      totalDeliveries: d.totalDeliveries,
-      avgOnTimeRate: d.totalDeliveries > 0 ? (d.totalOnTime / d.totalDeliveries) * 100 : 0,
-      avgRevisionRate: d.totalDeliveries > 0 ? (d.totalRevisions / d.totalDeliveries) * 100 : 0,
-    }))
-    .sort((a, b) => b.avgOnTimeRate - a.avgOnTimeRate);
-
-  const clientRevisionData = [...clientOnTimeData].sort((a, b) => a.avgRevisionRate - b.avgRevisionRate);
+  const validOnTime = monthlyRates.filter((r) => r.onTimeRate !== null);
+  const validRevision = monthlyRates.filter((r) => r.revisionRate !== null);
+  const ytdAvgOnTimeRate = validOnTime.length > 0
+    ? validOnTime.reduce((s, r) => s + r.onTimeRate!, 0) / validOnTime.length : 0;
+  const ytdAvgRevisionRate = validRevision.length > 0
+    ? validRevision.reduce((s, r) => s + r.revisionRate!, 0) / validRevision.length : 0;
 
   return {
     isLoading,
@@ -162,24 +137,26 @@ export function useQualityData() {
     currDeliveries,
     deliveriesGrowth,
     ytdDeliveries,
-    prevOnTime,
-    currOnTime,
+    prevOnTime: prev.onTime,
+    currOnTime: curr.onTime,
     prevOnTimeRate,
     currOnTimeRate,
     onTimeRateDiff,
-    prevRevisions,
-    currRevisions,
+    prevRevisions: prev.revisions,
+    currRevisions: curr.revisions,
     prevRevisionRate,
     currRevisionRate,
     revisionRateDiff,
     ytdAvgOnTimeRate,
     ytdAvgRevisionRate,
-    // Charts
-    monthlyData,
-    // Tables
-    clientOnTimeData,
-    clientRevisionData,
-    // Raw refetch
-    refetch: query.refetch,
+    // For editable table
+    defaultInputMap,
+    computeMonthlyRow,
+    projectCountForMonth,
+    // Refetch
+    refetch: () => {
+      projectPlQuery.refetch();
+      qualityQuery.refetch();
+    },
   };
 }
