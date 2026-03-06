@@ -200,7 +200,7 @@ const Customers = () => {
                           </td>
                         );
                       })}
-                      <td className="text-right px-3 py-1.5 font-mono text-xs font-semibold border-b border-border tabular-nums">
+                      <td className={`text-right px-3 py-1.5 font-mono text-xs font-semibold border-b border-border tabular-nums ${tableMode === "grossProfitRate" && client.revenue > 0 && (client.grossProfit / client.revenue) * 100 < 70 ? "text-destructive" : ""}`}>
                         {tableMode === "grossProfitRate"
                           ? `${client.revenue > 0 ? ((client.grossProfit / client.revenue) * 100).toFixed(1) : "0.0"}%`
                           : formatAmount(tableMode === "revenue" ? client.revenue : client.grossProfit)}
