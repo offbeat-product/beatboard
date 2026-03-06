@@ -174,10 +174,10 @@ const Quality = () => {
           <Clock className="h-4 w-4" /> 納期遵守数 / 率
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 遵守数/率" value={`${kpis.prevOnTime}件 / ${kpis.prevOnTimeRate.toFixed(1)}%`} alert={kpis.prevDel > 0 && kpis.prevOnTimeRate < 95} />
-          <KpiMiniCard label="今月 遵守数/率" value={`${kpis.currOnTime}件 / ${kpis.currOnTimeRate.toFixed(1)}%`} alert={kpis.currDel > 0 && kpis.currOnTimeRate < 95} />
+          <KpiMiniCard label="前月 遵守数/率" value={`${kpis.prevOnTime}件 / ${kpis.prevOnTimeRate.toFixed(1)}%`} />
+          <KpiMiniCard label="今月 遵守数/率" value={`${kpis.currOnTime}件 / ${kpis.currOnTimeRate.toFixed(1)}%`} />
           <DiffCard label="前月比" value={kpis.onTimeRateDiff} positiveIsGood={true} />
-          <KpiMiniCard label="通期 平均遵守率" value={`${kpis.ytdAvgOnTimeRate.toFixed(1)}%`} alert={kpis.ytdAvgOnTimeRate > 0 && kpis.ytdAvgOnTimeRate < 95} />
+          <KpiMiniCard label="通期 平均遵守率" value={`${kpis.ytdAvgOnTimeRate.toFixed(1)}%`} />
         </div>
       </div>
 
