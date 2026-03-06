@@ -187,10 +187,10 @@ const Quality = () => {
           <AlertTriangle className="h-4 w-4" /> 修正発生数 / 率
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 修正数/率" value={`${kpis.prevRevisions}件 / ${kpis.prevRevisionRate.toFixed(1)}%`} alert={kpis.prevDel > 0 && kpis.prevRevisionRate > 20} />
-          <KpiMiniCard label="今月 修正数/率" value={`${kpis.currRevisions}件 / ${kpis.currRevisionRate.toFixed(1)}%`} alert={kpis.currDel > 0 && kpis.currRevisionRate > 20} />
+          <KpiMiniCard label="前月 修正数/率" value={`${kpis.prevRevisions}件 / ${kpis.prevRevisionRate.toFixed(1)}%`} />
+          <KpiMiniCard label="今月 修正数/率" value={`${kpis.currRevisions}件 / ${kpis.currRevisionRate.toFixed(1)}%`} />
           <DiffCard label="前月比" value={kpis.revisionRateDiff} positiveIsGood={false} />
-          <KpiMiniCard label="通期 平均修正率" value={`${kpis.ytdAvgRevisionRate.toFixed(1)}%`} alert={kpis.ytdAvgRevisionRate > 0 && kpis.ytdAvgRevisionRate > 20} />
+          <KpiMiniCard label="通期 平均修正率" value={`${kpis.ytdAvgRevisionRate.toFixed(1)}%`} />
         </div>
       </div>
 
