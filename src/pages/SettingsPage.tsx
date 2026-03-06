@@ -440,32 +440,95 @@ function DataTab() {
 }
 
 /* ────────────────────────────────────────────── */
-/* Tab 4: メンバー招待                               */
+/* Tab 4: メンバー管理                               */
 /* ────────────────────────────────────────────── */
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "管理者",
+  manager: "マネージャー",
+  viewer: "閲覧者",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  active: "アクティブ",
+  invited: "招待中",
+};
+
+type Profile = {
+  id: string;
+  email: string | null;
+  role: string;
+  status: string;
+  invited_at: string | null;
+};
 
 function MembersTab() {
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState("viewer");
   const [inviting, setInviting] = useState(false);
+  const [members, setMembers] = useState<Profile[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  const fetchMembers = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, role, status, invited_at")
+      .order("created_at", { ascending: true });
+    if (data) setMembers(data as Profile[]);
+    setLoadingMembers(false);
+  };
+
+  useEffect(() => { fetchMembers(); }, []);
 
   const handleInvite = async () => {
     if (!email.trim()) return;
     setInviting(true);
     try {
       const { data, error } = await supabase.functions.invoke("invite-member", {
-        body: { email: email.trim() },
+        body: { email: email.trim(), role },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`${email} に招待メールを送信しました`);
       setEmail("");
+      setRole("viewer");
+      fetchMembers();
     } catch (err: any) {
       toast.error("招待に失敗しました: " + (err.message || "不明なエラー"));
     }
     setInviting(false);
   };
 
+  const handleRoleChange = async (memberId: string, newRole: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ role: newRole })
+      .eq("id", memberId);
+    if (error) {
+      toast.error("ロール変更に失敗しました");
+    } else {
+      toast.success("ロールを変更しました");
+      setMembers((prev) => prev.map((m) => m.id === memberId ? { ...m, role: newRole } : m));
+    }
+  };
+
+  const handleDelete = async (memberId: string, memberEmail: string | null) => {
+    if (!confirm(`${memberEmail || "このメンバー"} を削除しますか？`)) return;
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", memberId);
+    if (error) {
+      toast.error("削除に失敗しました");
+    } else {
+      toast.success("メンバーを削除しました");
+      setMembers((prev) => prev.filter((m) => m.id !== memberId));
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Invite form */}
       <div className="bg-card rounded-lg shadow-sm border border-border p-6">
         <h3 className="text-sm font-semibold mb-1 flex items-center gap-2">
           <UserPlus className="h-4 w-4" />
@@ -474,20 +537,102 @@ function MembersTab() {
         <p className="text-xs text-muted-foreground mb-4">
           招待メールが送信され、リンクからアカウントを作成できます。
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Input
             type="email"
             placeholder="メールアドレスを入力"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleInvite()}
-            className="flex-1"
+            className="flex-1 min-w-[200px]"
           />
+          <Select value={role} onValueChange={setRole}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">管理者</SelectItem>
+              <SelectItem value="manager">マネージャー</SelectItem>
+              <SelectItem value="viewer">閲覧者</SelectItem>
+            </SelectContent>
+          </Select>
           <Button onClick={handleInvite} disabled={inviting || !email.trim()} size="sm">
             <Mail className="h-4 w-4 mr-1.5" />
             {inviting ? "送信中..." : "招待を送信"}
           </Button>
         </div>
+      </div>
+
+      {/* Members table */}
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-xs">メールアドレス</TableHead>
+              <TableHead className="text-xs">ロール</TableHead>
+              <TableHead className="text-xs">ステータス</TableHead>
+              <TableHead className="text-xs">招待日</TableHead>
+              <TableHead className="text-xs w-16"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loadingMembers ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                  読み込み中...
+                </TableCell>
+              </TableRow>
+            ) : members.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                  メンバーがいません
+                </TableCell>
+              </TableRow>
+            ) : (
+              members.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell className="text-sm">{member.email || "—"}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={member.role}
+                      onValueChange={(v) => handleRoleChange(member.id, v)}
+                    >
+                      <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">管理者</SelectItem>
+                        <SelectItem value="manager">マネージャー</SelectItem>
+                        <SelectItem value="viewer">閲覧者</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      member.status === "active"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}>
+                      {STATUS_LABELS[member.status] || member.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {member.invited_at ? new Date(member.invited_at).toLocaleDateString("ja-JP") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleDelete(member.id, member.email)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      title="削除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -499,6 +644,8 @@ function MembersTab() {
 
 const SettingsPage = () => {
   usePageTitle("設定");
+  const { isAdmin } = useUserRole();
+
   return (
     <div className="space-y-6">
       <div>
@@ -511,7 +658,7 @@ const SettingsPage = () => {
           <TabsTrigger value="targets">目標値設定</TabsTrigger>
           <TabsTrigger value="alerts">アラート閾値</TabsTrigger>
           <TabsTrigger value="data">データ管理</TabsTrigger>
-          <TabsTrigger value="members">メンバー招待</TabsTrigger>
+          {isAdmin && <TabsTrigger value="members">メンバー管理</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="targets">
@@ -523,9 +670,11 @@ const SettingsPage = () => {
         <TabsContent value="data">
           <DataTab />
         </TabsContent>
-        <TabsContent value="members">
-          <MembersTab />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="members">
+            <MembersTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
