@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import offbeatIcon from "@/assets/offbeat-icon.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
