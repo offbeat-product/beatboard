@@ -33,7 +33,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
     <aside className="w-60 shrink-0 border-r border-border bg-background flex flex-col h-screen sticky top-0">
       {/* Logo */}
       <div className="px-4 py-5 flex items-center gap-2">
-        <img src={offbeatLogo} alt="Off Beat" className="h-7 w-7 object-contain" />
+        <img src={offbeatIcon} alt="Off Beat" className="h-7 w-7 object-contain" />
         <h1 className="text-xl font-bold text-foreground tracking-tight">BeatBoard</h1>
       </div>
 
