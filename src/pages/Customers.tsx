@@ -138,7 +138,8 @@ const Customers = () => {
             </div>
 
             {/* 顧客単価推移 */}
-            <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
+            {/* 案件単価推移 */}
+            <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
               <h3 className="text-sm font-semibold mb-4">顧客単価推移</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={chartData}>
