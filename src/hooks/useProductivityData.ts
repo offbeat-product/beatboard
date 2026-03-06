@@ -2,12 +2,39 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel } from "@/lib/fiscalYear";
 
+export interface MonthlyHoursInput {
+  employeeTotalHours: number;
+  employeeProjectHours: number;
+  partTimerTotalHours: number;
+  partTimerProjectHours: number;
+}
+
+export interface MonthlyProductivityRow {
+  ym: string;
+  label: string;
+  revenue: number;
+  grossProfit: number;
+  employees: number;
+  partTimers: number;
+  headcount: number;
+  employeeTotalHours: number;
+  employeeProjectHours: number;
+  partTimerTotalHours: number;
+  partTimerProjectHours: number;
+  totalLaborHours: number;
+  projectHours: number;
+  utilizationRate: number;
+  gph: number;
+  projectGph: number;
+  revenuePerHead: number;
+  grossProfitPerHead: number;
+}
+
 export function useProductivityData() {
   const fiscalMonths = getFiscalYearMonths(2026);
   const currentMonth = CURRENT_MONTH;
   const previousMonth = "2026-02";
   const currentIdx = fiscalMonths.indexOf(currentMonth);
-  const monthsElapsed = getFiscalMonthNumber(currentMonth);
   const fyLabel = getFiscalYearLabel(currentMonth);
 
   const salesQuery = useQuery({
@@ -35,6 +62,10 @@ export function useProductivityData() {
           "gross_profit_per_project_hour",
           "project_hours",
           "total_labor_hours",
+          "employee_total_hours",
+          "employee_project_hours",
+          "parttimer_total_hours",
+          "parttimer_project_hours",
         ]);
       if (error) throw error;
       return data;
@@ -76,44 +107,76 @@ export function useProductivityData() {
   const targetGPH = targets.find((t) => t.metric_name === "gross_profit_per_hour")?.target_value ?? 21552;
   const targetProjectGPH = targets.find((t) => t.metric_name === "gross_profit_per_project_hour")?.target_value ?? 25000;
 
-  // Staffing rules per month
+  // Staffing rules per month (defaults)
   const getStaffing = (ym: string) => {
     if (ym >= "2026-02") {
-      return { employees: 2, partTimers: 3, employeeHours: 160, partTimerTotalHours: 3 * 140 };
+      return { employees: 2, partTimers: 3, employeeHours: 160, partTimerHoursEach: 140 };
     }
-    return { employees: 3, partTimers: 0, employeeHours: 160, partTimerTotalHours: 0 };
+    return { employees: 3, partTimers: 0, employeeHours: 160, partTimerHoursEach: 140 };
   };
 
-  // Build monthly data
-  const monthlyData = fiscalMonths.map((ym) => {
+  // Build base monthly data with default hours from kpi_snapshots or staffing rules
+  const getDefaultHoursForMonth = (ym: string): MonthlyHoursInput => {
+    const staffing = getStaffing(ym);
+    const findSnap = (metric: string) =>
+      kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric);
+
+    const empTotalSnap = findSnap("employee_total_hours");
+    const empProjSnap = findSnap("employee_project_hours");
+    const ptTotalSnap = findSnap("parttimer_total_hours");
+    const ptProjSnap = findSnap("parttimer_project_hours");
+
+    // If granular snapshots exist, use them
+    if (empTotalSnap || ptTotalSnap) {
+      const empTotal = empTotalSnap?.actual_value ?? staffing.employees * staffing.employeeHours;
+      const ptTotal = ptTotalSnap?.actual_value ?? staffing.partTimers * staffing.partTimerHoursEach;
+      const empProj = empProjSnap?.actual_value ?? Math.max(0, empTotal - staffing.employees * 40);
+      const ptProj = ptProjSnap?.actual_value ?? Math.max(0, ptTotal - staffing.partTimers * 20);
+      return { employeeTotalHours: empTotal, employeeProjectHours: empProj, partTimerTotalHours: ptTotal, partTimerProjectHours: ptProj };
+    }
+
+    // Fall back to legacy total_labor_hours / project_hours snapshots
+    const totalSnap = findSnap("total_labor_hours");
+    const projSnap = findSnap("project_hours");
+    
+    const defaultEmpTotal = staffing.employees * staffing.employeeHours;
+    const defaultPtTotal = staffing.partTimers * staffing.partTimerHoursEach;
+    
+    if (totalSnap) {
+      // Distribute proportionally
+      const total = totalSnap.actual_value;
+      const ratio = defaultEmpTotal + defaultPtTotal > 0 ? defaultEmpTotal / (defaultEmpTotal + defaultPtTotal) : 1;
+      const empTotal = Math.round(total * ratio);
+      const ptTotal = Math.round(total * (1 - ratio));
+      const internalEmp = staffing.employees * 40;
+      const internalPt = staffing.partTimers * 20;
+      const projTotal = projSnap?.actual_value ?? (total - internalEmp - internalPt);
+      const empProj = Math.max(0, Math.round(projTotal * ratio));
+      const ptProj = Math.max(0, Math.round(projTotal * (1 - ratio)));
+      return { employeeTotalHours: empTotal, employeeProjectHours: empProj, partTimerTotalHours: ptTotal, partTimerProjectHours: ptProj };
+    }
+
+    // Pure defaults
+    const empTotal = defaultEmpTotal;
+    const ptTotal = defaultPtTotal;
+    const empProj = Math.max(0, empTotal - staffing.employees * 40);
+    const ptProj = Math.max(0, ptTotal - staffing.partTimers * 20);
+    return { employeeTotalHours: empTotal, employeeProjectHours: empProj, partTimerTotalHours: ptTotal, partTimerProjectHours: ptProj };
+  };
+
+  // Compute monthly row from hours input
+  const computeMonthlyRow = (ym: string, hours: MonthlyHoursInput): MonthlyProductivityRow => {
     const salesRows = sales.filter((s) => s.year_month === ym);
     const revenue = salesRows.reduce((s, r) => s + r.revenue, 0);
     const grossProfit = salesRows.reduce((s, r) => s + r.gross_profit, 0);
-
     const staffing = getStaffing(ym);
     const headcount = staffing.employees + staffing.partTimers;
 
-    // Total labor hours from kpi_snapshots or calculated
-    const totalHoursSnap = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "total_labor_hours");
-    const totalLaborHours = totalHoursSnap
-      ? totalHoursSnap.actual_value
-      : staffing.employees * staffing.employeeHours + staffing.partTimerTotalHours;
-
-    // Project hours from kpi_snapshots or calculated
-    const projectHoursSnap = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "project_hours");
-    const internalHours = staffing.employees * 40 + staffing.partTimers * 20;
-    const projectHours = projectHoursSnap
-      ? projectHoursSnap.actual_value
-      : totalLaborHours - internalHours;
-
-    // GPH from kpi_snapshots or calculated
-    const gphSnap = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "gross_profit_per_hour");
-    const gph = gphSnap ? gphSnap.actual_value : (totalLaborHours > 0 ? grossProfit / totalLaborHours : 0);
-
-    const projectGphSnap = kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "gross_profit_per_project_hour");
-    const projectGph = projectGphSnap ? projectGphSnap.actual_value : (projectHours > 0 ? grossProfit / projectHours : 0);
-
+    const totalLaborHours = hours.employeeTotalHours + hours.partTimerTotalHours;
+    const projectHours = hours.employeeProjectHours + hours.partTimerProjectHours;
     const utilizationRate = totalLaborHours > 0 ? (projectHours / totalLaborHours) * 100 : 0;
+    const gph = totalLaborHours > 0 ? grossProfit / totalLaborHours : 0;
+    const projectGph = projectHours > 0 ? grossProfit / projectHours : 0;
     const revenuePerHead = headcount > 0 ? revenue / headcount : 0;
     const grossProfitPerHead = headcount > 0 ? grossProfit / headcount : 0;
 
@@ -125,6 +188,7 @@ export function useProductivityData() {
       employees: staffing.employees,
       partTimers: staffing.partTimers,
       headcount,
+      ...hours,
       totalLaborHours,
       projectHours,
       utilizationRate,
@@ -133,12 +197,20 @@ export function useProductivityData() {
       revenuePerHead,
       grossProfitPerHead,
     };
-  });
+  };
+
+  // Default hours map
+  const defaultHoursMap: Record<string, MonthlyHoursInput> = {};
+  for (const ym of fiscalMonths) {
+    defaultHoursMap[ym] = getDefaultHoursForMonth(ym);
+  }
+
+  // Build monthly data with default hours
+  const monthlyData = fiscalMonths.map((ym) => computeMonthlyRow(ym, defaultHoursMap[ym]));
 
   const currentData = monthlyData.find((m) => m.ym === currentMonth);
   const prevData = monthlyData.find((m) => m.ym === previousMonth);
 
-  // GPH KPIs
   const currentGPH = currentData?.gph ?? 0;
   const prevGPH = prevData?.gph ?? 0;
   const gphMomChange = prevGPH > 0 ? ((currentGPH - prevGPH) / prevGPH) * 100 : 0;
@@ -147,14 +219,12 @@ export function useProductivityData() {
   const prevProjectGPH = prevData?.projectGph ?? 0;
   const projectGphMomChange = prevProjectGPH > 0 ? ((currentProjectGPH - prevProjectGPH) / prevProjectGPH) * 100 : 0;
 
-  // Averages (fiscal year up to current month)
   const activeMonths = monthlyData.slice(0, currentIdx + 1).filter((m) => m.gph > 0);
   const avgGPH = activeMonths.length > 0 ? activeMonths.reduce((s, m) => s + m.gph, 0) / activeMonths.length : 0;
 
   const activeProjectMonths = monthlyData.slice(0, currentIdx + 1).filter((m) => m.projectGph > 0);
   const avgProjectGPH = activeProjectMonths.length > 0 ? activeProjectMonths.reduce((s, m) => s + m.projectGph, 0) / activeProjectMonths.length : 0;
 
-  // Chart data
   const gphChartData = monthlyData.map((m) => ({
     name: m.label,
     粗利工数単価: Math.round(m.gph),
@@ -171,22 +241,30 @@ export function useProductivityData() {
     isLoading,
     isError,
     fyLabel,
-    monthsElapsed,
-    // GPH (total labor hours)
+    fiscalMonths,
+    currentMonth,
+    previousMonth,
+    currentIdx,
+    // Targets
+    targetGPH,
+    targetProjectGPH,
+    // GPH
     currentGPH,
     prevGPH,
     gphMomChange,
     avgGPH,
-    targetGPH,
     // Project GPH
     currentProjectGPH,
     prevProjectGPH,
     projectGphMomChange,
     avgProjectGPH,
-    targetProjectGPH,
     // Data
     monthlyData,
     gphChartData,
     perHeadChartData,
+    // For editable mode
+    defaultHoursMap,
+    computeMonthlyRow,
+    sales,
   };
 }
