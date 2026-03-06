@@ -21,8 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 
-const Quality = () => {
-  usePageTitle("品質指標");
+const Quality = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "品質指標");
   const queryClient = useQueryClient();
   const d = useQualityData();
 

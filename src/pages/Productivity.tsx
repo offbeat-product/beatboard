@@ -24,8 +24,8 @@ import { toast } from "sonner";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-const Productivity = () => {
-  usePageTitle("生産性指標");
+const Productivity = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "生産性指標");
   const queryClient = useQueryClient();
   const { formatAmount } = useCurrencyUnit();
   const d = useProductivityData();

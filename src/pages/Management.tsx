@@ -22,8 +22,8 @@ import { cn } from "@/lib/utils";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-const Management = () => {
-  usePageTitle("経営指標");
+const Management = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "経営指標");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useManagementData();

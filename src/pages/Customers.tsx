@@ -16,8 +16,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMonthLabel } from "@/lib/fiscalYear";
 
-const Customers = () => {
-  usePageTitle("顧客分析");
+const Customers = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "顧客分析");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useCustomersData();
