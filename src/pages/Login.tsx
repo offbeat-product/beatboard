@@ -8,33 +8,18 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: window.location.origin },
-      });
-      setLoading(false);
-      if (error) {
-        toast.error("登録に失敗しました: " + error.message);
-      } else {
-        toast.success("確認メールを送信しました。メールを確認してください。");
-      }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      toast.error("ログインに失敗しました: " + error.message);
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      setLoading(false);
-      if (error) {
-        toast.error("ログインに失敗しました: " + error.message);
-      } else {
-        navigate("/");
-      }
+      navigate("/");
     }
   };
 
@@ -47,7 +32,7 @@ const Login = () => {
             <h1 className="text-2xl font-bold text-foreground">BeatBoard</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            {isSignUp ? "新規アカウントを作成" : "経営ダッシュボードにログイン"}
+            経営ダッシュボードにログイン
           </p>
         </div>
 
@@ -78,18 +63,12 @@ const Login = () => {
             disabled={loading}
             className="w-full py-2.5 bg-foreground text-background rounded-sm text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? "処理中..." : isSignUp ? "アカウント作成" : "ログイン"}
+            {loading ? "処理中..." : "ログイン"}
           </button>
         </form>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
-          {isSignUp ? "すでにアカウントをお持ちですか？" : "アカウントをお持ちでないですか？"}{" "}
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-primary font-medium hover:underline"
-          >
-            {isSignUp ? "ログイン" : "新規登録"}
-          </button>
+          アクセスには管理者からの招待が必要です
         </p>
       </div>
     </div>
