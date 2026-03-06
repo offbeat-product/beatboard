@@ -664,7 +664,7 @@ const SettingsPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">設定</h2>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">設定</h2>
         <p className="text-muted-foreground text-sm mt-1">目標値・アラート・データ同期・労働時間・メンバー管理</p>
       </div>
 
