@@ -92,7 +92,7 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
+      {!embedded && <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>}
 
       {/* Section 1: Customer KPIs */}
       <div className="space-y-2">
