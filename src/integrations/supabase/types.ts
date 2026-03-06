@@ -210,6 +210,42 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_links: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          expires_at: string
+          id: string
+          org_id: string
+          role: string
+          status: string | null
+          token: string
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          org_id?: string
+          role?: string
+          status?: string | null
+          token: string
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          org_id?: string
+          role?: string
+          status?: string | null
+          token?: string
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       kpi_snapshots: {
         Row: {
           actual_value: number
@@ -396,6 +432,7 @@ export type Database = {
           email: string | null
           id: string
           invited_at: string | null
+          org_id: string | null
           role: string
           status: string
         }
@@ -405,6 +442,7 @@ export type Database = {
           email?: string | null
           id: string
           invited_at?: string | null
+          org_id?: string | null
           role?: string
           status?: string
         }
@@ -414,6 +452,7 @@ export type Database = {
           email?: string | null
           id?: string
           invited_at?: string | null
+          org_id?: string | null
           role?: string
           status?: string
         }
