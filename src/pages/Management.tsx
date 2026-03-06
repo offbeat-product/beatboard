@@ -396,8 +396,9 @@ const Management = () => {
               <p>・<strong>粗利率</strong> = 粗利 ÷ 売上 × 100</p>
               <p>・<strong>営業利益</strong> = 粗利 - 販管費（freee_monthly_plテーブルのsga_total）</p>
               <p>・<strong>営業利益率</strong> = 営業利益 ÷ 売上 × 100</p>
-              <p>・<strong>売上着地予測</strong> = 累計売上 ÷ 経過月数 × 12</p>
-              <p>・<strong>累計売上</strong> = 会計年度（5月〜当月）のrevenue合計</p>
+              <p>・<strong>累計営業利益</strong> = 月次P/Lテーブルの営業利益合計</p>
+              <p>・<strong>営業利益目標</strong> = 年間売上目標 × 20%（¥{(d.annualTarget * 0.2).toLocaleString()}）</p>
+              <p>・<strong>粗利目標</strong> = 売上目標 × 70%</p>
               <p>・<strong>年間目標</strong> = ¥75,000,000</p>
             </div>
           </CollapsibleContent>
