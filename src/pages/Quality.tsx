@@ -10,7 +10,7 @@ import {
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { TrendingUp, TrendingDown, Package, Clock, AlertTriangle, ChevronDown, Save, RotateCcw } from "lucide-react";
+import { TrendingUp, TrendingDown, Package, Clock, AlertTriangle, ChevronDown, Save, RotateCcw, Bot, Send } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
