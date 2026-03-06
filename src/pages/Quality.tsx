@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/PageHeader";
 
 const Quality = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "品質指標");
@@ -154,7 +155,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        {!embedded && <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>}
+        {!embedded && <PageHeader title="品質指標" />}
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
@@ -172,7 +173,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
 
   return (
     <div className="space-y-6">
-      {!embedded && <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>}
+      {!embedded && <PageHeader title="品質指標" />}
 
       {/* Section 1: KPI Cards */}
       {/* Row 1: 案件数 */}

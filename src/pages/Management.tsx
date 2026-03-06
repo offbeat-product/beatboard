@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/PageHeader";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -51,10 +52,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        {!embedded && <div>
-          <h2 className="text-2xl font-bold tracking-tight">経営指標</h2>
-          <p className="text-sm text-muted-foreground mt-1">CEO向け - 売上成長・利益構造・財務健全性</p>
-        </div>}
+        {!embedded && <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />}
         <KpiCardSkeleton count={3} />
         <KpiCardSkeleton count={3} />
         <ChartSkeleton />
@@ -104,12 +102,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      {!embedded && <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">経営指標</h2>
-          <p className="text-sm text-muted-foreground mt-1">CEO向け - 売上成長・利益構造・財務健全性</p>
-        </div>
-      </div>}
+      {!embedded && <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />}
 
       {/* Row 1: Current month KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

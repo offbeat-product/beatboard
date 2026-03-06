@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMonthLabel } from "@/lib/fiscalYear";
+import { PageHeader } from "@/components/PageHeader";
 
 const Customers = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "顧客分析");
@@ -45,7 +46,7 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        {!embedded && <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>}
+        {!embedded && <PageHeader title="顧客分析" />}
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -92,7 +93,7 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
 
   return (
     <div className="space-y-6">
-      {!embedded && <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>}
+      {!embedded && <PageHeader title="顧客分析" />}
 
       {/* Section 1: Customer KPIs */}
       <div className="space-y-2">
