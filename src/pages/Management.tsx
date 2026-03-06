@@ -104,12 +104,12 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      {!embedded && <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">経営指標</h2>
           <p className="text-sm text-muted-foreground mt-1">CEO向け - 売上成長・利益構造・財務健全性</p>
         </div>
-      </div>
+      </div>}
 
       {/* Row 1: Current month KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
