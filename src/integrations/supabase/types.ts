@@ -488,6 +488,42 @@ export type Database = {
         }
         Relationships: []
       }
+      quality_monthly: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          created_at: string | null
+          id: string
+          on_time_deliveries: number | null
+          org_id: string
+          revision_count: number | null
+          total_deliveries: number | null
+          year_month: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          id?: string
+          on_time_deliveries?: number | null
+          org_id: string
+          revision_count?: number | null
+          total_deliveries?: number | null
+          year_month: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          id?: string
+          on_time_deliveries?: number | null
+          org_id?: string
+          revision_count?: number | null
+          total_deliveries?: number | null
+          year_month?: string
+        }
+        Relationships: []
+      }
       quality_records: {
         Row: {
           created_at: string
