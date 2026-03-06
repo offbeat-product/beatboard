@@ -137,7 +137,10 @@ const Customers = () => {
 
             {/* 案件数推移 */}
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <h3 className="text-sm font-semibold mb-4">案件数推移</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">案件数推移</h3>
+                <span className="text-xs font-semibold text-destructive">平均 {avgProjectCount}件</span>
+              </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
