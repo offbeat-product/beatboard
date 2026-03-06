@@ -42,7 +42,10 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-content-bg">
       <div className="bg-card rounded-lg shadow-sm p-8 w-full max-w-sm animate-fade-in">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-primary">BeatBoard</h1>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <img src={offbeatIcon} alt="Off Beat" className="h-8 w-8 object-contain" />
+            <h1 className="text-2xl font-bold text-foreground">BeatBoard</h1>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             {isSignUp ? "新規アカウントを作成" : "経営ダッシュボードにログイン"}
           </p>
