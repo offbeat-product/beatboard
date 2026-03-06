@@ -187,7 +187,7 @@ const AIAdvisor = () => {
         </div>
 
         {/* ── Right: Chat ── */}
-        <div className="flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <div className="flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden min-h-[400px] md:min-h-0">
           {/* Header */}
           <div className="px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
