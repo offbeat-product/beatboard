@@ -216,7 +216,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
       </div>
 
       {/* Section 2: Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
           <h3 className="text-sm font-semibold mb-4">案件数推移</h3>
           <ResponsiveContainer width="100%" height={280}>

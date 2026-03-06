@@ -17,7 +17,7 @@ const Index = () => {
       <PageHeader title="ダッシュボード" />
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="w-full justify-start bg-muted/50 p-1 h-auto flex-wrap gap-1">
+        <TabsList className="w-full justify-start bg-muted/50 p-1 h-auto flex-wrap gap-1 overflow-x-auto">
           <TabsTrigger value="management" className="gap-1.5 text-xs sm:text-sm">
             <TrendingUp className="h-3.5 w-3.5" />
             経営指標

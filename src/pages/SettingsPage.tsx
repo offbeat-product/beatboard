@@ -270,11 +270,11 @@ function AlertsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs">KPI</TableHead>
+              <TableHead className="text-xs min-w-[120px]">KPI</TableHead>
               <TableHead className="text-xs text-center">⚠️ 警告閾値</TableHead>
               <TableHead className="text-xs text-center">🚨 危険閾値</TableHead>
             </TableRow>
@@ -325,7 +325,7 @@ function DataTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {SYNC_SOURCES.map((src) => (
           <div key={src.id} className="bg-card rounded-lg shadow-sm border border-border p-5">
             <Button variant="outline" className="w-full justify-center" disabled={syncing[src.id]} onClick={() => handleSync(src.id)}>
@@ -527,11 +527,11 @@ function MembersTab() {
           招待リンクを生成
         </h3>
         <p className="text-xs text-muted-foreground mb-4">リンクを共有してメンバーを招待できます。リンクは7日間有効です。</p>
-        <div className="flex gap-2 flex-wrap items-end">
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
           <div>
             <Label className="text-xs mb-1 block">ロール</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full sm:w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -541,7 +541,7 @@ function MembersTab() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleGenerate} disabled={generating} size="sm">
+          <Button onClick={handleGenerate} disabled={generating} size="sm" className="w-full sm:w-auto">
             <Link2 className="h-4 w-4 mr-1.5" />
             {generating ? "生成中..." : "招待リンクを生成"}
           </Button>
@@ -562,6 +562,7 @@ function MembersTab() {
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">招待リンク一覧</h3>
         </div>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -597,6 +598,7 @@ function MembersTab() {
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Members table */}
@@ -604,6 +606,7 @@ function MembersTab() {
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">メンバー一覧</h3>
         </div>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -648,6 +651,7 @@ function MembersTab() {
             ))}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
@@ -664,18 +668,20 @@ const SettingsPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">設定</h2>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">設定</h2>
         <p className="text-muted-foreground text-sm mt-1">目標値・アラート・データ同期・労働時間・メンバー管理</p>
       </div>
 
       <Tabs defaultValue="targets">
-        <TabsList>
-          <TabsTrigger value="targets">目標値設定</TabsTrigger>
-          <TabsTrigger value="alerts">アラート閾値</TabsTrigger>
-          <TabsTrigger value="data">データ管理</TabsTrigger>
-          <TabsTrigger value="workhours">労働時間</TabsTrigger>
-          {isAdmin && <TabsTrigger value="members">メンバー管理</TabsTrigger>}
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="w-max md:w-auto">
+            <TabsTrigger value="targets" className="text-xs sm:text-sm">目標値設定</TabsTrigger>
+            <TabsTrigger value="alerts" className="text-xs sm:text-sm">アラート閾値</TabsTrigger>
+            <TabsTrigger value="data" className="text-xs sm:text-sm">データ管理</TabsTrigger>
+            <TabsTrigger value="workhours" className="text-xs sm:text-sm">労働時間</TabsTrigger>
+            {isAdmin && <TabsTrigger value="members" className="text-xs sm:text-sm">メンバー管理</TabsTrigger>}
+          </TabsList>
+        </div>
 
         <TabsContent value="targets"><TargetsTab /></TabsContent>
         <TabsContent value="alerts"><AlertsTab /></TabsContent>
