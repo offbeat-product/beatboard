@@ -182,9 +182,18 @@ const Customers = () => {
                         {client.name}
                       </td>
                       {d.fiscalMonths.map((ym) => {
-                        const val = tableMode === "revenue"
-                          ? (client.monthly[ym]?.revenue ?? 0)
-                          : (client.monthly[ym]?.grossProfit ?? 0);
+                        const m = client.monthly[ym];
+                        if (tableMode === "grossProfitRate") {
+                          const rev = m?.revenue ?? 0;
+                          const gp = m?.grossProfit ?? 0;
+                          const rate = rev > 0 ? (gp / rev) * 100 : 0;
+                          return (
+                            <td key={ym} className="text-right px-2 py-1.5 font-mono text-xs border-b border-border tabular-nums">
+                              {rev > 0 ? `${rate.toFixed(1)}%` : <span className="text-muted-foreground">-</span>}
+                            </td>
+                          );
+                        }
+                        const val = tableMode === "revenue" ? (m?.revenue ?? 0) : (m?.grossProfit ?? 0);
                         return (
                           <td key={ym} className="text-right px-2 py-1.5 font-mono text-xs border-b border-border tabular-nums">
                             {val > 0 ? formatAmount(val) : <span className="text-muted-foreground">-</span>}
@@ -192,7 +201,9 @@ const Customers = () => {
                         );
                       })}
                       <td className="text-right px-3 py-1.5 font-mono text-xs font-semibold border-b border-border tabular-nums">
-                        {formatAmount(tableMode === "revenue" ? client.revenue : client.grossProfit)}
+                        {tableMode === "grossProfitRate"
+                          ? `${client.revenue > 0 ? ((client.grossProfit / client.revenue) * 100).toFixed(1) : "0.0"}%`
+                          : formatAmount(tableMode === "revenue" ? client.revenue : client.grossProfit)}
                       </td>
                     </tr>
                   ))}
