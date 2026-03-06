@@ -119,14 +119,17 @@ const Customers = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* 顧客数推移 */}
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
-              <h3 className="text-sm font-semibold mb-4">顧客数推移</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">顧客数推移</h3>
+                <span className="text-xs font-semibold text-destructive">平均 {avgCustomerCount}社</span>
+              </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number) => [`${v}社`, "顧客数"]} />
-                  <ReferenceLine y={avgCustomerCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerCount}社`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine y={avgCustomerCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} />
                   <Bar dataKey="customerCount" name="顧客数" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -134,14 +137,17 @@ const Customers = () => {
 
             {/* 案件数推移 */}
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <h3 className="text-sm font-semibold mb-4">案件数推移</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">案件数推移</h3>
+                <span className="text-xs font-semibold text-destructive">平均 {avgProjectCount}件</span>
+              </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number) => [`${v}件`, "案件数"]} />
-                  <ReferenceLine y={avgProjectCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectCount}件`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine y={avgProjectCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} />
                   <Bar dataKey="projectCount" name="案件数" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -150,7 +156,10 @@ const Customers = () => {
             {/* 顧客単価推移 */}
             {/* 案件単価推移 */}
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
-              <h3 className="text-sm font-semibold mb-4">顧客単価推移</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">顧客単価推移</h3>
+                <span className="text-xs font-semibold text-destructive">平均 {avgCustomerUnitPrice.toLocaleString()}{unitSuffix}</span>
+              </div>
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -159,7 +168,7 @@ const Customers = () => {
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number, name: string) => [name === "顧客数" ? `${v}社` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
-                  <ReferenceLine yAxisId="left" y={avgCustomerUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerUnitPrice.toLocaleString()}${unitSuffix}`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine yAxisId="left" y={avgCustomerUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} />
                   <Bar yAxisId="left" dataKey="customerUnitPrice" name="顧客単価" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="customerCount" name="顧客数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
@@ -167,7 +176,10 @@ const Customers = () => {
             </div>
 
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
-              <h3 className="text-sm font-semibold mb-4">案件単価推移</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">案件単価推移</h3>
+                <span className="text-xs font-semibold text-destructive">平均 {avgProjectUnitPrice.toLocaleString()}{unitSuffix}</span>
+              </div>
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -176,7 +188,7 @@ const Customers = () => {
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number, name: string) => [name === "案件数" ? `${v}件` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
-                  <ReferenceLine yAxisId="left" y={avgProjectUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectUnitPrice.toLocaleString()}${unitSuffix}`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine yAxisId="left" y={avgProjectUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} />
                   <Bar yAxisId="left" dataKey="projectUnitPrice" name="案件単価" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="projectCount" name="案件数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
