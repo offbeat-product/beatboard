@@ -226,10 +226,10 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      {!embedded && <div>
         <h2 className="text-2xl font-bold tracking-tight">生産性指標</h2>
         <p className="text-sm text-muted-foreground mt-1">局長向け - 工数あたりの収益性・リソース効率</p>
-      </div>
+      </div>}
 
       {/* Row 1: GPH (Total Labor Hours) */}
       <div>
