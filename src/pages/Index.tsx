@@ -13,7 +13,7 @@ const Index = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold tracking-tight">ダッシュボード</h2>
+      <PageHeader title="ダッシュボード" />
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="w-full justify-start bg-muted/50 p-1 h-auto flex-wrap gap-1">
