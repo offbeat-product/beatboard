@@ -129,7 +129,7 @@ const Customers = () => {
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number) => [`${v}社`, "顧客数"]} />
-                  <ReferenceLine y={avgCustomerCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerCount}社`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine y={avgCustomerCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} />
                   <Bar dataKey="customerCount" name="顧客数" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
