@@ -38,13 +38,19 @@ const Productivity = () => {
   const [hoursMap, setHoursMap] = useState<Record<string, MonthlyHoursInput>>({});
   const [hoursInitialized, setHoursInitialized] = useState(false);
 
-  // Re-initialize from default when data loads (including after kpi snapshots load)
+  // Stable JSON key to detect when default hours actually change
+  const defaultHoursKey = useMemo(() => {
+    if (d.isLoading || !d.defaultHoursMap) return "";
+    return JSON.stringify(d.defaultHoursMap);
+  }, [d.isLoading, d.defaultHoursMap]);
+
+  // Re-initialize from default when data loads (only when actual values change)
   useEffect(() => {
-    if (!d.isLoading && d.defaultHoursMap && Object.keys(d.defaultHoursMap).length > 0) {
-      setHoursMap({ ...d.defaultHoursMap });
+    if (defaultHoursKey) {
+      setHoursMap(JSON.parse(defaultHoursKey));
       setHoursInitialized(true);
     }
-  }, [d.isLoading, d.defaultHoursMap]);
+  }, [defaultHoursKey]);
 
   // Recompute monthly data from editable hours
   const editedMonthlyData: MonthlyProductivityRow[] = useMemo(() => {
