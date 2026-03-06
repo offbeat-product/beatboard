@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import offbeatIcon from "@/assets/offbeat-icon.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -41,7 +42,10 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-content-bg">
       <div className="bg-card rounded-lg shadow-sm p-8 w-full max-w-sm animate-fade-in">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-primary">BeatBoard</h1>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <img src={offbeatIcon} alt="Off Beat" className="h-8 w-8 object-contain" />
+            <h1 className="text-2xl font-bold text-foreground">BeatBoard</h1>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             {isSignUp ? "新規アカウントを作成" : "経営ダッシュボードにログイン"}
           </p>
@@ -72,7 +76,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-primary text-primary-foreground rounded-sm text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full py-2.5 bg-foreground text-background rounded-sm text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading ? "処理中..." : isSignUp ? "アカウント作成" : "ログイン"}
           </button>
