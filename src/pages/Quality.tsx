@@ -1,30 +1,135 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useQualityData } from "@/hooks/useQualityData";
+import { useQualityData, QualityMonthlyInput } from "@/hooks/useQualityData";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 import { ErrorState } from "@/components/ErrorState";
-import { EmptyState } from "@/components/EmptyState";
 import {
   BarChart, Bar, LineChart, Line, ReferenceLine,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { TrendingUp, TrendingDown, Package, Clock, AlertTriangle, ChevronDown, Plus, Upload } from "lucide-react";
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from "@/components/ui/table";
+import { TrendingUp, TrendingDown, Package, Clock, AlertTriangle, ChevronDown, Save, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getMonthLabel, getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 
 const Quality = () => {
   usePageTitle("品質指標");
   const queryClient = useQueryClient();
   const d = useQualityData();
-  const [tableMode, setTableMode] = useState<"onTime" | "revision">("onTime");
+
+  // Editable inputs state
+  const [inputMap, setInputMap] = useState<Record<string, QualityMonthlyInput>>({});
+  const [initialized, setInitialized] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const defaultKey = useMemo(() => {
+    if (d.isLoading) return "";
+    return JSON.stringify(d.defaultInputMap);
+  }, [d.isLoading, d.defaultInputMap]);
+
+  useEffect(() => {
+    if (defaultKey) {
+      setInputMap(JSON.parse(defaultKey));
+      setInitialized(true);
+    }
+  }, [defaultKey]);
+
+  // Compute monthly rows from editable inputs
+  const editedMonthlyData = useMemo(() => {
+    if (!d.fiscalMonths || Object.keys(inputMap).length === 0) return [];
+    return d.fiscalMonths.map((ym) => {
+      const input = inputMap[ym] ?? d.defaultInputMap[ym];
+      return d.computeMonthlyRow(ym, input);
+    });
+  }, [inputMap, d.fiscalMonths, d.defaultInputMap, d.computeMonthlyRow]);
+
+  // Recompute KPIs from edited data
+  const kpis = useMemo(() => {
+    const curr = editedMonthlyData.find((m) => m.ym === d.currentMonth);
+    const prev = editedMonthlyData.find((m) => m.ym === d.previousMonth);
+    const currDel = curr?.deliveries ?? 0;
+    const prevDel = prev?.deliveries ?? 0;
+    const deliveriesGrowth = prevDel > 0 ? ((currDel - prevDel) / prevDel) * 100 : 0;
+
+    const prevOnTimeRate = prevDel > 0 ? ((prev?.onTimeDeliveries ?? 0) / prevDel) * 100 : 0;
+    const currOnTimeRate = currDel > 0 ? ((curr?.onTimeDeliveries ?? 0) / currDel) * 100 : 0;
+
+    const prevRevisionRate = prevDel > 0 ? ((prev?.revisionCount ?? 0) / prevDel) * 100 : 0;
+    const currRevisionRate = currDel > 0 ? ((curr?.revisionCount ?? 0) / currDel) * 100 : 0;
+
+    const fiscalMonthsToDate = d.fiscalMonths.filter((m) => m <= d.currentMonth);
+    const activeMonths = editedMonthlyData.filter((m) => fiscalMonthsToDate.includes(m.ym) && m.deliveries > 0);
+    const ytdAvgOnTimeRate = activeMonths.length > 0
+      ? activeMonths.reduce((s, m) => s + m.onTimeRate, 0) / activeMonths.length : 0;
+    const ytdAvgRevisionRate = activeMonths.length > 0
+      ? activeMonths.reduce((s, m) => s + m.revisionRate, 0) / activeMonths.length : 0;
+    const ytdDeliveries = editedMonthlyData
+      .filter((m) => fiscalMonthsToDate.includes(m.ym))
+      .reduce((s, m) => s + m.deliveries, 0);
+
+    return {
+      prevDel, currDel, deliveriesGrowth, ytdDeliveries,
+      prevOnTime: prev?.onTimeDeliveries ?? 0,
+      currOnTime: curr?.onTimeDeliveries ?? 0,
+      prevOnTimeRate, currOnTimeRate,
+      onTimeRateDiff: currOnTimeRate - prevOnTimeRate,
+      prevRevisions: prev?.revisionCount ?? 0,
+      currRevisions: curr?.revisionCount ?? 0,
+      prevRevisionRate, currRevisionRate,
+      revisionRateDiff: currRevisionRate - prevRevisionRate,
+      ytdAvgOnTimeRate, ytdAvgRevisionRate,
+    };
+  }, [editedMonthlyData, d.currentMonth, d.previousMonth, d.fiscalMonths]);
+
+  const updateInput = useCallback((ym: string, field: keyof QualityMonthlyInput, value: number) => {
+    setInputMap((prev) => ({
+      ...prev,
+      [ym]: { ...prev[ym], [field]: value },
+    }));
+  }, []);
+
+  const resetInputs = useCallback(() => {
+    setInputMap({ ...d.defaultInputMap });
+    toast.success("デフォルト値にリセットしました");
+  }, [d.defaultInputMap]);
+
+  const saveInputs = useCallback(async () => {
+    setSaving(true);
+    try {
+      for (const ym of d.fiscalMonths) {
+        const input = inputMap[ym];
+        if (!input) continue;
+        // Upsert aggregated row (no client_id for aggregated)
+        const { error } = await supabase.from("quality_monthly").upsert(
+          {
+            org_id: ORG_ID,
+            year_month: ym,
+            client_id: "__total__",
+            client_name: "合計",
+            total_deliveries: d.projectCountForMonth(ym),
+            on_time_deliveries: input.onTimeDeliveries,
+            revision_count: input.revisionCount,
+          },
+          { onConflict: "org_id,year_month,client_id" }
+        );
+        if (error) throw error;
+      }
+      d.refetch();
+      toast.success("品質データを保存しました");
+    } catch (e: any) {
+      toast.error("保存に失敗しました: " + (e.message || e));
+    } finally {
+      setSaving(false);
+    }
+  }, [inputMap, d]);
 
   if (d.isLoading) {
     return (
@@ -45,16 +150,6 @@ const Quality = () => {
 
   if (d.isError) return <ErrorState onRetry={() => queryClient.invalidateQueries()} />;
 
-  const tableData = tableMode === "onTime" ? d.clientOnTimeData : d.clientRevisionData;
-
-  const rankBg = (idx: number) => {
-    if (idx === 0) return "bg-amber-50 dark:bg-amber-950/30";
-    if (idx === 1) return "bg-slate-50 dark:bg-slate-800/30";
-    if (idx === 2) return "bg-orange-50 dark:bg-orange-950/20";
-    if (idx <= 4) return "bg-blue-50 dark:bg-blue-950/20";
-    return "";
-  };
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>
@@ -66,10 +161,10 @@ const Quality = () => {
           <Package className="h-4 w-4" /> 案件数
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 案件数" value={`${d.prevDeliveries}件`} />
-          <KpiMiniCard label="今月 案件数" value={`${d.currDeliveries}件`} />
-          <GrowthCard label="前月比" value={d.deliveriesGrowth} />
-          <KpiMiniCard label="通期 案件数" value={`${d.ytdDeliveries}件`} />
+          <KpiMiniCard label="前月 案件数" value={`${kpis.prevDel}件`} />
+          <KpiMiniCard label="今月 案件数" value={`${kpis.currDel}件`} />
+          <GrowthCard label="前月比" value={kpis.deliveriesGrowth} />
+          <KpiMiniCard label="通期 案件数" value={`${kpis.ytdDeliveries}件`} />
         </div>
       </div>
 
@@ -79,10 +174,10 @@ const Quality = () => {
           <Clock className="h-4 w-4" /> 納期遵守数 / 率
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 遵守数/率" value={`${d.prevOnTime}件 / ${d.prevOnTimeRate.toFixed(1)}%`} />
-          <KpiMiniCard label="今月 遵守数/率" value={`${d.currOnTime}件 / ${d.currOnTimeRate.toFixed(1)}%`} />
-          <DiffCard label="前月比" value={d.onTimeRateDiff} positiveIsGood={true} />
-          <KpiMiniCard label="通期 平均遵守率" value={`${d.ytdAvgOnTimeRate.toFixed(1)}%`} />
+          <KpiMiniCard label="前月 遵守数/率" value={`${kpis.prevOnTime}件 / ${kpis.prevOnTimeRate.toFixed(1)}%`} />
+          <KpiMiniCard label="今月 遵守数/率" value={`${kpis.currOnTime}件 / ${kpis.currOnTimeRate.toFixed(1)}%`} />
+          <DiffCard label="前月比" value={kpis.onTimeRateDiff} positiveIsGood={true} />
+          <KpiMiniCard label="通期 平均遵守率" value={`${kpis.ytdAvgOnTimeRate.toFixed(1)}%`} />
         </div>
       </div>
 
@@ -92,10 +187,10 @@ const Quality = () => {
           <AlertTriangle className="h-4 w-4" /> 修正発生数 / 率
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 修正数/率" value={`${d.prevRevisions}件 / ${d.prevRevisionRate.toFixed(1)}%`} />
-          <KpiMiniCard label="今月 修正数/率" value={`${d.currRevisions}件 / ${d.currRevisionRate.toFixed(1)}%`} />
-          <DiffCard label="前月比" value={d.revisionRateDiff} positiveIsGood={false} />
-          <KpiMiniCard label="通期 平均修正率" value={`${d.ytdAvgRevisionRate.toFixed(1)}%`} />
+          <KpiMiniCard label="前月 修正数/率" value={`${kpis.prevRevisions}件 / ${kpis.prevRevisionRate.toFixed(1)}%`} />
+          <KpiMiniCard label="今月 修正数/率" value={`${kpis.currRevisions}件 / ${kpis.currRevisionRate.toFixed(1)}%`} />
+          <DiffCard label="前月比" value={kpis.revisionRateDiff} positiveIsGood={false} />
+          <KpiMiniCard label="通期 平均修正率" value={`${kpis.ytdAvgRevisionRate.toFixed(1)}%`} />
         </div>
       </div>
 
@@ -104,7 +199,7 @@ const Quality = () => {
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
           <h3 className="text-sm font-semibold mb-4">案件数推移</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={d.monthlyData}>
+            <BarChart data={editedMonthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis fontSize={12} tickLine={false} axisLine={false} />
@@ -117,7 +212,7 @@ const Quality = () => {
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "50ms" }}>
           <h3 className="text-sm font-semibold mb-4">納期遵守率推移</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={d.monthlyData}>
+            <LineChart data={editedMonthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
@@ -131,7 +226,7 @@ const Quality = () => {
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
           <h3 className="text-sm font-semibold mb-4">修正発生率推移</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={d.monthlyData}>
+            <LineChart data={editedMonthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
@@ -143,71 +238,106 @@ const Quality = () => {
         </div>
       </div>
 
-      {/* Section 3: Client Quality Table */}
-      <div className="bg-card rounded-lg shadow-sm animate-fade-in" style={{ animationDelay: "150ms" }}>
-        <div className="flex items-center justify-between p-4 pb-0">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setTableMode("onTime")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-t-md transition-colors ${tableMode === "onTime" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
-            >
-              納期遵守率
-            </button>
-            <button
-              onClick={() => setTableMode("revision")}
-              className={`px-3 py-1.5 text-sm font-medium rounded-t-md transition-colors ${tableMode === "revision" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
-            >
-              修正発生率
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <DataEntryModal fiscalMonths={d.fiscalMonths} onSaved={() => d.refetch()} />
-            <CsvUploadButton fiscalMonths={d.fiscalMonths} onSaved={() => d.refetch()} />
+      {/* Section 3: Editable Transposed Table */}
+      <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in" style={{ animationDelay: "150ms" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold">品質データ入力テーブル</h3>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={resetInputs} className="text-xs gap-1">
+              <RotateCcw className="h-3 w-3" /> リセット
+            </Button>
+            <Button size="sm" onClick={saveInputs} disabled={saving} className="text-xs gap-1">
+              <Save className="h-3 w-3" /> {saving ? "保存中..." : "保存"}
+            </Button>
           </div>
         </div>
-        <div className="overflow-x-auto relative">
-          <table className="w-full text-sm border-collapse min-w-[900px]">
-            <thead className="sticky top-0 z-20 bg-secondary">
-              <tr>
-                <th className="sticky left-0 z-30 bg-secondary text-left px-3 py-2 font-semibold min-w-[160px] border-b border-border">顧客名</th>
-                {d.fiscalMonths.map((ym) => (
-                  <th key={ym} className="text-right px-2 py-2 font-semibold whitespace-nowrap border-b border-border">{getMonthLabel(ym)}</th>
-                ))}
-                <th className="text-right px-3 py-2 font-bold whitespace-nowrap border-b border-border">通期平均</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableData.map((client, idx) => (
-                <tr key={client.id} className={`${rankBg(idx)} hover:bg-muted/50 transition-colors`}>
-                  <td className={`sticky left-0 z-10 ${rankBg(idx) || "bg-card"} px-3 py-1.5 font-medium border-b border-border truncate max-w-[200px]`}>
-                    {client.name}
-                  </td>
-                  {d.fiscalMonths.map((ym) => {
-                    const m = client.monthly[ym];
-                    const total = m?.total ?? 0;
-                    let rate = 0;
-                    if (tableMode === "onTime") {
-                      rate = total > 0 ? ((m?.onTime ?? 0) / total) * 100 : 0;
-                    } else {
-                      rate = total > 0 ? ((m?.revisions ?? 0) / total) * 100 : 0;
-                    }
-                    const isBad = tableMode === "onTime" ? (total > 0 && rate < 95) : (total > 0 && rate > 20);
-                    return (
-                      <td key={ym} className={`text-right px-2 py-1.5 font-mono text-xs border-b border-border tabular-nums ${isBad ? "bg-destructive/10 text-destructive font-semibold" : ""}`}>
-                        {total > 0 ? `${rate.toFixed(1)}%` : <span className="text-muted-foreground">-</span>}
-                      </td>
-                    );
-                  })}
-                  <td className={`text-right px-3 py-1.5 font-mono text-xs font-semibold border-b border-border tabular-nums`}>
-                    {tableMode === "onTime"
-                      ? `${client.avgOnTimeRate.toFixed(1)}%`
-                      : `${client.avgRevisionRate.toFixed(1)}%`}
-                  </td>
-                </tr>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="sticky left-0 bg-card z-10 min-w-[140px]">項目</TableHead>
+              {editedMonthlyData.map((m) => (
+                <TableHead key={m.ym} className="text-center whitespace-nowrap min-w-[80px]">{m.month}</TableHead>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {/* 案件数 (read-only, from project_pl) */}
+            <TableRow>
+              <TableCell className="font-medium sticky left-0 bg-card z-10">案件数</TableCell>
+              {editedMonthlyData.map((m) => (
+                <TableCell key={m.ym} className="text-center font-mono tabular-nums">{m.deliveries > 0 ? `${m.deliveries}件` : "-"}</TableCell>
+              ))}
+            </TableRow>
+
+            {/* 納期遵守数 (editable) */}
+            <TableRow className="bg-accent/30">
+              <TableCell className="font-medium sticky left-0 bg-accent/30 z-10 text-xs">
+                <span className="text-primary font-semibold">✏️ 納期遵守数</span>
+              </TableCell>
+              {d.fiscalMonths.map((ym) => (
+                <TableCell key={ym} className="p-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={inputMap[ym]?.onTimeDeliveries ?? 0}
+                    onChange={(e) => updateInput(ym, "onTimeDeliveries", Number(e.target.value))}
+                    className="h-8 text-xs text-center w-full min-w-[60px] font-mono tabular-nums"
+                  />
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {/* 納期遵守率 (auto-calculated) */}
+            <TableRow>
+              <TableCell className="font-medium sticky left-0 bg-card z-10">納期遵守率</TableCell>
+              {editedMonthlyData.map((m) => (
+                <TableCell
+                  key={m.ym}
+                  className={cn(
+                    "text-center font-mono tabular-nums whitespace-nowrap",
+                    m.deliveries > 0 && m.onTimeRate < 95 && "bg-destructive/10 text-destructive font-semibold"
+                  )}
+                >
+                  {m.deliveries > 0 ? `${m.onTimeRate.toFixed(1)}%` : "-"}
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {/* 修正発生数 (editable) */}
+            <TableRow className="bg-accent/30">
+              <TableCell className="font-medium sticky left-0 bg-accent/30 z-10 text-xs">
+                <span className="text-primary font-semibold">✏️ 修正発生数</span>
+              </TableCell>
+              {d.fiscalMonths.map((ym) => (
+                <TableCell key={ym} className="p-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={inputMap[ym]?.revisionCount ?? 0}
+                    onChange={(e) => updateInput(ym, "revisionCount", Number(e.target.value))}
+                    className="h-8 text-xs text-center w-full min-w-[60px] font-mono tabular-nums"
+                  />
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {/* 修正発生率 (auto-calculated) */}
+            <TableRow>
+              <TableCell className="font-medium sticky left-0 bg-card z-10">修正発生率</TableCell>
+              {editedMonthlyData.map((m) => (
+                <TableCell
+                  key={m.ym}
+                  className={cn(
+                    "text-center font-mono tabular-nums whitespace-nowrap",
+                    m.deliveries > 0 && m.revisionRate > 20 && "bg-destructive/10 text-destructive font-semibold"
+                  )}
+                >
+                  {m.deliveries > 0 ? `${m.revisionRate.toFixed(1)}%` : "-"}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Calculation Logic */}
@@ -217,9 +347,9 @@ const Quality = () => {
           計算ロジック
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2 text-xs text-muted-foreground bg-secondary rounded-lg p-4 space-y-1">
-          <p>・案件数 = quality_monthly.total_deliveriesの月間合計</p>
-          <p>・納期遵守率 = 月間on_time_deliveries合計 ÷ 月間total_deliveries合計 × 100（基準: 95%以上が目標）</p>
-          <p>・修正発生率 = 月間revision_count合計 ÷ 月間total_deliveries合計 × 100（基準: 20%以下が目標）</p>
+          <p>・案件数 = project_plテーブルの当月レコード数（売上&gt;0）※顧客指標と同一データソース</p>
+          <p>・納期遵守率 = 納期遵守数 ÷ 案件数 × 100（基準: 95%以上が目標）</p>
+          <p>・修正発生率 = 修正発生数 ÷ 案件数 × 100（基準: 20%以下が目標）</p>
           <p>・通期平均 = 会計年度（5月〜当月）の各月の率の単純平均</p>
           <p className="text-muted-foreground/70 italic">※将来的にCheckGo AIと連携後は自動取得に切り替え予定。現在は手動入力。</p>
         </CollapsibleContent>
@@ -266,148 +396,6 @@ function DiffCard({ label, value, positiveIsGood }: { label: string; value: numb
         </span>
       </div>
     </div>
-  );
-}
-
-function DataEntryModal({ fiscalMonths, onSaved }: { fiscalMonths: string[]; onSaved: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [yearMonth, setYearMonth] = useState(fiscalMonths[0]);
-  const [clientName, setClientName] = useState("");
-  const [totalDeliveries, setTotalDeliveries] = useState("");
-  const [onTimeDeliveries, setOnTimeDeliveries] = useState("");
-  const [revisionCount, setRevisionCount] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!clientName.trim() || !totalDeliveries) {
-      toast.error("顧客名と納品数は必須です");
-      return;
-    }
-    setSaving(true);
-    const { error } = await supabase.from("quality_monthly").upsert(
-      {
-        org_id: ORG_ID,
-        year_month: yearMonth,
-        client_id: clientName.trim(),
-        client_name: clientName.trim(),
-        total_deliveries: parseInt(totalDeliveries) || 0,
-        on_time_deliveries: parseInt(onTimeDeliveries) || 0,
-        revision_count: parseInt(revisionCount) || 0,
-      },
-      { onConflict: "org_id,year_month,client_id" }
-    );
-    setSaving(false);
-    if (error) {
-      toast.error("保存に失敗しました: " + error.message);
-    } else {
-      toast.success("保存しました");
-      setClientName("");
-      setTotalDeliveries("");
-      setOnTimeDeliveries("");
-      setRevisionCount("");
-      onSaved();
-      setOpen(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> データ入力
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>品質データ入力</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label>年月</Label>
-            <Select value={yearMonth} onValueChange={setYearMonth}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {fiscalMonths.map((ym) => (
-                  <SelectItem key={ym} value={ym}>{getMonthLabel(ym)}（{ym}）</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>顧客名</Label>
-            <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="例: 株式会社サンプル" />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label>納品数</Label>
-              <Input type="number" value={totalDeliveries} onChange={(e) => setTotalDeliveries(e.target.value)} placeholder="0" />
-            </div>
-            <div>
-              <Label>納期遵守数</Label>
-              <Input type="number" value={onTimeDeliveries} onChange={(e) => setOnTimeDeliveries(e.target.value)} placeholder="0" />
-            </div>
-            <div>
-              <Label>修正発生数</Label>
-              <Input type="number" value={revisionCount} onChange={(e) => setRevisionCount(e.target.value)} placeholder="0" />
-            </div>
-          </div>
-          <Button onClick={handleSave} disabled={saving} className="w-full">
-            {saving ? "保存中..." : "保存"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function CsvUploadButton({ fiscalMonths, onSaved }: { fiscalMonths: string[]; onSaved: () => void }) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const text = await file.text();
-      const lines = text.trim().split("\n").slice(1); // skip header
-      const records = lines.map((line) => {
-        const [year_month, client_name, total_deliveries, on_time_deliveries, revision_count] = line.split(",").map((s) => s.trim());
-        return {
-          org_id: ORG_ID,
-          year_month,
-          client_id: client_name,
-          client_name,
-          total_deliveries: parseInt(total_deliveries) || 0,
-          on_time_deliveries: parseInt(on_time_deliveries) || 0,
-          revision_count: parseInt(revision_count) || 0,
-        };
-      }).filter((r) => r.year_month && r.client_name);
-
-      if (records.length === 0) {
-        toast.error("有効なデータがありません");
-        return;
-      }
-
-      const { error } = await supabase.from("quality_monthly").upsert(records, { onConflict: "org_id,year_month,client_id" });
-      if (error) throw error;
-      toast.success(`${records.length}件のデータをアップロードしました`);
-      onSaved();
-    } catch (err: any) {
-      toast.error("アップロードに失敗しました: " + (err.message || err));
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
-
-  return (
-    <>
-      <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
-      <Button variant="outline" size="sm" className="gap-1.5" disabled={uploading} onClick={() => fileRef.current?.click()}>
-        <Upload className="h-3.5 w-3.5" /> {uploading ? "処理中..." : "CSVアップロード"}
-      </Button>
-    </>
   );
 }
 
