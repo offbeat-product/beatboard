@@ -669,13 +669,15 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="targets">
-        <TabsList>
-          <TabsTrigger value="targets">目標値設定</TabsTrigger>
-          <TabsTrigger value="alerts">アラート閾値</TabsTrigger>
-          <TabsTrigger value="data">データ管理</TabsTrigger>
-          <TabsTrigger value="workhours">労働時間</TabsTrigger>
-          {isAdmin && <TabsTrigger value="members">メンバー管理</TabsTrigger>}
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="w-max md:w-auto">
+            <TabsTrigger value="targets" className="text-xs sm:text-sm">目標値設定</TabsTrigger>
+            <TabsTrigger value="alerts" className="text-xs sm:text-sm">アラート閾値</TabsTrigger>
+            <TabsTrigger value="data" className="text-xs sm:text-sm">データ管理</TabsTrigger>
+            <TabsTrigger value="workhours" className="text-xs sm:text-sm">労働時間</TabsTrigger>
+            {isAdmin && <TabsTrigger value="members" className="text-xs sm:text-sm">メンバー管理</TabsTrigger>}
+          </TabsList>
+        </div>
 
         <TabsContent value="targets"><TargetsTab /></TabsContent>
         <TabsContent value="alerts"><AlertsTab /></TabsContent>
