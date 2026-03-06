@@ -6,7 +6,7 @@ import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/Page
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import {
-  BarChart, Bar, LineChart, Line, ComposedChart,
+  BarChart, Bar, LineChart, Line, ComposedChart, ReferenceLine,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { TrendingUp, TrendingDown, Users, Briefcase, ChevronDown } from "lucide-react";
@@ -48,6 +48,14 @@ const Customers = () => {
     customerCount: m.customerCount,
     projectCount: m.projectCount,
   }));
+
+  // Averages for reference lines (only months with data)
+  const withCustomers = chartData.filter((c) => c.customerCount > 0);
+  const withProjects = chartData.filter((c) => c.projectCount > 0);
+  const avgCustomerCount = withCustomers.length > 0 ? Math.round(withCustomers.reduce((s, c) => s + c.customerCount, 0) / withCustomers.length * 10) / 10 : 0;
+  const avgProjectCount = withProjects.length > 0 ? Math.round(withProjects.reduce((s, c) => s + c.projectCount, 0) / withProjects.length * 10) / 10 : 0;
+  const avgCustomerUnitPrice = withCustomers.length > 0 ? Math.round(withCustomers.reduce((s, c) => s + c.customerUnitPrice, 0) / withCustomers.length) : 0;
+  const avgProjectUnitPrice = withProjects.length > 0 ? Math.round(withProjects.reduce((s, c) => s + c.projectUnitPrice, 0) / withProjects.length) : 0;
 
   // Rank colors for top 5
   const rankBg = (idx: number) => {
@@ -118,6 +126,7 @@ const Customers = () => {
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number) => [`${v}社`, "顧客数"]} />
+                  <ReferenceLine y={avgCustomerCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerCount}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
                   <Bar dataKey="customerCount" name="顧客数" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -132,6 +141,7 @@ const Customers = () => {
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number) => [`${v}件`, "案件数"]} />
+                  <ReferenceLine y={avgProjectCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectCount}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
                   <Bar dataKey="projectCount" name="案件数" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -149,6 +159,7 @@ const Customers = () => {
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number, name: string) => [name === "顧客数" ? `${v}社` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
+                  <ReferenceLine yAxisId="left" y={avgCustomerUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerUnitPrice.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
                   <Bar yAxisId="left" dataKey="customerUnitPrice" name="顧客単価" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="customerCount" name="顧客数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
@@ -165,6 +176,7 @@ const Customers = () => {
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number, name: string) => [name === "案件数" ? `${v}件` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
+                  <ReferenceLine yAxisId="left" y={avgProjectUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectUnitPrice.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
                   <Bar yAxisId="left" dataKey="projectUnitPrice" name="案件単価" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="projectCount" name="案件数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
