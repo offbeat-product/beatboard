@@ -527,11 +527,11 @@ function MembersTab() {
           招待リンクを生成
         </h3>
         <p className="text-xs text-muted-foreground mb-4">リンクを共有してメンバーを招待できます。リンクは7日間有効です。</p>
-        <div className="flex gap-2 flex-wrap items-end">
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
           <div>
             <Label className="text-xs mb-1 block">ロール</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full sm:w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -541,7 +541,7 @@ function MembersTab() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleGenerate} disabled={generating} size="sm">
+          <Button onClick={handleGenerate} disabled={generating} size="sm" className="w-full sm:w-auto">
             <Link2 className="h-4 w-4 mr-1.5" />
             {generating ? "生成中..." : "招待リンクを生成"}
           </Button>
