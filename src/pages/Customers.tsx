@@ -22,6 +22,25 @@ const Customers = () => {
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useCustomersData();
   const [tableMode, setTableMode] = useState<"revenue" | "grossProfit" | "grossProfitRate">("revenue");
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
+
+  const presetQuestions = [
+    "顧客ポートフォリオの分析は？",
+    "売上集中リスクはある？",
+    "新規開拓の優先度は？",
+  ];
+
+  const handleSendChat = (text?: string) => {
+    const msg = text ?? chatInput.trim();
+    if (!msg) return;
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "user", content: msg },
+      { role: "ai", content: "ただいま分析中です。この機能は近日中に実装予定です。" },
+    ]);
+    setChatInput("");
+  };
 
   if (d.isLoading) {
     return (
