@@ -10,12 +10,12 @@ export function PageHeader({ title, description }: PageHeaderProps) {
   const label = `${y}年${Number(m)}月`;
 
   return (
-    <div className="flex items-start justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{title}</h2>
+        {description && <p className="text-xs sm:text-sm text-muted-foreground mt-1">{description}</p>}
       </div>
-      <span className="text-sm font-medium text-muted-foreground whitespace-nowrap mt-1">
+      <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">
         {label}
       </span>
     </div>

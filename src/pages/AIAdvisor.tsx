@@ -137,7 +137,7 @@ const AIAdvisor = () => {
   };
 
   return (
-    <div className="space-y-6 h-[calc(100vh-3rem)]">
+    <div className="space-y-6 md:h-[calc(100vh-3rem)]">
       {/* Title */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight">AIアドバイザー</h2>
@@ -147,7 +147,7 @@ const AIAdvisor = () => {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-[2fr_3fr] gap-6 h-[calc(100%-5rem)]">
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-6 md:h-[calc(100%-5rem)]">
         {/* ── Left: Reports ── */}
         <div className="flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden">
           <Tabs defaultValue="weekly" className="flex flex-col flex-1 overflow-hidden">

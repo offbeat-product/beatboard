@@ -295,7 +295,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 <BarChart data={sgaBarData} layout="vertical" margin={{ left: 60, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                   <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} />
-                  <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} width={100} />
+                  <YAxis type="category" dataKey="name" fontSize={10} tickLine={false} axisLine={false} width={80} />
                   <Tooltip
                     contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12, backgroundColor: "hsl(var(--card))" }}
                     formatter={(value: number) => [`${value.toLocaleString()}${unitSuffix}`, "金額"]}

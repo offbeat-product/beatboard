@@ -270,11 +270,11 @@ function AlertsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs">KPI</TableHead>
+              <TableHead className="text-xs min-w-[120px]">KPI</TableHead>
               <TableHead className="text-xs text-center">⚠️ 警告閾値</TableHead>
               <TableHead className="text-xs text-center">🚨 危険閾値</TableHead>
             </TableRow>
