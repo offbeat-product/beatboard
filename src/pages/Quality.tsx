@@ -30,6 +30,25 @@ const Quality = () => {
   const [inputMap, setInputMap] = useState<Record<string, QualityMonthlyInput>>({});
   const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
+
+  const presetQuestions = [
+    "品質改善の優先施策は？",
+    "納期遅延の主要因は？",
+    "修正率を下げるには？",
+  ];
+
+  const handleSendChat = (text?: string) => {
+    const msg = text ?? chatInput.trim();
+    if (!msg) return;
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "user", content: msg },
+      { role: "ai", content: "ただいま分析中です。この機能は近日中に実装予定です。" },
+    ]);
+    setChatInput("");
+  };
 
   const defaultKey = useMemo(() => {
     if (d.isLoading) return "";
