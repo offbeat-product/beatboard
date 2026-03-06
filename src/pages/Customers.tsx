@@ -156,7 +156,10 @@ const Customers = () => {
             {/* 顧客単価推移 */}
             {/* 案件単価推移 */}
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
-              <h3 className="text-sm font-semibold mb-4">顧客単価推移</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">顧客単価推移</h3>
+                <span className="text-xs font-semibold text-destructive">平均 {avgCustomerUnitPrice.toLocaleString()}{unitSuffix}</span>
+              </div>
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
