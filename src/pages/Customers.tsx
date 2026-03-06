@@ -212,9 +212,18 @@ const Customers = () => {
                   <tr>
                     <td className="sticky left-0 z-30 bg-secondary px-3 py-2 border-t border-border">合計</td>
                     {d.fiscalMonths.map((ym) => {
-                      const val = tableMode === "revenue"
-                        ? (d.monthlyTotals[ym]?.revenue ?? 0)
-                        : (d.monthlyTotals[ym]?.grossProfit ?? 0);
+                      const t = d.monthlyTotals[ym];
+                      if (tableMode === "grossProfitRate") {
+                        const rev = t?.revenue ?? 0;
+                        const gp = t?.grossProfit ?? 0;
+                        const rate = rev > 0 ? (gp / rev) * 100 : 0;
+                        return (
+                          <td key={ym} className="text-right px-2 py-2 font-mono text-xs border-t border-border tabular-nums">
+                            {rev > 0 ? `${rate.toFixed(1)}%` : "-"}
+                          </td>
+                        );
+                      }
+                      const val = tableMode === "revenue" ? (t?.revenue ?? 0) : (t?.grossProfit ?? 0);
                       return (
                         <td key={ym} className="text-right px-2 py-2 font-mono text-xs border-t border-border tabular-nums">
                           {formatAmount(val)}
@@ -222,7 +231,9 @@ const Customers = () => {
                       );
                     })}
                     <td className="text-right px-3 py-2 font-mono text-xs font-bold border-t border-border tabular-nums">
-                      {formatAmount(tableMode === "revenue" ? totalRevenue : totalGrossProfit)}
+                      {tableMode === "grossProfitRate"
+                        ? `${totalRevenue > 0 ? ((totalGrossProfit / totalRevenue) * 100).toFixed(1) : "0.0"}%`
+                        : formatAmount(tableMode === "revenue" ? totalRevenue : totalGrossProfit)}
                     </td>
                   </tr>
                 </tfoot>
