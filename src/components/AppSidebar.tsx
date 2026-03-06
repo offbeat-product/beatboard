@@ -10,7 +10,7 @@ const menuItems = [
   { title: "生産性指標", url: "/productivity", icon: BarChart3 },
   { title: "顧客指標", url: "/customers", icon: Users },
   { title: "品質指標", url: "/quality", icon: CheckCircle },
-  { title: "AIアドバイザー", url: "/ai", icon: Bot },
+  { title: "レポート", url: "/ai", icon: FileText },
   { title: "設定", url: "/settings", icon: Settings },
 ];
 
