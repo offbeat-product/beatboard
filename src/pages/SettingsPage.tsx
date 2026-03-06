@@ -651,6 +651,7 @@ function MembersTab() {
             ))}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
