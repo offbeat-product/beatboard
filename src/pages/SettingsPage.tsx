@@ -598,6 +598,7 @@ function MembersTab() {
             })}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Members table */}
@@ -605,6 +606,7 @@ function MembersTab() {
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">メンバー一覧</h3>
         </div>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
