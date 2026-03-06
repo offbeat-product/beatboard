@@ -154,7 +154,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>
+        {!embedded && <h2 className="text-2xl font-bold tracking-tight">品質指標</h2>}
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
