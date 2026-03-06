@@ -126,7 +126,7 @@ const Customers = () => {
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number) => [`${v}社`, "顧客数"]} />
-                  <ReferenceLine y={avgCustomerCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerCount}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine y={avgCustomerCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerCount}社`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
                   <Bar dataKey="customerCount" name="顧客数" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -141,7 +141,7 @@ const Customers = () => {
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number) => [`${v}件`, "案件数"]} />
-                  <ReferenceLine y={avgProjectCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectCount}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine y={avgProjectCount} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectCount}件`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
                   <Bar dataKey="projectCount" name="案件数" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -159,7 +159,7 @@ const Customers = () => {
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number, name: string) => [name === "顧客数" ? `${v}社` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
-                  <ReferenceLine yAxisId="left" y={avgCustomerUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerUnitPrice.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine yAxisId="left" y={avgCustomerUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerUnitPrice.toLocaleString()}${unitSuffix}`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
                   <Bar yAxisId="left" dataKey="customerUnitPrice" name="顧客単価" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="customerCount" name="顧客数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
@@ -176,7 +176,7 @@ const Customers = () => {
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number, name: string) => [name === "案件数" ? `${v}件` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
-                  <ReferenceLine yAxisId="left" y={avgProjectUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectUnitPrice.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine yAxisId="left" y={avgProjectUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgProjectUnitPrice.toLocaleString()}${unitSuffix}`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
                   <Bar yAxisId="left" dataKey="projectUnitPrice" name="案件単価" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="projectCount" name="案件数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
