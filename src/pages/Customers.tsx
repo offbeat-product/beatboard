@@ -159,7 +159,7 @@ const Customers = () => {
                   <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <Tooltip formatter={(v: number, name: string) => [name === "顧客数" ? `${v}社` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
-                  <ReferenceLine yAxisId="left" y={avgCustomerUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerUnitPrice.toLocaleString()}`, position: "right", fontSize: 10, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine yAxisId="left" y={avgCustomerUnitPrice} stroke="hsl(var(--destructive))" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `平均 ${avgCustomerUnitPrice.toLocaleString()}${unitSuffix}`, position: "insideTopRight", fontSize: 11, fontWeight: 600, fill: "hsl(var(--destructive))" }} />
                   <Bar yAxisId="left" dataKey="customerUnitPrice" name="顧客単価" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="customerCount" name="顧客数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
