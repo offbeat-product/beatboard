@@ -123,6 +123,8 @@ const Management = () => {
         <DashboardKpiCard
           label="今月の粗利"
           value={formatAmount(d.currentGrossProfit)}
+          target={formatAmount(d.currentTarget * 0.7)}
+          progress={d.currentTarget > 0 ? (d.currentGrossProfit / (d.currentTarget * 0.7)) * 100 : undefined}
           subtext={`粗利率 ${fmtPct(d.currentGrossMarginRate)}`}
           delay={50}
         />
@@ -146,22 +148,24 @@ const Management = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <DashboardKpiCard
           label={`累計売上（${d.fyLabel}）`}
-          value={formatAmount(d.cumulativeRevenue)}
+          value={formatAmount(totals.revenue)}
           target={formatAmount(d.annualTarget)}
-          progress={cumulativeRate}
+          progress={d.annualTarget > 0 ? (totals.revenue / d.annualTarget) * 100 : undefined}
           subtext={`${d.monthsElapsed}/12ヶ月経過`}
           delay={150}
         />
         <DashboardKpiCard
           label={`累計粗利（${d.fyLabel}）`}
-          value={formatAmount(d.cumulativeGrossProfit)}
+          value={formatAmount(totals.grossProfit)}
+          target={formatAmount(d.annualTarget * 0.7)}
+          progress={d.annualTarget > 0 ? (totals.grossProfit / (d.annualTarget * 0.7)) * 100 : undefined}
           delay={200}
         />
         <DashboardKpiCard
-          label="売上着地予測"
-          value={formatAmount(d.landingForecast)}
-          target={formatAmount(d.annualTarget)}
-          progress={d.annualTarget > 0 ? (d.landingForecast / d.annualTarget) * 100 : undefined}
+          label={`累計営業利益（${d.fyLabel}）`}
+          value={formatAmount(totals.operatingProfit)}
+          target={formatAmount(d.annualTarget * 0.2)}
+          progress={d.annualTarget > 0 ? (totals.operatingProfit / (d.annualTarget * 0.2)) * 100 : undefined}
           delay={250}
         />
       </div>
