@@ -132,6 +132,8 @@ const Management = () => {
           <DashboardKpiCard
             label="今月の営業利益"
             value={formatAmount(d.currentOperatingProfit)}
+            target={formatAmount(d.currentTarget * 0.2)}
+            progress={d.currentTarget > 0 ? (d.currentOperatingProfit / (d.currentTarget * 0.2)) * 100 : undefined}
             subtext={`営業利益率 ${fmtPct(d.currentOperatingMarginRate ?? 0)}`}
             delay={100}
           />
