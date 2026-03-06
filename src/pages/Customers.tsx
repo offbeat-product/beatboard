@@ -6,7 +6,7 @@ import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/Page
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import {
-  BarChart, Bar, LineChart, Line, ComposedChart,
+  BarChart, Bar, LineChart, Line, ComposedChart, ReferenceLine,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { TrendingUp, TrendingDown, Users, Briefcase, ChevronDown } from "lucide-react";
