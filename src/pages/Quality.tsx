@@ -360,11 +360,11 @@ const Quality = () => {
 
 /* ── Sub-components ── */
 
-function KpiMiniCard({ label, value }: { label: string; value: string }) {
+function KpiMiniCard({ label, value, alert }: { label: string; value: string; alert?: boolean }) {
   return (
-    <div className="bg-card rounded-lg shadow-sm p-4 animate-fade-in">
+    <div className={cn("bg-card rounded-lg shadow-sm p-4 animate-fade-in", alert && "border border-destructive/30 bg-destructive/5")}>
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <p className="text-lg font-bold font-mono tabular-nums">{value}</p>
+      <p className={cn("text-lg font-bold font-mono tabular-nums", alert && "text-destructive")}>{value}</p>
     </div>
   );
 }
