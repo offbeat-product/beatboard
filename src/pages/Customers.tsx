@@ -1,321 +1,265 @@
-import { useState, useMemo } from "react";
-import { useCustomersData, CustomerDateRange } from "@/hooks/useCustomersData";
+import { useState } from "react";
+import { useCustomersData } from "@/hooks/useCustomersData";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import {
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-} from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  PieChart, Pie, Cell, LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
+  BarChart, Bar, LineChart, Line, ComposedChart,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { ArrowUpDown, CalendarDays } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Briefcase, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getFiscalYearMonths } from "@/lib/fiscalYear";
-
-type SortKey = "name" | "pct" | "revenue" | "grossProfit" | "grossProfitRate" | "status";
-
-/** Generate month options for selectors */
-function generateMonthOptions(): { value: string; label: string }[] {
-  const options: { value: string; label: string }[] = [];
-  // from 2024-05 to 2027-04
-  for (let y = 2024; y <= 2027; y++) {
-    for (let m = 1; m <= 12; m++) {
-      const val = `${y}-${String(m).padStart(2, "0")}`;
-      options.push({ value: val, label: `${y}年${m}月` });
-    }
-  }
-  return options;
-}
-
-const MONTH_OPTIONS = generateMonthOptions();
-
-const PRESET_RANGES = [
-  { label: "2026年4月期（通期）", start: "2025-05", end: "2026-04" },
-  { label: "2025年4月期（通期）", start: "2024-05", end: "2025-04" },
-  { label: "直近3ヶ月", start: "2026-01", end: "2026-03" },
-  { label: "直近6ヶ月", start: "2025-10", end: "2026-03" },
-  { label: "カスタム", start: "", end: "" },
-];
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { getMonthLabel } from "@/lib/fiscalYear";
 
 const Customers = () => {
   usePageTitle("顧客分析");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
-
-  // Default to current fiscal year
-  const defaultMonths = getFiscalYearMonths(2026);
-  const [startMonth, setStartMonth] = useState(defaultMonths[0]);
-  const [endMonth, setEndMonth] = useState(defaultMonths[defaultMonths.length - 1]);
-  const [presetIndex, setPresetIndex] = useState(0);
-
-  const dateRange: CustomerDateRange = { startMonth, endMonth };
-  const d = useCustomersData(dateRange);
-
-  const [sortKey, setSortKey] = useState<SortKey>("revenue");
-  const [sortAsc, setSortAsc] = useState(false);
-
-  const sorted = useMemo(() => {
-    const list = [...d.clientTable];
-    list.sort((a, b) => {
-      const va = a[sortKey] ?? "";
-      const vb = b[sortKey] ?? "";
-      if (typeof va === "number" && typeof vb === "number") return sortAsc ? va - vb : vb - va;
-      return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-    });
-    return list;
-  }, [d.clientTable, sortKey, sortAsc]);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortAsc(!sortAsc);
-    else { setSortKey(key); setSortAsc(false); }
-  };
-
-  const handlePresetChange = (idx: string) => {
-    const i = Number(idx);
-    setPresetIndex(i);
-    if (PRESET_RANGES[i].start) {
-      setStartMonth(PRESET_RANGES[i].start);
-      setEndMonth(PRESET_RANGES[i].end);
-    }
-  };
+  const d = useCustomersData();
+  const [tableMode, setTableMode] = useState<"revenue" | "grossProfit">("revenue");
 
   if (d.isLoading) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
-        <KpiCardSkeleton count={2} />
+        <KpiCardSkeleton count={4} />
+        <KpiCardSkeleton count={4} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ChartSkeleton height={280} />
           <ChartSkeleton height={280} />
         </div>
-        <ChartSkeleton />
         <TableSkeleton />
       </div>
     );
   }
 
-  if (d.isError) {
-    return <ErrorState onRetry={() => queryClient.invalidateQueries()} />;
-  }
+  if (d.isError) return <ErrorState onRetry={() => queryClient.invalidateQueries()} />;
 
-  const hasData = d.clientTable.length > 0;
-  const isTop1Over = d.top1Pct > d.targetTop1;
-  const isTop3Over = d.top3Pct > d.targetTop3;
+  const hasData = d.clientTableData.length > 0;
 
-  const pieDisplayData = d.pieData.map((p) => ({
-    ...p,
-    displayValue: toDisplayValue(p.value),
+  // Chart data with display values
+  const chartData = d.monthlyData.map((m) => ({
+    name: m.month,
+    customerUnitPrice: toDisplayValue(m.customerUnitPrice),
+    projectUnitPrice: toDisplayValue(m.projectUnitPrice),
+    customerCount: m.customerCount,
+    projectCount: m.projectCount,
   }));
 
-  const barDisplayData = d.monthlyByClient.map((entry) => {
-    const converted: Record<string, number | string> = { name: entry.name };
-    d.clientNames.forEach((n) => {
-      converted[n] = toDisplayValue((entry[n] as number) ?? 0);
-    });
-    converted["top1"] = entry["top1"];
-    converted["top3"] = entry["top3"];
-    return converted;
-  });
+  // Rank colors for top 5
+  const rankBg = (idx: number) => {
+    if (idx === 0) return "bg-amber-50 dark:bg-amber-950/30";
+    if (idx === 1) return "bg-slate-50 dark:bg-slate-800/30";
+    if (idx === 2) return "bg-orange-50 dark:bg-orange-950/20";
+    if (idx <= 4) return "bg-blue-50 dark:bg-blue-950/20";
+    return "";
+  };
 
-  const periodLabel = `${startMonth} 〜 ${endMonth}`;
+  const totalRevenue = d.clientTableData.reduce((s, c) => s + c.revenue, 0);
+  const totalGrossProfit = d.clientTableData.reduce((s, c) => s + c.grossProfit, 0);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
-      </div>
+      <h2 className="text-2xl font-bold tracking-tight">顧客分析</h2>
 
-      {/* Period Selector */}
-      <div className="bg-card rounded-lg shadow-sm p-4 animate-fade-in">
-        <div className="flex flex-wrap items-center gap-3">
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">期間:</span>
-          <Select value={String(presetIndex)} onValueChange={handlePresetChange}>
-            <SelectTrigger className="w-[200px] h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PRESET_RANGES.map((p, i) => (
-                <SelectItem key={i} value={String(i)}>{p.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {presetIndex === PRESET_RANGES.length - 1 && (
-            <>
-              <Select value={startMonth} onValueChange={setStartMonth}>
-                <SelectTrigger className="w-[140px] h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTH_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-muted-foreground">〜</span>
-              <Select value={endMonth} onValueChange={setEndMonth}>
-                <SelectTrigger className="w-[140px] h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTH_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          )}
+      {/* Section 1: Customer KPIs */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Users className="h-4 w-4" /> 顧客数 / 単価
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiMiniCard label="前月 顧客数" value={`${d.prevCustomerCount}社`} />
+          <KpiMiniCard label="今月 顧客数" value={`${d.currCustomerCount}社`} />
+          <GrowthCard label="前月比" value={d.customerGrowth} />
+          <KpiMiniCard label="通期 取引顧客数" value={`${d.ytdCustomerCount}社`} />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiMiniCard label="前月 顧客単価" value={formatAmount(d.prevCustomerUnitPrice)} />
+          <KpiMiniCard label="今月 顧客単価" value={formatAmount(d.currCustomerUnitPrice)} />
+          <GrowthCard label="前月比" value={d.customerUnitPriceGrowth} />
+          <KpiMiniCard label="通期 平均顧客単価" value={formatAmount(d.ytdCustomerUnitPrice)} />
         </div>
       </div>
 
-      {/* Concentration KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ConcentrationCard label="上位1社集中度" value={d.top1Pct} target={d.targetTop1} isOver={isTop1Over} targetLabel={`目標 ${d.targetTop1}%以下`} />
-        <ConcentrationCard label="上位3社集中度" value={d.top3Pct} target={d.targetTop3} isOver={isTop3Over} targetLabel={`目標 ${d.targetTop3}%以下`} />
+      {/* Section 2: Project KPIs */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Briefcase className="h-4 w-4" /> 案件数 / 単価
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiMiniCard label="前月 案件数" value={`${d.prevProjectCount}件`} />
+          <KpiMiniCard label="今月 案件数" value={`${d.currProjectCount}件`} />
+          <GrowthCard label="前月比" value={d.projectGrowth} />
+          <KpiMiniCard label="通期 取引案件数" value={`${d.ytdProjectCount}件`} />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiMiniCard label="前月 案件単価" value={formatAmount(d.prevProjectUnitPrice)} />
+          <KpiMiniCard label="今月 案件単価" value={formatAmount(d.currProjectUnitPrice)} />
+          <GrowthCard label="前月比" value={d.projectUnitPriceGrowth} />
+          <KpiMiniCard label="通期 平均案件単価" value={formatAmount(d.ytdProjectUnitPrice)} />
+        </div>
       </div>
 
       {!hasData ? (
         <EmptyState />
       ) : (
         <>
-          {/* Charts row */}
+          {/* Section 3: Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
-              <h3 className="text-sm font-semibold mb-4">顧客別売上構成（{periodLabel}）</h3>
+              <h3 className="text-sm font-semibold mb-4">顧客単価推移</h3>
               <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie data={pieDisplayData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} dataKey="displayValue" paddingAngle={2} label={({ name, pct }) => `${name} ${pct.toFixed(1)}%`} labelLine={false} fontSize={11}>
-                    {pieDisplayData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => [`${v.toLocaleString()}${unitSuffix}`, "売上"]} />
-                  <text x="50%" y="48%" textAnchor="middle" className="fill-muted-foreground text-xs">売上合計</text>
-                  <text x="50%" y="56%" textAnchor="middle" className="fill-foreground text-sm font-semibold">{formatAmount(d.totalCurrentRevenue)}</text>
-                </PieChart>
+                <ComposedChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="left" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} label={{ value: unitSuffix, position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "社", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip formatter={(v: number, name: string) => [name === "顧客数" ? `${v}社` : `${v.toLocaleString()}${unitSuffix}`, name]} />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="customerUnitPrice" name="顧客単価" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <Line yAxisId="right" type="monotone" dataKey="customerCount" name="顧客数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
 
             <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
-              <h3 className="text-sm font-semibold mb-4">顧客集中度推移</h3>
+              <h3 className="text-sm font-semibold mb-4">案件単価推移</h3>
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={d.monthlyByClient}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                <ComposedChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                  <Tooltip formatter={(v: number) => [`${v}%`]} />
-                  <ReferenceLine y={d.targetTop1} stroke="#9CA3AF" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `目標${d.targetTop1}%`, position: "right", fontSize: 10, fill: "#9CA3AF" }} />
-                  <ReferenceLine y={d.targetTop3} stroke="#9CA3AF" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `目標${d.targetTop3}%`, position: "right", fontSize: 10, fill: "#9CA3AF" }} />
-                  <Line type="monotone" dataKey="top1" name="上位1社" stroke="#E85B2D" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="top3" name="上位3社" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} />
+                  <YAxis yAxisId="left" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} label={{ value: unitSuffix, position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis yAxisId="right" orientation="right" fontSize={12} tickLine={false} axisLine={false} label={{ value: "件", position: "insideTopRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip formatter={(v: number, name: string) => [name === "案件数" ? `${v}件` : `${v.toLocaleString()}${unitSuffix}`, name]} />
                   <Legend />
-                </LineChart>
+                  <Bar yAxisId="left" dataKey="projectUnitPrice" name="案件単価" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  <Line yAxisId="right" type="monotone" dataKey="projectCount" name="案件数" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Stacked Bar Chart */}
-          <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "200ms" }}>
-            <h3 className="text-sm font-semibold mb-4">顧客別月次売上推移</h3>
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={barDisplayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v.toLocaleString()} label={{ value: unitSuffix, position: "insideTopLeft", offset: -5, fontSize: 11, fill: "#9CA3AF" }} />
-                <Tooltip formatter={(v: number, name: string) => [`${v.toLocaleString()}${unitSuffix}`, name]} />
-                <Legend />
-                {d.clientNames.map((name) => (
-                  <Bar key={name} dataKey={name} stackId="a" fill={d.clientColors[name]} radius={0} />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Client Table */}
-          <div className="bg-card rounded-lg shadow-sm animate-fade-in overflow-x-auto" style={{ animationDelay: "300ms" }}>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary">
-                  <SortableHead label="顧客名" sortKey="name" current={sortKey} asc={sortAsc} onSort={toggleSort} />
-                  <SortableHead label="売上" sortKey="revenue" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
-                  <SortableHead label="粗利" sortKey="grossProfit" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
-                  <SortableHead label="粗利率" sortKey="grossProfitRate" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
-                  <SortableHead label="構成比" sortKey="pct" current={sortKey} asc={sortAsc} onSort={toggleSort} className="text-right" />
-                  <SortableHead label="ステータス" sortKey="status" current={sortKey} asc={sortAsc} onSort={toggleSort} />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sorted.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell className="text-right font-mono-num">{formatAmount(c.revenue)}</TableCell>
-                    <TableCell className="text-right font-mono-num">{formatAmount(c.grossProfit)}</TableCell>
-                    <TableCell className={`text-right font-mono-num ${c.grossProfitRate >= 70 ? "text-chart-green" : c.grossProfitRate < 50 ? "text-destructive" : ""}`}>
-                      {c.grossProfitRate.toFixed(1)}%
-                    </TableCell>
-                    <TableCell className="text-right font-mono-num">{c.pct.toFixed(1)}%</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center gap-1.5 text-xs ${c.status === "active" ? "text-chart-green" : "text-muted-foreground"}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${c.status === "active" ? "bg-chart-green" : "bg-muted-foreground"}`} />
-                        {c.status === "active" ? "契約中" : c.status}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {/* Total row */}
-                <TableRow className="bg-secondary font-semibold">
-                  <TableCell>合計</TableCell>
-                  <TableCell className="text-right font-mono-num">{formatAmount(d.totalCurrentRevenue)}</TableCell>
-                  <TableCell className="text-right font-mono-num">{formatAmount(d.totalGrossProfit)}</TableCell>
-                  <TableCell className="text-right font-mono-num">
-                    {d.totalCurrentRevenue > 0 ? ((d.totalGrossProfit / d.totalCurrentRevenue) * 100).toFixed(1) : "0.0"}%
-                  </TableCell>
-                  <TableCell className="text-right font-mono-num">100.0%</TableCell>
-                  <TableCell />
-                </TableRow>
-              </TableBody>
-            </Table>
+          {/* Section 4: Monthly Client Table */}
+          <div className="bg-card rounded-lg shadow-sm animate-fade-in" style={{ animationDelay: "200ms" }}>
+            <div className="flex items-center gap-1 p-4 pb-0">
+              <button
+                onClick={() => setTableMode("revenue")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-t-md transition-colors ${tableMode === "revenue" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
+              >
+                売上
+              </button>
+              <button
+                onClick={() => setTableMode("grossProfit")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-t-md transition-colors ${tableMode === "grossProfit" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
+              >
+                粗利
+              </button>
+            </div>
+            <div className="overflow-x-auto relative">
+              <table className="w-full text-sm border-collapse min-w-[900px]">
+                <thead className="sticky top-0 z-20 bg-secondary">
+                  <tr>
+                    <th className="sticky left-0 z-30 bg-secondary text-left px-3 py-2 font-semibold min-w-[160px] border-b border-border">顧客名</th>
+                    {d.fiscalMonths.map((ym) => (
+                      <th key={ym} className="text-right px-2 py-2 font-semibold whitespace-nowrap border-b border-border">{getMonthLabel(ym)}</th>
+                    ))}
+                    <th className="text-right px-3 py-2 font-bold whitespace-nowrap border-b border-border">合計</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.clientTableData.map((client, idx) => (
+                    <tr key={client.id} className={`${rankBg(idx)} hover:bg-muted/50 transition-colors`}>
+                      <td className={`sticky left-0 z-10 ${rankBg(idx) || "bg-card"} px-3 py-1.5 font-medium border-b border-border truncate max-w-[200px]`}>
+                        {client.name}
+                      </td>
+                      {d.fiscalMonths.map((ym) => {
+                        const val = tableMode === "revenue"
+                          ? (client.monthly[ym]?.revenue ?? 0)
+                          : (client.monthly[ym]?.grossProfit ?? 0);
+                        return (
+                          <td key={ym} className="text-right px-2 py-1.5 font-mono text-xs border-b border-border tabular-nums">
+                            {val > 0 ? formatAmount(val) : <span className="text-muted-foreground">-</span>}
+                          </td>
+                        );
+                      })}
+                      <td className="text-right px-3 py-1.5 font-mono text-xs font-semibold border-b border-border tabular-nums">
+                        {formatAmount(tableMode === "revenue" ? client.revenue : client.grossProfit)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="sticky bottom-0 z-20 bg-secondary font-semibold">
+                  <tr>
+                    <td className="sticky left-0 z-30 bg-secondary px-3 py-2 border-t border-border">合計</td>
+                    {d.fiscalMonths.map((ym) => {
+                      const val = tableMode === "revenue"
+                        ? (d.monthlyTotals[ym]?.revenue ?? 0)
+                        : (d.monthlyTotals[ym]?.grossProfit ?? 0);
+                      return (
+                        <td key={ym} className="text-right px-2 py-2 font-mono text-xs border-t border-border tabular-nums">
+                          {formatAmount(val)}
+                        </td>
+                      );
+                    })}
+                    <td className="text-right px-3 py-2 font-mono text-xs font-bold border-t border-border tabular-nums">
+                      {formatAmount(tableMode === "revenue" ? totalRevenue : totalGrossProfit)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </>
       )}
+
+      {/* Calculation Logic */}
+      <Collapsible>
+        <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronDown className="h-3 w-3" />
+          計算ロジック
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2 text-xs text-muted-foreground bg-secondary rounded-lg p-4 space-y-1">
+          <p>・顧客数 = 当月のproject_plで売上&gt;0のユニークclient_id数</p>
+          <p>・顧客単価 = 月間売上 ÷ 月間顧客数</p>
+          <p>・案件数 = 当月のproject_plのレコード数（売上&gt;0）</p>
+          <p>・案件単価 = 月間売上 ÷ 月間案件数</p>
+          <p>・通期取引顧客数 = 会計年度内で1回以上売上のあったユニーク顧客数</p>
+          <p>・通期平均顧客単価 = 通期売上合計 ÷ 通期取引顧客数</p>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
 
 /* ── Sub-components ── */
-function ConcentrationCard({ label, value, target, isOver, targetLabel }: {
-  label: string; value: number; target: number; isOver: boolean; targetLabel: string;
-}) {
+function KpiMiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
+    <div className="bg-card rounded-lg shadow-sm p-4 animate-fade-in">
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <div className="flex items-baseline gap-2 mb-1">
-        <span className={`text-2xl font-bold font-mono-num ${isOver ? "text-destructive" : "text-chart-green"}`}>{value.toFixed(1)}%</span>
-        <span className="text-xs text-muted-foreground">{targetLabel}</span>
-      </div>
-      <div className="relative h-3 w-full rounded-full bg-secondary overflow-hidden">
-        <div className="absolute inset-y-0 left-0 rounded-full bg-primary transition-all" style={{ width: `${Math.min(value, 100)}%` }} />
-        <div className="absolute inset-y-0 w-0.5 bg-chart-green" style={{ left: `${target}%` }} />
-      </div>
+      <p className="text-lg font-bold font-mono tabular-nums">{value}</p>
     </div>
   );
 }
 
-function SortableHead({ label, sortKey, current, asc, onSort, className = "" }: {
-  label: string; sortKey: SortKey; current: SortKey; asc: boolean; onSort: (k: SortKey) => void; className?: string;
-}) {
+function GrowthCard({ label, value }: { label: string; value: number }) {
+  const isPositive = value >= 0;
   return (
-    <TableHead className={className}>
-      <button onClick={() => onSort(sortKey)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
-        {label}
-        <ArrowUpDown className={`h-3.5 w-3.5 ${current === sortKey ? "text-foreground" : "text-muted-foreground/50"}`} />
-      </button>
-    </TableHead>
+    <div className="bg-card rounded-lg shadow-sm p-4 animate-fade-in">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <div className="flex items-center gap-1.5">
+        {isPositive ? (
+          <TrendingUp className="h-4 w-4 text-chart-green" />
+        ) : (
+          <TrendingDown className="h-4 w-4 text-destructive" />
+        )}
+        <span className={`text-lg font-bold font-mono tabular-nums ${isPositive ? "text-chart-green" : "text-destructive"}`}>
+          {value >= 0 ? "+" : ""}{value.toFixed(1)}%
+        </span>
+      </div>
+    </div>
   );
 }
 
