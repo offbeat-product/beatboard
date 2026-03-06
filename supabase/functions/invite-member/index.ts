@@ -24,11 +24,10 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
 
-    // Verify caller
+    // Verify caller is admin
     const anonClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
@@ -38,7 +37,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email } = await req.json();
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const userId = claimsData.claims.sub;
+
+    // Check caller is admin
+    const { data: callerProfile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (callerProfile?.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { email, role = "viewer" } = await req.json();
     if (!email || typeof email !== "string") {
       return new Response(JSON.stringify({ error: "Email is required" }), {
         status: 400,
@@ -46,11 +65,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use admin client to invite
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const validRoles = ["admin", "manager", "viewer"];
+    if (!validRoles.includes(role)) {
+      return new Response(JSON.stringify({ error: "Invalid role" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
+    // Invite user
     const origin = req.headers.get("origin") || req.headers.get("referer") || supabaseUrl;
     const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
       redirectTo: origin,
@@ -61,6 +84,17 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Create/update profile with role
+    if (data.user) {
+      await adminClient.from("profiles").upsert({
+        id: data.user.id,
+        email,
+        role,
+        status: "invited",
+        invited_at: new Date().toISOString(),
+      }, { onConflict: "id" });
     }
 
     return new Response(JSON.stringify({ success: true, user: data.user }), {
