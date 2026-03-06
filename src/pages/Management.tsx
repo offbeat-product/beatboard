@@ -51,10 +51,10 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        <div>
+        {!embedded && <div>
           <h2 className="text-2xl font-bold tracking-tight">経営指標</h2>
           <p className="text-sm text-muted-foreground mt-1">CEO向け - 売上成長・利益構造・財務健全性</p>
-        </div>
+        </div>}
         <KpiCardSkeleton count={3} />
         <KpiCardSkeleton count={3} />
         <ChartSkeleton />
