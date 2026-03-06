@@ -194,10 +194,7 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        {!embedded && <div>
-          <h2 className="text-2xl font-bold tracking-tight">生産性指標</h2>
-          <p className="text-sm text-muted-foreground mt-1">局長向け - 工数あたりの収益性・リソース効率</p>
-        </div>}
+        {!embedded && <PageHeader title="生産性指標" description="局長向け - 工数あたりの収益性・リソース効率" />}
         <KpiCardSkeleton count={4} />
         <KpiCardSkeleton count={4} />
         <ChartSkeleton />
