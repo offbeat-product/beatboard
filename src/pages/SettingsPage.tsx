@@ -325,7 +325,7 @@ function DataTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {SYNC_SOURCES.map((src) => (
           <div key={src.id} className="bg-card rounded-lg shadow-sm border border-border p-5">
             <Button variant="outline" className="w-full justify-center" disabled={syncing[src.id]} onClick={() => handleSync(src.id)}>
