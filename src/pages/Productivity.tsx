@@ -571,7 +571,7 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
               <p>・<strong>総労働時間</strong> = Pace CSV全行の時間合計（自社業務含む）※正社員+パート</p>
               <p>・<strong>案件工数</strong> = 顧客名が「Off Beat株式会社（自社）」以外の時間合計</p>
               <p>・<strong>案件稼働率</strong> = 案件工数 ÷ 総労働時間 × 100</p>
-              <p>・<strong>目標差異</strong> = 案件粗利工数単価 - ¥25,000</p>
+              
               <p>・<strong>Paceデータがある月</strong> = 自動計算値を優先（薄い青背景 + Paceマーク）、ない月は手動入力値を使用</p>
               <p>・<strong>1人あたり売上</strong> = 売上 ÷ 総人員数（正社員+パート）</p>
               <p>・<strong>1人あたり粗利</strong> = 粗利 ÷ 総人員数</p>
