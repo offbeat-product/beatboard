@@ -104,7 +104,6 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
           </div>
           {!embedded && <FetchLatestButton targets="board" />}
         </div>
-        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiMiniCard label="前月 顧客数" value={`${d.prevCustomerCount}社`} />
           <KpiMiniCard label="今月 顧客数" value={`${d.currCustomerCount}社`} />
