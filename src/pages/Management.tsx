@@ -298,7 +298,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 ))}
                 {/* 営業利益 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">営業利益</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">営業利益</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className={cn("text-right font-mono-num whitespace-nowrap", m.operatingProfit !== null && m.operatingProfit < 0 && "text-destructive font-semibold")}>
                       {m.operatingProfit !== null ? formatAmount(m.operatingProfit) : "—"}
