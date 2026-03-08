@@ -119,38 +119,39 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
           <span className="text-sm font-semibold text-muted-foreground">当月実績</span>
           {!embedded && <FetchLatestButton targets="both" />}
         </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <DashboardKpiCard
-          label="今月の売上"
-          value={formatAmount(d.currentRevenue)}
-          target={formatAmount(d.currentTarget)}
-          progress={d.currentTarget > 0 ? (d.currentRevenue / d.currentTarget) * 100 : undefined}
-          delay={0}
-        />
-        <DashboardKpiCard
-          label="今月の粗利"
-          value={formatAmount(d.currentGrossProfit)}
-          target={formatAmount(d.currentTarget * 0.7)}
-          progress={d.currentTarget > 0 ? (d.currentGrossProfit / (d.currentTarget * 0.7)) * 100 : undefined}
-          subtext={`粗利率 ${fmtPct(d.currentGrossMarginRate)}`}
-          delay={50}
-        />
-        {d.currentOperatingProfit !== null ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <DashboardKpiCard
-            label="今月の営業利益"
-            value={formatAmount(d.currentOperatingProfit)}
-            target={formatAmount(d.currentTarget * 0.2)}
-            progress={d.currentTarget > 0 ? (d.currentOperatingProfit / (d.currentTarget * 0.2)) * 100 : undefined}
-            subtext={`営業利益率 ${fmtPct(d.currentOperatingMarginRate ?? 0)}`}
-            delay={100}
+            label="今月の売上"
+            value={formatAmount(d.currentRevenue)}
+            target={formatAmount(d.currentTarget)}
+            progress={d.currentTarget > 0 ? (d.currentRevenue / d.currentTarget) * 100 : undefined}
+            delay={0}
           />
-        ) : (
-          <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
-            <p className="text-xs text-muted-foreground mb-2">今月の営業利益</p>
-            <span className="text-2xl font-bold font-mono-num tracking-tight text-muted-foreground">—</span>
-            <p className="text-xs text-muted-foreground mt-2">販管費データなし</p>
-          </div>
-        )}
+          <DashboardKpiCard
+            label="今月の粗利"
+            value={formatAmount(d.currentGrossProfit)}
+            target={formatAmount(d.currentTarget * 0.7)}
+            progress={d.currentTarget > 0 ? (d.currentGrossProfit / (d.currentTarget * 0.7)) * 100 : undefined}
+            subtext={`粗利率 ${fmtPct(d.currentGrossMarginRate)}`}
+            delay={50}
+          />
+          {d.currentOperatingProfit !== null ? (
+            <DashboardKpiCard
+              label="今月の営業利益"
+              value={formatAmount(d.currentOperatingProfit)}
+              target={formatAmount(d.currentTarget * 0.2)}
+              progress={d.currentTarget > 0 ? (d.currentOperatingProfit / (d.currentTarget * 0.2)) * 100 : undefined}
+              subtext={`営業利益率 ${fmtPct(d.currentOperatingMarginRate ?? 0)}`}
+              delay={100}
+            />
+          ) : (
+            <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
+              <p className="text-xs text-muted-foreground mb-2">今月の営業利益</p>
+              <span className="text-2xl font-bold font-mono-num tracking-tight text-muted-foreground">—</span>
+              <p className="text-xs text-muted-foreground mt-2">販管費データなし</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Row 2: Cumulative & forecast */}
