@@ -98,8 +98,12 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
 
       {/* Section 1: Customer KPIs */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-          <Users className="h-4 w-4" /> 顧客数 / 単価
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <Users className="h-4 w-4" /> 顧客数 / 単価
+          </div>
+          {!embedded && <FetchLatestButton targets="board" />}
+        </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiMiniCard label="前月 顧客数" value={`${d.prevCustomerCount}社`} />
