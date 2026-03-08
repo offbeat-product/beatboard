@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useManagementData } from "@/hooks/useManagementData";
+import { useManagementData, SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { DashboardKpiCard } from "@/components/DashboardKpiCard";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
@@ -31,7 +31,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const [logicOpen, setLogicOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
-
+  const [sgaOpen, setSgaOpen] = useState(true);
   const presetQuestions = [
     "今期の売上着地予測は？",
     "利益改善の打ち手は？",
