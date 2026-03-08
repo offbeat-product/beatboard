@@ -499,7 +499,7 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
               {editedMonthlyData.map((m) => {
                 const diff = m.projectGph > 0 ? Math.round(m.projectGph - d.targetProjectGPH) : 0;
                 return (
-                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", diff < 0 ? "text-destructive" : diff > 0 ? "text-emerald-600" : "")}>
+                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", diff < 0 ? "text-destructive" : diff > 0 ? "text-primary" : "")}>
                     {m.projectGph > 0 ? `${diff >= 0 ? "+" : ""}¥${diff.toLocaleString()}` : "—"}
                   </TableCell>
                 );
