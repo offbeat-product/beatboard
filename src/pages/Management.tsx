@@ -111,14 +111,14 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      {!embedded && (
-        <div className="flex items-start justify-between gap-2">
-          <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />
-          <FetchLatestButton targets="both" />
-        </div>
-      )}
+      {!embedded && <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />}
 
       {/* Row 1: Current month KPIs */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-muted-foreground">当月実績</span>
+          {!embedded && <FetchLatestButton targets="both" />}
+        </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <DashboardKpiCard
           label="今月の売上"
