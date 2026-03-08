@@ -42,7 +42,7 @@ export function DashboardLayout() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground hidden sm:inline">
-              {fyLabel} 第{fyMonth}月
+              {fyLabel} 第{fyMonth}月（{currentLabel}）
             </span>
             <CurrencyToggle />
           </div>
