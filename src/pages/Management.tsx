@@ -260,14 +260,41 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                   ))}
                   <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{totals.revenue > 0 ? fmtPct((totals.grossProfit / totals.revenue) * 100) : "—"}</TableCell>
                 </TableRow>
-                {/* 販管費 */}
-                <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">販管費</TableCell>
+                {/* 販管費 (clickable to toggle sub-rows) */}
+                <TableRow
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setSgaOpen(!sgaOpen)}
+                >
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">
+                    <span className="flex items-center gap-1">
+                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !sgaOpen && "-rotate-90")} />
+                      販管費
+                    </span>
+                  </TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{m.sgaTotal !== null ? formatAmount(m.sgaTotal) : "—"}</TableCell>
                   ))}
                   <TableCell className="text-right font-mono-num font-bold whitespace-nowrap">{formatAmount(totals.sga)}</TableCell>
                 </TableRow>
+                {/* SGA Category sub-rows */}
+                {sgaOpen && SGA_CATEGORY_NAMES.map((cat) => (
+                  <TableRow key={cat} className="bg-muted/30">
+                    <TableCell className="sticky left-0 bg-muted/30 z-10 pl-8 text-xs text-muted-foreground">
+                      └ {cat}
+                    </TableCell>
+                    {d.monthlyData.map((m) => {
+                      const val = m.sgaCategoryBreakdown[cat] ?? 0;
+                      return (
+                        <TableCell key={m.ym} className="text-right font-mono-num text-xs text-muted-foreground whitespace-nowrap">
+                          {m.sgaTotal !== null ? (val > 0 ? formatAmount(val) : "—") : "—"}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className="text-right font-mono-num text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                      {sgaCategoryTotals[cat] > 0 ? formatAmount(sgaCategoryTotals[cat]) : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {/* 営業利益 */}
                 <TableRow>
                   <TableCell className="font-medium sticky left-0 bg-card z-10">営業利益</TableCell>
