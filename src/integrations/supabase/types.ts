@@ -311,6 +311,36 @@ export type Database = {
           },
         ]
       }
+      member_classifications: {
+        Row: {
+          created_at: string | null
+          employment_type: string
+          end_month: string | null
+          id: string
+          member_name: string
+          org_id: string
+          start_month: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          employment_type: string
+          end_month?: string | null
+          id?: string
+          member_name: string
+          org_id?: string
+          start_month?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          employment_type?: string
+          end_month?: string | null
+          id?: string
+          member_name?: string
+          org_id?: string
+          start_month?: string | null
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           created_at: string
