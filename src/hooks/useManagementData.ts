@@ -2,6 +2,42 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel } from "@/lib/fiscalYear";
 
+export const SGA_CATEGORIES: Record<string, string[]> = {
+  '人件費': ['役員報酬', '給料手当', '法定福利費', '福利厚生費', '外注費'],
+  '採用費': ['採用教育費'],
+  'オフィス費': ['地代家賃', '水道光熱費', '更新料', '修繕費'],
+  '広告宣伝・営業活動費': ['交際費', '会議費', '旅費交通費', '広告宣伝費'],
+  'IT・システム費': ['システム利用料', '通信費'],
+  '専門家・税務費': ['支払報酬料', '租税公課', '支払手数料'],
+  'その他': ['消耗品費', '諸会費', '長期前払費用償却', '雑費'],
+};
+
+export const SGA_CATEGORY_NAMES = Object.keys(SGA_CATEGORIES);
+
+function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
+  const result: Record<string, number> = {};
+  SGA_CATEGORY_NAMES.forEach((cat) => (result[cat] = 0));
+
+  if (!Array.isArray(sgaDetails)) return result;
+
+  const accountToCategory: Record<string, string> = {};
+  for (const [cat, accounts] of Object.entries(SGA_CATEGORIES)) {
+    for (const acc of accounts) {
+      accountToCategory[acc] = cat;
+    }
+  }
+
+  for (const item of sgaDetails as Array<{ account_item_name?: string; closing_balance?: number; total_line?: number }>) {
+    const name = item.account_item_name ?? "";
+    const amount = item.closing_balance ?? item.total_line ?? 0;
+    if (amount === 0) continue;
+    const cat = accountToCategory[name] ?? 'その他';
+    result[cat] = (result[cat] ?? 0) + Number(amount);
+  }
+
+  return result;
+}
+
 export function useManagementData() {
   const fiscalMonths = getFiscalYearMonths(2026);
   const currentMonth = CURRENT_MONTH;
@@ -68,6 +104,8 @@ export function useManagementData() {
     const operatingProfit = sgaTotal !== null ? grossProfit - Number(sgaTotal) : null;
     const operatingMarginRate = operatingProfit !== null && revenue > 0 ? (operatingProfit / revenue) * 100 : null;
 
+    const sgaCategoryBreakdown = classifySgaDetails(sgaDetails);
+
     const target = targets.find((t) => t.year_month === ym && t.metric_name === "monthly_revenue");
 
     return {
@@ -79,6 +117,7 @@ export function useManagementData() {
       grossMarginRate,
       sgaTotal: sgaTotal !== null ? Number(sgaTotal) : null,
       sgaDetails,
+      sgaCategoryBreakdown,
       operatingProfit,
       operatingMarginRate,
       target: target?.target_value ?? 0,
