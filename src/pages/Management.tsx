@@ -384,7 +384,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]" rowSpan={2}>項目</TableHead>
+                      <TableHead className="sticky left-0 bg-card z-10 min-w-[120px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>項目</TableHead>
                       {budgetMonths.map((bd) => (
                         <TableHead key={bd.ym} colSpan={3} className="text-center whitespace-nowrap border-l border-border/50">{bd.label}</TableHead>
                       ))}
