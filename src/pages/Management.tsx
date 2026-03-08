@@ -247,7 +247,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 </TableRow>
                 {/* 粗利 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">粗利</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">粗利</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.grossProfit)}</TableCell>
                   ))}
