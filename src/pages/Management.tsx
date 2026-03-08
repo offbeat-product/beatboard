@@ -221,7 +221,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]">項目</TableHead>
+                  <TableHead className="sticky left-0 bg-card z-10 min-w-[120px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">項目</TableHead>
                   {d.monthlyData.map((m) => (
                     <TableHead key={m.ym} className="text-right whitespace-nowrap">{m.label}</TableHead>
                   ))}
@@ -231,7 +231,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
               <TableBody>
                 {/* 売上 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">売上</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">売上</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.revenue)}</TableCell>
                   ))}
@@ -239,7 +239,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 </TableRow>
                 {/* 売上原価 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">売上原価</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">売上原価</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.cost)}</TableCell>
                   ))}
@@ -247,7 +247,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 </TableRow>
                 {/* 粗利 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">粗利</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">粗利</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.grossProfit)}</TableCell>
                   ))}
@@ -255,7 +255,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 </TableRow>
                 {/* 粗利率 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">粗利率</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">粗利率</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className={cn("text-right font-mono-num whitespace-nowrap", m.grossMarginRate <= 60 && "text-destructive font-semibold")}>{fmtPct(m.grossMarginRate)}</TableCell>
                   ))}
@@ -266,7 +266,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => setSgaOpen(!sgaOpen)}
                 >
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                     <span className="flex items-center gap-1">
                       <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !sgaOpen && "-rotate-90")} />
                       販管費
@@ -280,7 +280,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 {/* SGA Category sub-rows */}
                 {sgaOpen && SGA_CATEGORY_NAMES.map((cat) => (
                   <TableRow key={cat} className="bg-muted/30">
-                    <TableCell className="sticky left-0 bg-muted/30 z-10 pl-8 text-xs text-muted-foreground">
+                    <TableCell className="sticky left-0 z-10 pl-8 text-xs text-muted-foreground bg-secondary shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       └ {cat}
                     </TableCell>
                     {d.monthlyData.map((m) => {
@@ -298,7 +298,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 ))}
                 {/* 営業利益 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">営業利益</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">営業利益</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className={cn("text-right font-mono-num whitespace-nowrap", m.operatingProfit !== null && m.operatingProfit < 0 && "text-destructive font-semibold")}>
                       {m.operatingProfit !== null ? formatAmount(m.operatingProfit) : "—"}
@@ -308,7 +308,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 </TableRow>
                 {/* 営業利益率 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">営業利益率</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">営業利益率</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className={cn("text-right font-mono-num whitespace-nowrap", m.operatingMarginRate !== null && m.operatingMarginRate < 0 && "text-destructive font-semibold")}>
                       {m.operatingMarginRate !== null ? fmtPct(m.operatingMarginRate) : "—"}
@@ -384,7 +384,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]" rowSpan={2}>項目</TableHead>
+                      <TableHead className="sticky left-0 bg-card z-10 min-w-[120px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" rowSpan={2}>項目</TableHead>
                       {budgetMonths.map((bd) => (
                         <TableHead key={bd.ym} colSpan={3} className="text-center whitespace-nowrap border-l border-border/50">{bd.label}</TableHead>
                       ))}
@@ -405,7 +405,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                       if (row.isSgaSub && !budgetSgaOpen) return null;
                       return (
                         <TableRow key={row.label} className={cn(row.isSgaHeader && "cursor-pointer hover:bg-muted/50", row.isSgaSub && "bg-muted/30")} onClick={row.isSgaHeader ? () => setBudgetSgaOpen(!budgetSgaOpen) : undefined}>
-                          <TableCell className={cn("sticky left-0 z-10 whitespace-nowrap", row.isSgaSub ? "bg-muted/30 pl-8 text-xs text-muted-foreground" : "bg-card font-medium")}>
+                          <TableCell className={cn("sticky left-0 z-10 whitespace-nowrap shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]", row.isSgaSub ? "bg-secondary pl-8 text-xs text-muted-foreground" : "bg-card font-medium")}>
                             {row.isSgaHeader ? <span className="flex items-center gap-1"><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !budgetSgaOpen && "-rotate-90")} />{row.label}</span> : row.isSgaSub ? `└ ${row.label}` : row.label}
                           </TableCell>
                           {budgetMonths.map((bd) => {
