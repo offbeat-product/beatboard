@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { QualityCsvUpload } from "@/components/QualityCsvUpload";
 
 const Quality = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "品質指標");
