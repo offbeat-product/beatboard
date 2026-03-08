@@ -27,12 +27,12 @@ function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
     }
   }
 
-  for (const item of sgaDetails as Array<{ account_item_name?: string; closing_balance?: number; total_line?: number }>) {
-    const name = item.account_item_name ?? "";
-    const amount = item.closing_balance ?? item.total_line ?? 0;
-    if (amount === 0) continue;
+  for (const item of sgaDetails as Array<Record<string, unknown>>) {
+    const name = (item.name ?? item.account_item_name ?? "") as string;
+    const amount = Number(item.amount ?? item.closing_balance ?? item.total_line ?? 0);
+    if (amount === 0 || !name) continue;
     const cat = accountToCategory[name] ?? 'その他';
-    result[cat] = (result[cat] ?? 0) + Number(amount);
+    result[cat] = (result[cat] ?? 0) + amount;
   }
 
   return result;
