@@ -66,6 +66,13 @@ export function useProductivityData() {
           "employee_project_hours",
           "parttimer_total_hours",
           "parttimer_project_hours",
+          "fulltime_count",
+          "parttime_count",
+          "fulltime_total_hours",
+          "fulltime_project_hours",
+          "parttime_total_hours",
+          "parttime_project_hours",
+          "pace_data_exists",
         ]);
       if (error) throw error;
       return data;
