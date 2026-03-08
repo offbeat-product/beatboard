@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { QualityCsvUpload } from "@/components/QualityCsvUpload";
 
 const Quality = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "品質指標");
@@ -265,6 +266,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">品質データ入力テーブル</h3>
           <div className="flex gap-2">
+            <QualityCsvUpload />
             <Button variant="outline" size="sm" onClick={resetInputs} className="text-xs gap-1">
               <RotateCcw className="h-3 w-3" /> リセット
             </Button>
