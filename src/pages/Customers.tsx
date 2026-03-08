@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMonthLabel } from "@/lib/fiscalYear";
 import { PageHeader } from "@/components/PageHeader";
+import { FetchLatestButton } from "@/components/FetchLatestButton";
 
 const Customers = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "顧客分析");
