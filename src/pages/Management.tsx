@@ -405,7 +405,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                       if (row.isSgaSub && !budgetSgaOpen) return null;
                       return (
                         <TableRow key={row.label} className={cn(row.isSgaHeader && "cursor-pointer hover:bg-muted/50", row.isSgaSub && "bg-muted/30")} onClick={row.isSgaHeader ? () => setBudgetSgaOpen(!budgetSgaOpen) : undefined}>
-                          <TableCell className={cn("sticky left-0 z-10 whitespace-nowrap", row.isSgaSub ? "bg-muted/30 pl-8 text-xs text-muted-foreground" : "bg-card font-medium")}>
+                          <TableCell className={cn("sticky left-0 z-10 whitespace-nowrap", row.isSgaSub ? "bg-secondary pl-8 text-xs text-muted-foreground" : "bg-card font-medium")}>
                             {row.isSgaHeader ? <span className="flex items-center gap-1"><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !budgetSgaOpen && "-rotate-90")} />{row.label}</span> : row.isSgaSub ? `└ ${row.label}` : row.label}
                           </TableCell>
                           {budgetMonths.map((bd) => {
