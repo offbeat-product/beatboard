@@ -320,11 +320,61 @@ const SYNC_SOURCES = [
 
 function DataTab() {
   const [syncing, setSyncing] = useState<Record<string, boolean>>({});
+  const [boardWebhookUrl, setBoardWebhookUrl] = useState("https://offbeat-inc.app.n8n.cloud/webhook/wf01-board-sync");
+  const [freeeWebhookUrl, setFreeeWebhookUrl] = useState("https://offbeat-inc.app.n8n.cloud/webhook/wf02-freee-sync");
+  const [savingWebhooks, setSavingWebhooks] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("organizations").select("settings_json").eq("id", ORG_ID).single();
+      if (data?.settings_json && typeof data.settings_json === "object") {
+        const s = data.settings_json as Record<string, unknown>;
+        if (s.webhook_board_url) setBoardWebhookUrl(s.webhook_board_url as string);
+        if (s.webhook_freee_url) setFreeeWebhookUrl(s.webhook_freee_url as string);
+      }
+    })();
+  }, []);
+
+  const handleSaveWebhooks = async () => {
+    setSavingWebhooks(true);
+    try {
+      const { data: org } = await supabase.from("organizations").select("id, settings_json").eq("id", ORG_ID).single();
+      if (!org) { toast.error("組織情報が見つかりません"); return; }
+      const settings = typeof org.settings_json === "object" && org.settings_json !== null ? org.settings_json as Record<string, unknown> : {};
+      const { error } = await supabase.from("organizations").update({
+        settings_json: { ...settings, webhook_board_url: boardWebhookUrl, webhook_freee_url: freeeWebhookUrl },
+      }).eq("id", org.id);
+      if (error) throw error;
+      toast.success("Webhook URLを保存しました");
+    } catch { toast.error("保存に失敗しました"); }
+    setSavingWebhooks(false);
+  };
+
   const handleSync = (id: string) => { setSyncing((p) => ({ ...p, [id]: true })); toast.success("同期を開始しました"); setTimeout(() => setSyncing((p) => ({ ...p, [id]: false })), 2000); };
   const handleSyncAll = () => { const all: Record<string, boolean> = {}; SYNC_SOURCES.forEach((s) => (all[s.id] = true)); setSyncing(all); toast.success("全データの同期を開始しました"); setTimeout(() => setSyncing({}), 3000); };
 
   return (
     <div className="space-y-6">
+      {/* Webhook URL Settings */}
+      <div className="bg-card rounded-lg shadow-sm border border-border p-5 space-y-4">
+        <h3 className="text-sm font-semibold">Webhook URL設定</h3>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Board同期 Webhook URL</Label>
+            <Input value={boardWebhookUrl} onChange={(e) => setBoardWebhookUrl(e.target.value)} className="text-xs" placeholder="https://..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">freee同期 Webhook URL</Label>
+            <Input value={freeeWebhookUrl} onChange={(e) => setFreeeWebhookUrl(e.target.value)} className="text-xs" placeholder="https://..." />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" onClick={handleSaveWebhooks} disabled={savingWebhooks}>
+            <Save className="h-4 w-4 mr-1.5" />{savingWebhooks ? "保存中..." : "URL保存"}
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {SYNC_SOURCES.map((src) => (
           <div key={src.id} className="bg-card rounded-lg shadow-sm border border-border p-5">
