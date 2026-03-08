@@ -12,6 +12,8 @@ export function DashboardLayout() {
 
   const fyLabel = getFiscalYearLabel(CURRENT_MONTH);
   const fyMonth = getFiscalMonthNumber(CURRENT_MONTH);
+  const [y, m] = CURRENT_MONTH.split("-");
+  const currentLabel = `${y}年${Number(m)}月`;
 
   return (
     <div className="flex min-h-screen w-full">
