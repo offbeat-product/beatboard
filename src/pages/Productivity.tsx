@@ -485,6 +485,9 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
         </Table>
       </div>
 
+      {/* Client GPH Table */}
+      <ClientGphTable />
+
       {/* AI Advisor */}
       <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
         <div className="flex items-center gap-2 mb-3">
