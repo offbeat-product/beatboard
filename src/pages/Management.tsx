@@ -221,7 +221,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]">項目</TableHead>
+                  <TableHead className="sticky left-0 bg-card z-10 min-w-[120px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">項目</TableHead>
                   {d.monthlyData.map((m) => (
                     <TableHead key={m.ym} className="text-right whitespace-nowrap">{m.label}</TableHead>
                   ))}
