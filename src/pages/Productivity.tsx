@@ -497,28 +497,6 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
                 </TableCell>
               ))}
             </TableRow>
-            <TableRow>
-              <TableCell className="font-medium sticky left-0 bg-card z-10">目標差異</TableCell>
-              {editedMonthlyData.map((m) => {
-                const diff = m.projectGph > 0 ? Math.round(m.projectGph - d.targetProjectGPH) : 0;
-                return (
-                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", diff < 0 ? "text-destructive" : diff > 0 ? "text-primary" : "")}>
-                    {m.projectGph > 0 ? `${diff >= 0 ? "+" : ""}¥${diff.toLocaleString()}` : "—"}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-            <TableRow className="border-t-2 border-border bg-muted/30">
-              <TableCell className="font-semibold sticky left-0 bg-muted/30 z-10">人件費予算</TableCell>
-              {editedMonthlyData.map((m) => {
-                const laborBudget = m.grossProfit - (m.revenue * 0.5);
-                return (
-                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", laborBudget < 0 && "text-destructive")}>
-                    {formatAmount(Math.round(laborBudget))}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
           </TableBody>
         </Table>
       </div>
