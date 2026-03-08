@@ -339,6 +339,111 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
               </ResponsiveContainer>
             </div>
           )}
+
+          {/* Budget vs Actuals Table */}
+          {(() => {
+            function calcBudget(target: number) {
+              const gp = target * 0.70;
+              const op = target * 0.20;
+              const sgaT = gp - op;
+              const personnel = gp * 0.50;
+              const rem = sgaT - personnel;
+              return {
+                revenue: target, cost: target * 0.30, grossProfit: gp, grossMarginRate: 70,
+                sgaTotal: sgaT, '人件費': personnel, '採用費': rem * 0.15, 'オフィス費': rem * 0.35,
+                '広告宣伝・営業活動費': rem * 0.20, 'IT・システム費': rem * 0.15, '専門家・税務費': rem * 0.10,
+                'その他': rem * 0.05, operatingProfit: op, operatingMarginRate: 20,
+              };
+            }
+            const budgetMonths = d.monthlyData.map((m) => ({ ym: m.ym, label: m.label, budget: calcBudget(m.target), actual: m, target: m.target }));
+            const bTotals = budgetMonths.reduce((a, bd) => {
+              const b = bd.budget;
+              a.revenue += b.revenue; a.cost += b.cost; a.grossProfit += b.grossProfit;
+              a.sgaTotal += b.sgaTotal; a.operatingProfit += b.operatingProfit;
+              SGA_CATEGORY_NAMES.forEach((c) => { a.sgaCats[c] = (a.sgaCats[c] ?? 0) + (b[c as keyof typeof b] as number ?? 0); });
+              return a;
+            }, { revenue: 0, cost: 0, grossProfit: 0, sgaTotal: 0, operatingProfit: 0, sgaCats: {} as Record<string, number> });
+
+            type RowDef = { label: string; isRate?: boolean; isSgaHeader?: boolean; isSgaSub?: boolean; invertColor?: boolean; getBudget: (b: ReturnType<typeof calcBudget>) => number | null; getActual: (m: typeof d.monthlyData[0]) => number | null; getBudgetTotal: () => number | null; getActualTotal: () => number | null; };
+            const rows: RowDef[] = [
+              { label: '売上', getBudget: (b) => b.revenue, getActual: (m) => m.revenue, getBudgetTotal: () => bTotals.revenue, getActualTotal: () => totals.revenue },
+              { label: '原価', invertColor: true, getBudget: (b) => b.cost, getActual: (m) => m.cost, getBudgetTotal: () => bTotals.cost, getActualTotal: () => totals.cost },
+              { label: '粗利', getBudget: (b) => b.grossProfit, getActual: (m) => m.grossProfit, getBudgetTotal: () => bTotals.grossProfit, getActualTotal: () => totals.grossProfit },
+              { label: '粗利率', isRate: true, getBudget: (b) => b.grossMarginRate, getActual: (m) => m.grossMarginRate, getBudgetTotal: () => bTotals.revenue > 0 ? (bTotals.grossProfit / bTotals.revenue) * 100 : null, getActualTotal: () => totals.revenue > 0 ? (totals.grossProfit / totals.revenue) * 100 : null },
+              { label: '販管費', isSgaHeader: true, invertColor: true, getBudget: (b) => b.sgaTotal, getActual: (m) => m.sgaTotal, getBudgetTotal: () => bTotals.sgaTotal, getActualTotal: () => totals.sga },
+              ...SGA_CATEGORY_NAMES.map((cat): RowDef => ({ label: cat, isSgaSub: true, invertColor: true, getBudget: (b) => b[cat as keyof typeof b] as number, getActual: (m) => m.sgaTotal !== null ? (m.sgaCategoryBreakdown[cat] ?? 0) : null, getBudgetTotal: () => bTotals.sgaCats[cat] ?? 0, getActualTotal: () => sgaCategoryTotals[cat] ?? 0 })),
+              { label: '営業利益', getBudget: (b) => b.operatingProfit, getActual: (m) => m.operatingProfit, getBudgetTotal: () => bTotals.operatingProfit, getActualTotal: () => totals.operatingProfit },
+              { label: '営業利益率', isRate: true, getBudget: (b) => b.operatingMarginRate, getActual: (m) => m.operatingMarginRate, getBudgetTotal: () => bTotals.revenue > 0 ? (bTotals.operatingProfit / bTotals.revenue) * 100 : null, getActualTotal: () => totals.revenue > 0 ? (totals.operatingProfit / totals.revenue) * 100 : null },
+            ];
+            const vc = (diff: number, inv?: boolean) => { if (diff === 0) return ''; return (inv ? diff < 0 : diff > 0) ? 'text-emerald-600' : 'text-destructive'; };
+            const fmtV = (v: number | null, isRate?: boolean) => { if (v === null) return "—"; return isRate ? fmtPct(v) : formatAmount(v); };
+
+            return (
+              <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
+                <h3 className="text-sm font-semibold mb-4">月次予算 vs 実績</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]" rowSpan={2}>項目</TableHead>
+                      {budgetMonths.map((bd) => (
+                        <TableHead key={bd.ym} colSpan={3} className="text-center whitespace-nowrap border-l border-border/50">{bd.label}</TableHead>
+                      ))}
+                      <TableHead colSpan={3} className="text-center font-bold border-l border-border/50">通期合計</TableHead>
+                    </TableRow>
+                    <TableRow>
+                      {[...budgetMonths.map(b => b.ym), 'total'].map((k) => (
+                        <React.Fragment key={`sub-${k}`}>
+                          <TableHead className="text-right text-[10px] whitespace-nowrap bg-blue-50/60 dark:bg-blue-950/20 border-l border-border/50">予算</TableHead>
+                          <TableHead className="text-right text-[10px] whitespace-nowrap">実績</TableHead>
+                          <TableHead className="text-right text-[10px] whitespace-nowrap">差異</TableHead>
+                        </React.Fragment>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => {
+                      if (row.isSgaSub && !budgetSgaOpen) return null;
+                      return (
+                        <TableRow key={row.label} className={cn(row.isSgaHeader && "cursor-pointer hover:bg-muted/50", row.isSgaSub && "bg-muted/30")} onClick={row.isSgaHeader ? () => setBudgetSgaOpen(!budgetSgaOpen) : undefined}>
+                          <TableCell className={cn("sticky left-0 z-10 whitespace-nowrap", row.isSgaSub ? "bg-muted/30 pl-8 text-xs text-muted-foreground" : "bg-card font-medium")}>
+                            {row.isSgaHeader ? <span className="flex items-center gap-1"><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !budgetSgaOpen && "-rotate-90")} />{row.label}</span> : row.isSgaSub ? `└ ${row.label}` : row.label}
+                          </TableCell>
+                          {budgetMonths.map((bd) => {
+                            const bV = bd.target > 0 ? row.getBudget(bd.budget) : null;
+                            const aV = row.getActual(bd.actual);
+                            const diff = bV !== null && aV !== null ? aV - bV : null;
+                            return (
+                              <React.Fragment key={bd.ym}>
+                                <TableCell className="text-right font-mono-num whitespace-nowrap text-xs bg-blue-50/60 dark:bg-blue-950/20 border-l border-border/50">{fmtV(bV, row.isRate)}</TableCell>
+                                <TableCell className="text-right font-mono-num whitespace-nowrap text-xs">{fmtV(aV, row.isRate)}</TableCell>
+                                <TableCell className={cn("text-right font-mono-num whitespace-nowrap text-xs", diff !== null && vc(diff, row.invertColor))}>{diff !== null ? fmtV(diff, row.isRate) : "—"}</TableCell>
+                              </React.Fragment>
+                            );
+                          })}
+                          {(() => {
+                            const bT = row.getBudgetTotal(); const aT = row.getActualTotal(); const dT = bT !== null && aT !== null ? aT - bT : null;
+                            return (<>
+                              <TableCell className="text-right font-mono-num whitespace-nowrap text-xs font-semibold bg-blue-50/60 dark:bg-blue-950/20 border-l border-border/50">{fmtV(bT, row.isRate)}</TableCell>
+                              <TableCell className="text-right font-mono-num whitespace-nowrap text-xs font-semibold">{fmtV(aT, row.isRate)}</TableCell>
+                              <TableCell className={cn("text-right font-mono-num whitespace-nowrap text-xs font-semibold", dT !== null && vc(dT, row.invertColor))}>{dT !== null ? fmtV(dT, row.isRate) : "—"}</TableCell>
+                            </>);
+                          })()}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <div className="mt-4 text-[11px] text-muted-foreground space-y-0.5 leading-relaxed">
+                  <p className="font-medium text-foreground/70 mb-1">予算配分ルール:</p>
+                  <p>・粗利目標 = 売上目標 × 70%</p>
+                  <p>・営業利益目標 = 売上目標 × 20%</p>
+                  <p>・販管費予算 = 粗利目標 - 営業利益目標（= 売上目標 × 50%）</p>
+                  <p>・人件費 = 粗利目標 × 50%</p>
+                  <p>・残り予算（販管費 - 人件費）の配分: 採用費15%, オフィス費35%, 広告宣伝・営業活動費20%, IT・システム費15%, 専門家・税務費10%, その他5%</p>
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
 
