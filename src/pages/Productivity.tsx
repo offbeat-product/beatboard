@@ -230,7 +230,10 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
 
       {/* Row 1: GPH (Total Labor Hours) */}
       <div>
-        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">粗利工数単価（総労働時間）</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">粗利工数単価（総労働時間）</h3>
+          <PaceCsvUpload />
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <DashboardKpiCard label="前月の粗利工数単価" value={`¥${Math.round(kpis.prevGPH).toLocaleString()}`} delay={0} />
           <DashboardKpiCard
@@ -494,37 +497,12 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
                 </TableCell>
               ))}
             </TableRow>
-            <TableRow>
-              <TableCell className="font-medium sticky left-0 bg-card z-10">目標差異</TableCell>
-              {editedMonthlyData.map((m) => {
-                const diff = m.projectGph > 0 ? Math.round(m.projectGph - d.targetProjectGPH) : 0;
-                return (
-                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", diff < 0 ? "text-destructive" : diff > 0 ? "text-primary" : "")}>
-                    {m.projectGph > 0 ? `${diff >= 0 ? "+" : ""}¥${diff.toLocaleString()}` : "—"}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-            <TableRow className="border-t-2 border-border bg-muted/30">
-              <TableCell className="font-semibold sticky left-0 bg-muted/30 z-10">人件費予算</TableCell>
-              {editedMonthlyData.map((m) => {
-                const laborBudget = m.grossProfit - (m.revenue * 0.5);
-                return (
-                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", laborBudget < 0 && "text-destructive")}>
-                    {formatAmount(Math.round(laborBudget))}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
           </TableBody>
         </Table>
       </div>
 
-      {/* Pace CSV Upload + Client GPH Table */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
-        <PaceCsvUpload />
-      </div>
+      {/* Client GPH Table */}
+      <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
       <ClientGphTable />
 
       {/* AI Advisor */}
@@ -593,7 +571,7 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
               <p>・<strong>総労働時間</strong> = Pace CSV全行の時間合計（自社業務含む）※正社員+パート</p>
               <p>・<strong>案件工数</strong> = 顧客名が「Off Beat株式会社（自社）」以外の時間合計</p>
               <p>・<strong>案件稼働率</strong> = 案件工数 ÷ 総労働時間 × 100</p>
-              <p>・<strong>目標差異</strong> = 案件粗利工数単価 - ¥25,000</p>
+              
               <p>・<strong>Paceデータがある月</strong> = 自動計算値を優先（薄い青背景 + Paceマーク）、ない月は手動入力値を使用</p>
               <p>・<strong>1人あたり売上</strong> = 売上 ÷ 総人員数（正社員+パート）</p>
               <p>・<strong>1人あたり粗利</strong> = 粗利 ÷ 総人員数</p>
