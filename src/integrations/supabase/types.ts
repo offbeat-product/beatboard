@@ -84,6 +84,36 @@ export type Database = {
           },
         ]
       }
+      client_monthly_hours: {
+        Row: {
+          client_id: string
+          client_name: string
+          created_at: string | null
+          hours: number | null
+          id: string
+          org_id: string
+          year_month: string
+        }
+        Insert: {
+          client_id: string
+          client_name: string
+          created_at?: string | null
+          hours?: number | null
+          id?: string
+          org_id: string
+          year_month: string
+        }
+        Update: {
+          client_id?: string
+          client_name?: string
+          created_at?: string | null
+          hours?: number | null
+          id?: string
+          org_id?: string
+          year_month?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           created_at: string | null
