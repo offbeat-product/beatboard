@@ -266,7 +266,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => setSgaOpen(!sgaOpen)}
                 >
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                     <span className="flex items-center gap-1">
                       <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !sgaOpen && "-rotate-90")} />
                       販管費
