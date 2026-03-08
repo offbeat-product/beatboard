@@ -291,5 +291,7 @@ export function useProductivityData() {
     defaultHoursMap,
     computeMonthlyRow,
     sales,
+    // Pace data flag
+    hasPaceData,
   };
 }
