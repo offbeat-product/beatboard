@@ -554,6 +554,10 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
               <p>・<strong>案件稼働率</strong> = 案件工数 ÷ 総労働時間 × 100</p>
               <p>・<strong>1人あたり売上</strong> = 売上 ÷ 総人員数（正社員+パート）</p>
               <p>・<strong>1人あたり粗利</strong> = 粗利 ÷ 総人員数</p>
+              <p className="mt-2 pt-2 border-t border-border">・<strong>顧客別粗利工数単価</strong> = 顧客の月間粗利 ÷ 顧客の月間案件工数（手動入力）</p>
+              <p>・¥25,000以上が目標。¥25,000未満は赤字表示</p>
+              <p>・工数は2025年11月以降のデータのみ対応</p>
+              <p>・通期平均 = 通期粗利合計 ÷ 通期工数合計</p>
             </div>
           </CollapsibleContent>
         </div>
