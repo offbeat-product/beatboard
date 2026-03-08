@@ -66,6 +66,13 @@ export function useProductivityData() {
           "employee_project_hours",
           "parttimer_total_hours",
           "parttimer_project_hours",
+          "fulltime_count",
+          "parttime_count",
+          "fulltime_total_hours",
+          "fulltime_project_hours",
+          "parttime_total_hours",
+          "parttime_project_hours",
+          "pace_data_exists",
         ]);
       if (error) throw error;
       return data;
@@ -109,10 +116,28 @@ export function useProductivityData() {
 
   // Staffing rules per month (defaults)
   const getStaffing = (ym: string) => {
+    // Check kpi_snapshots for Pace-derived counts first
+    const findSnap = (metric: string) =>
+      kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric);
+    const ftCount = findSnap("fulltime_count");
+    const ptCount = findSnap("parttime_count");
+    if (ftCount || ptCount) {
+      return {
+        employees: ftCount?.actual_value ?? (ym >= "2026-02" ? 2 : 3),
+        partTimers: ptCount?.actual_value ?? (ym >= "2026-02" ? 3 : 0),
+        employeeHours: 160,
+        partTimerHoursEach: 140,
+      };
+    }
     if (ym >= "2026-02") {
       return { employees: 2, partTimers: 3, employeeHours: 160, partTimerHoursEach: 140 };
     }
     return { employees: 3, partTimers: 0, employeeHours: 160, partTimerHoursEach: 140 };
+  };
+
+  // Check if a month has Pace data
+  const hasPaceData = (ym: string): boolean => {
+    return kpiSnapshots.some((k) => k.snapshot_date.startsWith(ym) && k.metric_name === "pace_data_exists" && k.actual_value === 1);
   };
 
   // Build base monthly data with default hours from kpi_snapshots or staffing rules
@@ -266,5 +291,7 @@ export function useProductivityData() {
     defaultHoursMap,
     computeMonthlyRow,
     sales,
+    // Pace data flag
+    hasPaceData,
   };
 }

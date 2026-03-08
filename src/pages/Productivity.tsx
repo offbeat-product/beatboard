@@ -337,108 +337,131 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
             <TableRow>
               <TableHead className="sticky left-0 bg-card z-10 min-w-[160px]">項目</TableHead>
               {editedMonthlyData.map((m) => (
-                <TableHead key={m.ym} className="text-center whitespace-nowrap min-w-[90px]">{m.label}</TableHead>
+                <TableHead key={m.ym} className="text-center whitespace-nowrap min-w-[90px]">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span>{m.label}</span>
+                    {d.hasPaceData(m.ym) && (
+                      <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Pace</span>
+                    )}
+                  </div>
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* Employee counts (read-only) */}
+            {/* Employee counts */}
             <TableRow>
               <TableCell className="font-medium sticky left-0 bg-card z-10">正社員数</TableCell>
               {editedMonthlyData.map((m) => (
-                <TableCell key={m.ym} className="text-center font-mono-num">{m.employees}</TableCell>
+                <TableCell key={m.ym} className={cn("text-center font-mono-num", d.hasPaceData(m.ym) && "bg-primary/5")}>{m.employees}</TableCell>
               ))}
             </TableRow>
             <TableRow>
-              <TableCell className="font-medium sticky left-0 bg-card z-10">パート数</TableCell>
+              <TableCell className="font-medium sticky left-0 bg-card z-10">パート人数</TableCell>
               {editedMonthlyData.map((m) => (
-                <TableCell key={m.ym} className="text-center font-mono-num">{m.partTimers}</TableCell>
+                <TableCell key={m.ym} className={cn("text-center font-mono-num", d.hasPaceData(m.ym) && "bg-primary/5")}>{m.partTimers}</TableCell>
               ))}
             </TableRow>
 
-            {/* Editable: Employee Total Hours */}
+            {/* Employee Total Hours */}
             <TableRow className="bg-accent/30">
               <TableCell className="font-medium sticky left-0 bg-accent/30 z-10 text-xs">
-                <span className="text-primary font-semibold">✏️ 社員 総労働時間</span>
+                <span className="text-primary font-semibold">{d.hasPaceData ? "" : "✏️ "}正社員総労働時間</span>
               </TableCell>
-              {d.fiscalMonths.map((ym) => (
-                <TableCell key={ym} className="p-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={hoursMap[ym]?.employeeTotalHours ?? 0}
-                    onChange={(e) => updateHours(ym, "employeeTotalHours", Number(e.target.value))}
-                    className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num"
-                  />
-                </TableCell>
-              ))}
+              {d.fiscalMonths.map((ym) => {
+                const isPace = d.hasPaceData(ym);
+                return (
+                  <TableCell key={ym} className={cn("p-1", isPace && "bg-primary/5")}>
+                    {isPace ? (
+                      <span className="text-xs font-mono-num block text-center">{(hoursMap[ym]?.employeeTotalHours ?? 0).toFixed(1)}h</span>
+                    ) : (
+                      <Input type="number" min={0} value={hoursMap[ym]?.employeeTotalHours ?? 0}
+                        onChange={(e) => updateHours(ym, "employeeTotalHours", Number(e.target.value))}
+                        className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num" />
+                    )}
+                  </TableCell>
+                );
+              })}
             </TableRow>
 
-            {/* Editable: Employee Project Hours */}
+            {/* Employee Project Hours */}
             <TableRow className="bg-accent/30">
               <TableCell className="font-medium sticky left-0 bg-accent/30 z-10 text-xs">
-                <span className="text-primary font-semibold">✏️ 社員 案件工数</span>
+                <span className="text-primary font-semibold">正社員案件工数</span>
               </TableCell>
-              {d.fiscalMonths.map((ym) => (
-                <TableCell key={ym} className="p-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={hoursMap[ym]?.employeeProjectHours ?? 0}
-                    onChange={(e) => updateHours(ym, "employeeProjectHours", Number(e.target.value))}
-                    className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num"
-                  />
-                </TableCell>
-              ))}
+              {d.fiscalMonths.map((ym) => {
+                const isPace = d.hasPaceData(ym);
+                return (
+                  <TableCell key={ym} className={cn("p-1", isPace && "bg-primary/5")}>
+                    {isPace ? (
+                      <span className="text-xs font-mono-num block text-center">{(hoursMap[ym]?.employeeProjectHours ?? 0).toFixed(1)}h</span>
+                    ) : (
+                      <Input type="number" min={0} value={hoursMap[ym]?.employeeProjectHours ?? 0}
+                        onChange={(e) => updateHours(ym, "employeeProjectHours", Number(e.target.value))}
+                        className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num" />
+                    )}
+                  </TableCell>
+                );
+              })}
             </TableRow>
 
-            {/* Editable: Part-timer Total Hours */}
+            {/* Part-timer Total Hours */}
             <TableRow className="bg-accent/20">
               <TableCell className="font-medium sticky left-0 bg-accent/20 z-10 text-xs">
-                <span className="text-primary font-semibold">✏️ パート 総労働時間</span>
+                <span className="text-primary font-semibold">パート総労働時間</span>
               </TableCell>
-              {d.fiscalMonths.map((ym) => (
-                <TableCell key={ym} className="p-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={hoursMap[ym]?.partTimerTotalHours ?? 0}
-                    onChange={(e) => updateHours(ym, "partTimerTotalHours", Number(e.target.value))}
-                    className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num"
-                  />
-                </TableCell>
-              ))}
+              {d.fiscalMonths.map((ym) => {
+                const isPace = d.hasPaceData(ym);
+                return (
+                  <TableCell key={ym} className={cn("p-1", isPace && "bg-primary/5")}>
+                    {isPace ? (
+                      <span className="text-xs font-mono-num block text-center">{(hoursMap[ym]?.partTimerTotalHours ?? 0).toFixed(1)}h</span>
+                    ) : (
+                      <Input type="number" min={0} value={hoursMap[ym]?.partTimerTotalHours ?? 0}
+                        onChange={(e) => updateHours(ym, "partTimerTotalHours", Number(e.target.value))}
+                        className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num" />
+                    )}
+                  </TableCell>
+                );
+              })}
             </TableRow>
 
-            {/* Editable: Part-timer Project Hours */}
+            {/* Part-timer Project Hours */}
             <TableRow className="bg-accent/20">
               <TableCell className="font-medium sticky left-0 bg-accent/20 z-10 text-xs">
-                <span className="text-primary font-semibold">✏️ パート 案件工数</span>
+                <span className="text-primary font-semibold">パート案件工数</span>
               </TableCell>
-              {d.fiscalMonths.map((ym) => (
-                <TableCell key={ym} className="p-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={hoursMap[ym]?.partTimerProjectHours ?? 0}
-                    onChange={(e) => updateHours(ym, "partTimerProjectHours", Number(e.target.value))}
-                    className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num"
-                  />
-                </TableCell>
-              ))}
+              {d.fiscalMonths.map((ym) => {
+                const isPace = d.hasPaceData(ym);
+                return (
+                  <TableCell key={ym} className={cn("p-1", isPace && "bg-primary/5")}>
+                    {isPace ? (
+                      <span className="text-xs font-mono-num block text-center">{(hoursMap[ym]?.partTimerProjectHours ?? 0).toFixed(1)}h</span>
+                    ) : (
+                      <Input type="number" min={0} value={hoursMap[ym]?.partTimerProjectHours ?? 0}
+                        onChange={(e) => updateHours(ym, "partTimerProjectHours", Number(e.target.value))}
+                        className="h-8 text-xs text-center w-full min-w-[70px] font-mono-num" />
+                    )}
+                  </TableCell>
+                );
+              })}
             </TableRow>
 
             {/* Auto-calculated rows */}
             <TableRow className="border-t-2 border-border">
-              <TableCell className="font-semibold sticky left-0 bg-card z-10">総労働時間（合計）</TableCell>
+              <TableCell className="font-semibold sticky left-0 bg-card z-10">全体総労働時間</TableCell>
               {editedMonthlyData.map((m) => (
-                <TableCell key={m.ym} className="text-center font-mono-num font-semibold whitespace-nowrap">{m.totalLaborHours.toLocaleString()}h</TableCell>
+                <TableCell key={m.ym} className={cn("text-center font-mono-num font-semibold whitespace-nowrap", d.hasPaceData(m.ym) && "bg-primary/5")}>
+                  {m.totalLaborHours.toLocaleString()}h
+                </TableCell>
               ))}
             </TableRow>
             <TableRow>
-              <TableCell className="font-semibold sticky left-0 bg-card z-10">案件工数（合計）</TableCell>
+              <TableCell className="font-semibold sticky left-0 bg-card z-10">全体案件工数</TableCell>
               {editedMonthlyData.map((m) => (
-                <TableCell key={m.ym} className="text-center font-mono-num font-semibold whitespace-nowrap">{m.projectHours.toLocaleString()}h</TableCell>
+                <TableCell key={m.ym} className={cn("text-center font-mono-num font-semibold whitespace-nowrap", d.hasPaceData(m.ym) && "bg-primary/5")}>
+                  {m.projectHours.toLocaleString()}h
+                </TableCell>
               ))}
             </TableRow>
             <TableRow>
@@ -470,6 +493,17 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
                   ¥{Math.round(m.projectGph).toLocaleString()}
                 </TableCell>
               ))}
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium sticky left-0 bg-card z-10">目標差異</TableCell>
+              {editedMonthlyData.map((m) => {
+                const diff = m.projectGph > 0 ? Math.round(m.projectGph - d.targetProjectGPH) : 0;
+                return (
+                  <TableCell key={m.ym} className={cn("text-center font-mono-num whitespace-nowrap font-semibold", diff < 0 ? "text-destructive" : diff > 0 ? "text-primary" : "")}>
+                    {m.projectGph > 0 ? `${diff >= 0 ? "+" : ""}¥${diff.toLocaleString()}` : "—"}
+                  </TableCell>
+                );
+              })}
             </TableRow>
             <TableRow className="border-t-2 border-border bg-muted/30">
               <TableCell className="font-semibold sticky left-0 bg-muted/30 z-10">人件費予算</TableCell>
@@ -554,14 +588,17 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
             <div className="px-5 pb-5 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
               <p>・<strong>粗利工数単価（総労働時間）</strong> = 月間粗利 ÷ 月間総労働時間。目標¥21,552</p>
               <p>・<strong>案件粗利工数単価（案件工数）</strong> = 月間粗利 ÷ 月間案件工数時間。目標¥25,000</p>
-              <p>・<strong>総労働時間</strong> = 社員総労働時間 + パート総労働時間</p>
-              <p>・<strong>案件工数</strong> = 社員案件工数 + パート案件工数</p>
+              <p>・<strong>正社員/パートの分類</strong> = 設定画面のメンバー分類テーブルに基づく</p>
+              <p>・<strong>CEO（井手）</strong> = 全集計から除外</p>
+              <p>・<strong>総労働時間</strong> = Pace CSV全行の時間合計（自社業務含む）※正社員+パート</p>
+              <p>・<strong>案件工数</strong> = 顧客名が「Off Beat株式会社（自社）」以外の時間合計</p>
               <p>・<strong>案件稼働率</strong> = 案件工数 ÷ 総労働時間 × 100</p>
+              <p>・<strong>目標差異</strong> = 案件粗利工数単価 - ¥25,000</p>
+              <p>・<strong>Paceデータがある月</strong> = 自動計算値を優先（薄い青背景 + Paceマーク）、ない月は手動入力値を使用</p>
               <p>・<strong>1人あたり売上</strong> = 売上 ÷ 総人員数（正社員+パート）</p>
               <p>・<strong>1人あたり粗利</strong> = 粗利 ÷ 総人員数</p>
               <p className="mt-2 pt-2 border-t border-border">・<strong>顧客別粗利工数単価</strong> = 顧客の月間粗利 ÷ 顧客の月間案件工数（手動入力）</p>
               <p>・¥25,000以上が目標。¥25,000未満は赤字表示</p>
-              <p>・工数は2025年11月以降のデータのみ対応</p>
               <p>・通期平均 = 通期粗利合計 ÷ 通期工数合計</p>
             </div>
           </CollapsibleContent>
