@@ -22,6 +22,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
+import { ClientGphTable } from "@/components/ClientGphTable";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
