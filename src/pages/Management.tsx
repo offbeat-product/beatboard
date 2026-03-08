@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useManagementData, SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
@@ -14,15 +14,13 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Bot, Send, RefreshCw, Loader2 } from "lucide-react";
+import { ChevronDown, Bot, Send } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID } from "@/lib/fiscalYear";
-import { toast } from "sonner";
+import { FetchLatestButton } from "@/components/FetchLatestButton";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -36,49 +34,6 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
   const [sgaOpen, setSgaOpen] = useState(true);
   const [budgetSgaOpen, setBudgetSgaOpen] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const cooldownRef = useRef(false);
-
-  const handleFetchLatest = useCallback(async () => {
-    if (cooldownRef.current || syncing) return;
-    setSyncing(true);
-    cooldownRef.current = true;
-    setTimeout(() => { cooldownRef.current = false; }, 30000);
-
-    try {
-      // Load webhook URLs from org settings
-      const { data: org } = await supabase
-        .from("organizations")
-        .select("settings_json")
-        .eq("id", ORG_ID)
-        .single();
-      const settings = (org?.settings_json && typeof org.settings_json === "object") ? org.settings_json as Record<string, unknown> : {};
-      const boardUrl = (settings.webhook_board_url as string) || "https://offbeat-inc.app.n8n.cloud/webhook/wf01-board-sync";
-      const freeeUrl = (settings.webhook_freee_url as string) || "https://offbeat-inc.app.n8n.cloud/webhook/wf02-freee-sync";
-
-      await Promise.all([
-        fetch(boardUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: "current" }),
-        }),
-        fetch(freeeUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: "current" }),
-        }),
-      ]);
-
-      // Wait 10 seconds then refetch
-      await new Promise((r) => setTimeout(r, 10000));
-      await queryClient.invalidateQueries();
-      toast.success("最新データを取得しました");
-    } catch {
-      toast.error("データ取得に失敗しました。しばらく待ってから再試行してください。");
-    } finally {
-      setSyncing(false);
-    }
-  }, [syncing, queryClient]);
 
   const presetQuestions = [
     "今期の売上着地予測は？",
@@ -103,9 +58,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
         {!embedded && (
           <div className="flex items-start justify-between gap-2">
             <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />
-            <Button variant="outline" size="sm" disabled className="shrink-0 mt-1">
-              <RefreshCw className="h-4 w-4 mr-1.5" />最新データ取得
-            </Button>
+            <FetchLatestButton targets="both" />
           </div>
         )}
         <KpiCardSkeleton count={3} />
@@ -166,19 +119,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
       {!embedded && (
         <div className="flex items-start justify-between gap-2">
           <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={syncing}
-            onClick={handleFetchLatest}
-            className="shrink-0 mt-1"
-          >
-            {syncing ? (
-              <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />取得中...</>
-            ) : (
-              <><RefreshCw className="h-4 w-4 mr-1.5" />最新データ取得</>
-            )}
-          </Button>
+          <FetchLatestButton targets="both" />
         </div>
       )}
 
