@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useManagementData, SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
@@ -14,15 +14,13 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Bot, Send, RefreshCw, Loader2 } from "lucide-react";
+import { ChevronDown, Bot, Send } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID } from "@/lib/fiscalYear";
-import { toast } from "sonner";
+import { FetchLatestButton } from "@/components/FetchLatestButton";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
