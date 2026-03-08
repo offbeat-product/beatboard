@@ -32,6 +32,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
   const [sgaOpen, setSgaOpen] = useState(true);
+  const [budgetSgaOpen, setBudgetSgaOpen] = useState(true);
   const presetQuestions = [
     "今期の売上着地予測は？",
     "利益改善の打ち手は？",
