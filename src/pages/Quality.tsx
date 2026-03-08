@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useQualityData, QualityMonthlyInput } from "@/hooks/useQualityData";
+import { ClientQualityTable } from "@/components/ClientQualityTable";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import {
