@@ -100,7 +100,14 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        {!embedded && <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />}
+        {!embedded && (
+          <div className="flex items-start justify-between gap-2">
+            <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />
+            <Button variant="outline" size="sm" disabled className="shrink-0 mt-1">
+              <RefreshCw className="h-4 w-4 mr-1.5" />最新データ取得
+            </Button>
+          </div>
+        )}
         <KpiCardSkeleton count={3} />
         <KpiCardSkeleton count={3} />
         <ChartSkeleton />
