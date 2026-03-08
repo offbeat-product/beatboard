@@ -119,19 +119,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
       {!embedded && (
         <div className="flex items-start justify-between gap-2">
           <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={syncing}
-            onClick={handleFetchLatest}
-            className="shrink-0 mt-1"
-          >
-            {syncing ? (
-              <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />取得中...</>
-            ) : (
-              <><RefreshCw className="h-4 w-4 mr-1.5" />最新データ取得</>
-            )}
-          </Button>
+          <FetchLatestButton targets="both" />
         </div>
       )}
 
