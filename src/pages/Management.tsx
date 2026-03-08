@@ -34,49 +34,6 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
   const [sgaOpen, setSgaOpen] = useState(true);
   const [budgetSgaOpen, setBudgetSgaOpen] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const cooldownRef = useRef(false);
-
-  const handleFetchLatest = useCallback(async () => {
-    if (cooldownRef.current || syncing) return;
-    setSyncing(true);
-    cooldownRef.current = true;
-    setTimeout(() => { cooldownRef.current = false; }, 30000);
-
-    try {
-      // Load webhook URLs from org settings
-      const { data: org } = await supabase
-        .from("organizations")
-        .select("settings_json")
-        .eq("id", ORG_ID)
-        .single();
-      const settings = (org?.settings_json && typeof org.settings_json === "object") ? org.settings_json as Record<string, unknown> : {};
-      const boardUrl = (settings.webhook_board_url as string) || "https://offbeat-inc.app.n8n.cloud/webhook/wf01-board-sync";
-      const freeeUrl = (settings.webhook_freee_url as string) || "https://offbeat-inc.app.n8n.cloud/webhook/wf02-freee-sync";
-
-      await Promise.all([
-        fetch(boardUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: "current" }),
-        }),
-        fetch(freeeUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: "current" }),
-        }),
-      ]);
-
-      // Wait 10 seconds then refetch
-      await new Promise((r) => setTimeout(r, 10000));
-      await queryClient.invalidateQueries();
-      toast.success("最新データを取得しました");
-    } catch {
-      toast.error("データ取得に失敗しました。しばらく待ってから再試行してください。");
-    } finally {
-      setSyncing(false);
-    }
-  }, [syncing, queryClient]);
 
   const presetQuestions = [
     "今期の売上着地予測は？",
