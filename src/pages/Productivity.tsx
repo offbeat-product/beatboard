@@ -230,7 +230,10 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
 
       {/* Row 1: GPH (Total Labor Hours) */}
       <div>
-        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">粗利工数単価（総労働時間）</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">粗利工数単価（総労働時間）</h3>
+          <PaceCsvUpload />
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <DashboardKpiCard label="前月の粗利工数単価" value={`¥${Math.round(kpis.prevGPH).toLocaleString()}`} delay={0} />
           <DashboardKpiCard
