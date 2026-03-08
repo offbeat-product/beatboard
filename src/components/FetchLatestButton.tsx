@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +16,24 @@ interface FetchLatestButtonProps {
   targets?: WebhookTarget;
 }
 
+function formatLastFetched(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function FetchLatestButton({ targets = "both" }: FetchLatestButtonProps) {
+  const storageKey = `lastFetched_${targets}`;
   const [syncing, setSyncing] = useState(false);
+  const [lastFetched, setLastFetched] = useState<string | null>(null);
   const cooldownRef = useRef(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setLastFetched(localStorage.getItem(storageKey));
+  }, [storageKey]);
 
   const handleClick = useCallback(async () => {
     if (cooldownRef.current || syncing) return;
@@ -58,27 +72,40 @@ export function FetchLatestButton({ targets = "both" }: FetchLatestButtonProps) 
       await Promise.all(calls);
       await new Promise((r) => setTimeout(r, 10000));
       await queryClient.invalidateQueries();
+
+      const now = new Date().toISOString();
+      localStorage.setItem(storageKey, now);
+      setLastFetched(now);
+
       toast.success("最新データを取得しました");
     } catch {
       toast.error("データ取得に失敗しました。しばらく待ってから再試行してください。");
     } finally {
       setSyncing(false);
     }
-  }, [syncing, queryClient, targets]);
+  }, [syncing, queryClient, targets, storageKey]);
+
+  const displayTime = formatLastFetched(lastFetched);
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={syncing}
-      onClick={handleClick}
-      className="shrink-0"
-    >
-      {syncing ? (
-        <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />取得中...</>
-      ) : (
-        <><RefreshCw className="h-4 w-4 mr-1.5" />最新データ取得</>
+    <div className="flex items-center gap-2 shrink-0">
+      {displayTime && (
+        <span className="text-[10px] text-muted-foreground whitespace-nowrap hidden sm:inline">
+          最終取得: {displayTime}
+        </span>
       )}
-    </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={syncing}
+        onClick={handleClick}
+      >
+        {syncing ? (
+          <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />取得中...</>
+        ) : (
+          <><RefreshCw className="h-4 w-4 mr-1.5" />最新データ取得</>
+        )}
+      </Button>
+    </div>
   );
 }
