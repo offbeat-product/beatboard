@@ -239,7 +239,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 </TableRow>
                 {/* 売上原価 */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10">売上原価</TableCell>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">売上原価</TableCell>
                   {d.monthlyData.map((m) => (
                     <TableCell key={m.ym} className="text-right font-mono-num whitespace-nowrap">{formatAmount(m.cost)}</TableCell>
                   ))}
