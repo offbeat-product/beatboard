@@ -280,7 +280,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 {/* SGA Category sub-rows */}
                 {sgaOpen && SGA_CATEGORY_NAMES.map((cat) => (
                   <TableRow key={cat} className="bg-muted/30">
-                    <TableCell className="sticky left-0 bg-muted/30 z-10 pl-8 text-xs text-muted-foreground">
+                    <TableCell className="sticky left-0 z-10 pl-8 text-xs text-muted-foreground bg-secondary">
                       └ {cat}
                     </TableCell>
                     {d.monthlyData.map((m) => {
