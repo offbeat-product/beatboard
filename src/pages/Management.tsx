@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useManagementData, SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
