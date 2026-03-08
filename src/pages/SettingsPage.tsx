@@ -348,6 +348,143 @@ function DataTab() {
 /* Tab 4: 労働時間                                  */
 /* ────────────────────────────────────────────── */
 
+interface MemberClassification {
+  id?: string;
+  member_name: string;
+  employment_type: string;
+  start_month: string;
+  end_month: string | null;
+}
+
+const EMPLOYMENT_TYPES = ["CEO", "正社員", "パート", "業務委託"];
+
+function MemberClassificationSection() {
+  const [members, setMembers] = useState<MemberClassification[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("member_classifications" as any)
+        .select("*")
+        .eq("org_id", ORG_ID)
+        .order("created_at");
+      if (data && (data as any[]).length > 0) {
+        setMembers((data as any[]).map((r: any) => ({
+          id: r.id,
+          member_name: r.member_name,
+          employment_type: r.employment_type,
+          start_month: r.start_month || "2025-05",
+          end_month: r.end_month || null,
+        })));
+      }
+      setLoaded(true);
+    })();
+  }, []);
+
+  const addRow = () => {
+    setMembers((prev) => [...prev, { member_name: "", employment_type: "正社員", start_month: "2025-05", end_month: null }]);
+  };
+
+  const updateRow = (idx: number, field: keyof MemberClassification, value: string | null) => {
+    setMembers((prev) => prev.map((m, i) => i === idx ? { ...m, [field]: value } : m));
+  };
+
+  const removeRow = (idx: number) => {
+    setMembers((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Delete existing then insert all
+      await (supabase.from("member_classifications" as any) as any).delete().eq("org_id", ORG_ID);
+      const inserts = members.filter((m) => m.member_name.trim()).map((m) => ({
+        org_id: ORG_ID,
+        member_name: m.member_name.trim(),
+        employment_type: m.employment_type,
+        start_month: m.start_month || null,
+        end_month: m.end_month || null,
+      }));
+      if (inserts.length > 0) {
+        const { error } = await (supabase.from("member_classifications" as any) as any).insert(inserts);
+        if (error) throw error;
+      }
+      toast.success("メンバー分類を保存しました");
+    } catch {
+      toast.error("保存に失敗しました");
+    }
+    setSaving(false);
+  };
+
+  const displayType = (t: string) => t === "CEO" ? "CEO（除外）" : t;
+  const displayPeriod = (m: MemberClassification) => {
+    if (!m.end_month) return `${m.start_month}〜 通期`;
+    return `${m.start_month}〜${m.end_month}`;
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold">メンバー分類</h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={addRow} className="text-xs">+ メンバー追加</Button>
+          <Button size="sm" onClick={handleSave} disabled={saving} className="text-xs gap-1">
+            <Save className="h-3 w-3" />{saving ? "保存中..." : "保存"}
+          </Button>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">Pace CSVアップロード時のメンバー分類に使用されます。CEOは全集計から除外されます。</p>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-xs">メンバー名</TableHead>
+              <TableHead className="text-xs">雇用形態</TableHead>
+              <TableHead className="text-xs">開始月</TableHead>
+              <TableHead className="text-xs">終了月</TableHead>
+              <TableHead className="text-xs w-10"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {members.map((m, i) => (
+              <TableRow key={i}>
+                <TableCell className="p-1">
+                  <Input value={m.member_name} onChange={(e) => updateRow(i, "member_name", e.target.value)} className="h-8 text-xs" placeholder="氏名" />
+                </TableCell>
+                <TableCell className="p-1">
+                  <Select value={m.employment_type} onValueChange={(v) => updateRow(i, "employment_type", v)}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYMENT_TYPES.map((t) => (
+                        <SelectItem key={t} value={t} className="text-xs">{t === "CEO" ? "CEO（除外）" : t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell className="p-1">
+                  <Input value={m.start_month} onChange={(e) => updateRow(i, "start_month", e.target.value)} className="h-8 text-xs w-28" placeholder="2025-05" />
+                </TableCell>
+                <TableCell className="p-1">
+                  <Input value={m.end_month ?? ""} onChange={(e) => updateRow(i, "end_month", e.target.value || null)} className="h-8 text-xs w-28" placeholder="空=通期" />
+                </TableCell>
+                <TableCell className="p-1">
+                  <Button variant="ghost" size="sm" onClick={() => removeRow(i)} className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
 function WorkHoursTab() {
   const [stdHours, setStdHours] = useState("160");
   const [excludedMembers, setExcludedMembers] = useState("井手 大貴");
@@ -401,6 +538,7 @@ function WorkHoursTab() {
           placeholder="井手 大貴"
         />
       </div>
+      <MemberClassificationSection />
       <div className="flex justify-end">
         <Button size="sm" onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1.5" />{saving ? "保存中..." : "保存"}</Button>
       </div>
