@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useQualityData, QualityMonthlyInput } from "@/hooks/useQualityData";
+import { ClientQualityTable } from "@/components/ClientQualityTable";
 import { KpiCardSkeleton, ChartSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 import { ErrorState } from "@/components/ErrorState";
 import {
@@ -411,6 +412,9 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
         </div>
       </div>
 
+      {/* Client Quality Table */}
+      <ClientQualityTable />
+
       {/* Calculation Logic */}
       <Collapsible>
         <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -422,6 +426,11 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
           <p>・納期遵守率 = 納期遵守数 ÷ 案件数 × 100（基準: 95%以上が目標）</p>
           <p>・修正発生率 = 修正発生数 ÷ 案件数 × 100（基準: 20%以下が目標）</p>
           <p>・通期平均 = 会計年度（5月〜当月）の各月の率の単純平均</p>
+          <p>・顧客別納期遵守率 = 顧客の月間納期遵守数 ÷ 月間案件数 × 100（基準: 95%以上）</p>
+          <p>・顧客別修正発生率 = 顧客の月間修正発生数 ÷ 月間案件数 × 100（基準: 20%以下）</p>
+          <p>・品質優良顧客 = 納期遵守率95%以上 かつ 修正発生率20%以下</p>
+          <p>・要注意顧客 = どちらか一方の基準を満たさない</p>
+          <p>・要改善顧客 = 両方の基準を満たさない</p>
           <p className="text-muted-foreground/70 italic">※将来的にCheckGo AIと連携後は自動取得に切り替え予定。現在は手動入力。</p>
         </CollapsibleContent>
       </Collapsible>
