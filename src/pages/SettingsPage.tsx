@@ -350,6 +350,7 @@ function DataTab() {
 
 function WorkHoursTab() {
   const [stdHours, setStdHours] = useState("160");
+  const [excludedMembers, setExcludedMembers] = useState("井手 大貴");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -358,6 +359,7 @@ function WorkHoursTab() {
       if (data?.settings_json && typeof data.settings_json === "object") {
         const s = data.settings_json as Record<string, unknown>;
         if (s.standard_work_hours) setStdHours(String(s.standard_work_hours));
+        if (s.excluded_members !== undefined) setExcludedMembers(String(s.excluded_members));
       }
     })();
   }, []);
@@ -367,7 +369,13 @@ function WorkHoursTab() {
     const { data: org } = await supabase.from("organizations").select("id, settings_json").eq("id", ORG_ID).single();
     if (!org) { toast.error("組織情報が見つかりません"); setSaving(false); return; }
     const settings = typeof org.settings_json === "object" && org.settings_json !== null ? org.settings_json : {};
-    const { error } = await supabase.from("organizations").update({ settings_json: { ...settings, standard_work_hours: parseFloat(stdHours) || 160 } }).eq("id", org.id);
+    const { error } = await supabase.from("organizations").update({
+      settings_json: {
+        ...settings,
+        standard_work_hours: parseFloat(stdHours) || 160,
+        excluded_members: excludedMembers,
+      },
+    }).eq("id", org.id);
     if (error) toast.error("保存に失敗しました");
     else toast.success("労働時間設定を保存しました");
     setSaving(false);
@@ -382,6 +390,16 @@ function WorkHoursTab() {
           <Input type="number" value={stdHours} onChange={(e) => setStdHours(e.target.value)} className="w-24 text-sm" />
           <span className="text-xs text-muted-foreground">時間/月</span>
         </div>
+      </div>
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+        <h3 className="text-sm font-semibold mb-2">案件工数集計から除外するメンバー</h3>
+        <p className="text-xs text-muted-foreground mb-3">Pace CSVアップロード時に除外するメンバー名（カンマ区切り）</p>
+        <textarea
+          value={excludedMembers}
+          onChange={(e) => setExcludedMembers(e.target.value)}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[60px] resize-none"
+          placeholder="井手 大貴"
+        />
       </div>
       <div className="flex justify-end">
         <Button size="sm" onClick={handleSave} disabled={saving}><Save className="h-4 w-4 mr-1.5" />{saving ? "保存中..." : "保存"}</Button>

@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { ClientGphTable } from "@/components/ClientGphTable";
+import { PaceCsvUpload } from "@/components/PaceCsvUpload";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -485,7 +486,11 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
         </Table>
       </div>
 
-      {/* Client GPH Table */}
+      {/* Pace CSV Upload + Client GPH Table */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
+        <PaceCsvUpload />
+      </div>
       <ClientGphTable />
 
       {/* AI Advisor */}
