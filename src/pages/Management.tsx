@@ -99,6 +99,12 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
     { revenue: 0, cost: 0, grossProfit: 0, sga: 0, operatingProfit: 0 }
   );
 
+  // SGA category totals
+  const sgaCategoryTotals: Record<string, number> = {};
+  SGA_CATEGORY_NAMES.forEach((cat) => {
+    sgaCategoryTotals[cat] = d.monthlyData.reduce((s, m) => s + (m.sgaCategoryBreakdown[cat] ?? 0), 0);
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
