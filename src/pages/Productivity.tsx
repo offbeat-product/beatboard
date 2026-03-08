@@ -588,14 +588,17 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
             <div className="px-5 pb-5 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
               <p>・<strong>粗利工数単価（総労働時間）</strong> = 月間粗利 ÷ 月間総労働時間。目標¥21,552</p>
               <p>・<strong>案件粗利工数単価（案件工数）</strong> = 月間粗利 ÷ 月間案件工数時間。目標¥25,000</p>
-              <p>・<strong>総労働時間</strong> = 社員総労働時間 + パート総労働時間</p>
-              <p>・<strong>案件工数</strong> = 社員案件工数 + パート案件工数</p>
+              <p>・<strong>正社員/パートの分類</strong> = 設定画面のメンバー分類テーブルに基づく</p>
+              <p>・<strong>CEO（井手）</strong> = 全集計から除外</p>
+              <p>・<strong>総労働時間</strong> = Pace CSV全行の時間合計（自社業務含む）※正社員+パート</p>
+              <p>・<strong>案件工数</strong> = 顧客名が「Off Beat株式会社（自社）」以外の時間合計</p>
               <p>・<strong>案件稼働率</strong> = 案件工数 ÷ 総労働時間 × 100</p>
+              <p>・<strong>目標差異</strong> = 案件粗利工数単価 - ¥25,000</p>
+              <p>・<strong>Paceデータがある月</strong> = 自動計算値を優先（薄い青背景 + Paceマーク）、ない月は手動入力値を使用</p>
               <p>・<strong>1人あたり売上</strong> = 売上 ÷ 総人員数（正社員+パート）</p>
               <p>・<strong>1人あたり粗利</strong> = 粗利 ÷ 総人員数</p>
               <p className="mt-2 pt-2 border-t border-border">・<strong>顧客別粗利工数単価</strong> = 顧客の月間粗利 ÷ 顧客の月間案件工数（手動入力）</p>
               <p>・¥25,000以上が目標。¥25,000未満は赤字表示</p>
-              <p>・工数は2025年11月以降のデータのみ対応</p>
               <p>・通期平均 = 通期粗利合計 ÷ 通期工数合計</p>
             </div>
           </CollapsibleContent>
