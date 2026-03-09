@@ -329,9 +329,9 @@ export function ClientQualityTable() {
       });
     }
 
-    // 3. Quality-only clients not in project_pl (by normalized name)
-    for (const [normalizedKey, monthlyMap] of qualityLookup.entries()) {
-      if (processedNormalized.has(normalizedKey)) continue;
+    // 3. Quality-only clients not in project_pl (by display name)
+    for (const [displayName, monthlyMap] of qualityLookup.entries()) {
+      if (processedDisplayNames.has(displayName)) continue;
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -347,8 +347,8 @@ export function ClientQualityTable() {
       if (totalDel === 0) continue;
 
       result.push({
-        clientId: normalizedKey,
-        clientName: normalizedKey,
+        clientId: displayName,
+        clientName: displayName,
         hasQualityData: true,
         monthly,
         totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
@@ -358,7 +358,7 @@ export function ClientQualityTable() {
     }
 
     return result;
-  }, [allClients, qualityLookup]);
+  }, [allClients, qualityLookup, clientDisplayNameMap, nameToDisplayName]);
 
   // Sort based on active tab; clients without data go to bottom
   const sortedRows = useMemo(() => {
