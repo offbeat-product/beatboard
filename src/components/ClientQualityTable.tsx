@@ -242,19 +242,23 @@ export function ClientQualityTable() {
   const allClients = clientsQuery.data ?? [];
   const qualityData = qualityQuery.data ?? [];
 
-  // Build quality lookup: Map<normalizedClientName, Map<yearMonth, MonthlyQuality>>
-  // Merge data for clients with same normalized name (e.g., "CyberZ" and "株式会社CyberZ")
+  // Build quality lookup: Map<displayName, Map<yearMonth, MonthlyQuality>>
+  // Use Board display name to merge clients
   const qualityLookup = useMemo(() => {
     const lookup = new Map<string, Map<string, MonthlyQuality>>();
     for (const row of qualityData) {
       if (row.client_id === "__total__") continue;
       const rawName = row.client_name ?? row.client_id ?? "";
       if (!rawName) continue;
-      const normalizedKey = normalizeClientName(rawName);
-      if (!normalizedKey) continue;
       
-      if (!lookup.has(normalizedKey)) lookup.set(normalizedKey, new Map());
-      const monthMap = lookup.get(normalizedKey)!;
+      // Try to find canonical display name from Board master
+      const displayName = nameToDisplayName.get(rawName) 
+        ?? nameToDisplayName.get(normalizeClientName(rawName))
+        ?? normalizeClientName(rawName);
+      if (!displayName) continue;
+      
+      if (!lookup.has(displayName)) lookup.set(displayName, new Map());
+      const monthMap = lookup.get(displayName)!;
       const existing = monthMap.get(row.year_month);
       
       // Merge if same month exists (sum the values)
@@ -273,7 +277,7 @@ export function ClientQualityTable() {
       }
     }
     return lookup;
-  }, [qualityData]);
+  }, [qualityData, nameToDisplayName]);
 
   // Build rows: group by normalized client name
   const rows: ClientQualityRow[] = useMemo(() => {
