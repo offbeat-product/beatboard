@@ -205,6 +205,14 @@ export function QualityCsvUpload() {
       return;
     }
 
+    // Fallback: detect year_month from CSV content if not detected from filename
+    if (!autoDetected) {
+      const detectedFromContent = detectYearMonthFromContent(text);
+      if (detectedFromContent && FISCAL_MONTHS.includes(detectedFromContent)) {
+        setSelectedYm(detectedFromContent);
+      }
+    }
+
     setRecords(parsed);
     // Auto-preview
     const agg = aggregateByClient(parsed);
