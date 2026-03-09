@@ -701,6 +701,7 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
                   <TableRow key={row.label}>
                     <TableCell colSpan={months.length + 3} className="font-semibold text-xs bg-muted/50 border-l-4 border-l-primary">
                       {row.label}
+                      {row.sectionNote && <span className="ml-2 text-[10px] font-normal text-muted-foreground">{row.sectionNote}</span>}
                     </TableCell>
                   </TableRow>
                 );
