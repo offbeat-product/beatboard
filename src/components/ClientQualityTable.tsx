@@ -51,6 +51,7 @@ function isJunkClientEntry(clientId: string | null, clientName: string | null): 
 const FISCAL_MONTHS = getFiscalYearMonths(2026);
 
 type TabType = "onTimeRate" | "revisionRate" | "deliveries";
+type SortDirection = "desc" | "asc";
 
 interface MonthlyQuality {
   totalDeliveries: number;
