@@ -53,24 +53,29 @@ export function FetchLatestButton({ targets = "both" }: FetchLatestButtonProps) 
       const boardUrl = (settings.webhook_board_url as string) || DEFAULT_BOARD_URL;
       const freeeUrl = (settings.webhook_freee_url as string) || DEFAULT_FREEE_URL;
 
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const currentYearMonth = `${year}-${month}`;
+
       const calls: Promise<Response>[] = [];
       if (targets === "board" || targets === "both") {
         calls.push(fetch(boardUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: "current" }),
+          body: JSON.stringify({ year_month: currentYearMonth }),
         }));
       }
       if (targets === "freee" || targets === "both") {
         calls.push(fetch(freeeUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: "current" }),
+          body: JSON.stringify({ year_month: currentYearMonth }),
         }));
       }
 
       await Promise.all(calls);
-      await new Promise((r) => setTimeout(r, 10000));
+      await new Promise((r) => setTimeout(r, 30000));
       await queryClient.invalidateQueries();
 
       const now = new Date().toISOString();
