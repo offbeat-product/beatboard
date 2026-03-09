@@ -34,6 +34,11 @@ const ALERT_METRICS: AlertMetric[] = [
   { key: "rev_achievement", label: "売上達成率", section: "経営指標アラート", warnDefault: 90, dangerDefault: 80, suffix: "%", warnLabel: "< 90%", dangerLabel: "< 80%" },
   { key: "gm_rate", label: "粗利率", section: "経営指標アラート", warnDefault: 65, dangerDefault: 60, suffix: "%", warnLabel: "< 65%", dangerLabel: "< 60%" },
   { key: "op_rate", label: "営業利益率", section: "経営指標アラート", warnDefault: 15, dangerDefault: 10, suffix: "%", warnLabel: "< 15%", dangerLabel: "< 10%" },
+  // 顧客指標
+  { key: "client_count", label: "顧客数", section: "顧客指標アラート", warnDefault: 80, dangerDefault: 60, suffix: "%", warnLabel: "< 目標の80%", dangerLabel: "< 目標の60%" },
+  { key: "client_unit_price", label: "顧客単価", section: "顧客指標アラート", warnDefault: 85, dangerDefault: 70, suffix: "%", warnLabel: "< 目標の85%", dangerLabel: "< 目標の70%" },
+  { key: "project_count", label: "案件数", section: "顧客指標アラート", warnDefault: 80, dangerDefault: 60, suffix: "%", warnLabel: "< 目標の80%", dangerLabel: "< 目標の60%" },
+  { key: "project_unit_price", label: "案件単価", section: "顧客指標アラート", warnDefault: 85, dangerDefault: 70, suffix: "%", warnLabel: "< 目標の85%", dangerLabel: "< 目標の70%" },
   // 生産性指標
   { key: "gph", label: "粗利工数単価", section: "生産性指標アラート", warnDefault: 18000, dangerDefault: 15000, suffix: "円", warnLabel: "< ¥18,000", dangerLabel: "< ¥15,000" },
   { key: "project_gph", label: "案件粗利工数単価", section: "生産性指標アラート", warnDefault: 22000, dangerDefault: 18000, suffix: "円", warnLabel: "< ¥22,000", dangerLabel: "< ¥18,000" },
