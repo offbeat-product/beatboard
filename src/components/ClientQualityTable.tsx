@@ -15,13 +15,37 @@ import { Plus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-// Normalize client name by removing common prefixes
+// Normalize client name by removing legal entity suffixes/prefixes for matching
 function normalizeClientName(name: string): string {
   return name
     .replace(/^株式会社/g, "")
+    .replace(/株式会社$/g, "")
+    .replace(/^有限会社/g, "")
+    .replace(/有限会社$/g, "")
+    .replace(/^合同会社/g, "")
+    .replace(/合同会社$/g, "")
+    .replace(/^一般社団法人/g, "")
     .replace(/^（株）/g, "")
-    .replace(/^(株)/g, "")
+    .replace(/^[\(（]株[\)）]/g, "")
     .trim();
+}
+
+// Create a case-insensitive key for matching
+function matchKey(name: string): string {
+  return normalizeClientName(name).toLowerCase().replace(/\s+/g, "");
+}
+
+// Check if a quality_monthly row looks like junk data (not a real client name)
+function isJunkClientEntry(clientId: string | null, clientName: string | null): boolean {
+  const name = clientName ?? clientId ?? "";
+  if (!name || name === "__total__") return true;
+  // Pure numbers, percentages, very short
+  if (/^\d+(\.\d+)?%?$/.test(name.trim())) return true;
+  // Project-like entries (start with 【 or contain detailed project descriptions)
+  if (name.startsWith("【") || name.startsWith("「")) return true;
+  // Entries containing long descriptions with underscores
+  if (name.includes("_") && name.length > 30) return true;
+  return false;
 }
 
 const FISCAL_MONTHS = getFiscalYearMonths(2026);
