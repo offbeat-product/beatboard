@@ -42,7 +42,7 @@ function generateMonthOptions(): { value: string; label: string }[] {
 
 const fmtCurrency = (v: number, unit: string) => {
   if (unit === "万円") return `¥${(v / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`;
-  return `¥${v.toLocaleString()}`;
+  return `¥${Math.round(v).toLocaleString()}`;
 };
 
 const fmtPct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
