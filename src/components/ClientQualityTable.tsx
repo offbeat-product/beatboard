@@ -343,25 +343,20 @@ export function ClientQualityTable() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Summary Cards */}
-      <QualitySummaryCards rows={rows} />
-
-      {/* Table */}
-      <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h3 className="text-sm font-semibold">顧客別品質分析</h3>
-          <div className="flex items-center gap-2">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
-              <TabsList className="h-8">
-                <TabsTrigger value="onTimeRate" className="text-xs px-3 h-7">納期遵守率</TabsTrigger>
-                <TabsTrigger value="revisionRate" className="text-xs px-3 h-7">修正発生率</TabsTrigger>
-                <TabsTrigger value="deliveries" className="text-xs px-3 h-7">案件数</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <QualityInputModal clientNames={clientNames} onSave={refetch} />
-          </div>
+    <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h3 className="text-sm font-semibold">顧客別品質管理</h3>
+        <div className="flex items-center gap-2">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="onTimeRate" className="text-xs px-3 h-7">納期遵守率</TabsTrigger>
+              <TabsTrigger value="revisionRate" className="text-xs px-3 h-7">修正発生率</TabsTrigger>
+              <TabsTrigger value="deliveries" className="text-xs px-3 h-7">案件数</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <QualityInputModal clientNames={clientNames} onSave={refetch} />
         </div>
+      </div>
 
         <Table>
           <TableHeader>
