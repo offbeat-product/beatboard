@@ -380,7 +380,7 @@ export function ClientQualityTable() {
     }
 
     return result;
-  }, [allClients, qualityLookup, clientDisplayNameMap, nameToDisplayName]);
+  }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName]);
 
   // Sort based on active tab; clients without data go to bottom
   const sortedRows = useMemo(() => {
