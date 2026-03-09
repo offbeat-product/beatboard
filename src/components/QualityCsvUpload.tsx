@@ -176,17 +176,11 @@ export function QualityCsvUpload() {
       setSelectedYm(detected);
     }
 
-    const buffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let text: string;
-    if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
-      text = new TextDecoder("utf-8").decode(bytes.slice(3));
-    } else {
-      try {
-        text = new TextDecoder("shift-jis").decode(bytes);
-      } catch {
-        text = new TextDecoder("utf-8").decode(bytes);
-      }
+    // Try UTF-8 first, fallback to Shift-JIS if garbled
+    let text = await file.text();
+    if (text.includes("\ufffd") || text.includes("�")) {
+      const buffer = await file.arrayBuffer();
+      text = new TextDecoder("shift-jis").decode(buffer);
     }
 
     const parsed = parseQualityCsv(text);
