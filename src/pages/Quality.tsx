@@ -175,7 +175,12 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
 
   return (
     <div className="space-y-6">
-      {!embedded && <PageHeader title="品質指標" />}
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <PageHeader title="品質指標" />
+          <QualityCsvUpload />
+        </div>
+      )}
 
       {/* Section 1: KPI Cards */}
       {/* Row 1: 案件数 */}
