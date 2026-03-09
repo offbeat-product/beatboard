@@ -12,7 +12,7 @@ const menuItems = [
   { title: "生産性指標", url: "/productivity", icon: BarChart3, minRole: "viewer" as const },
   { title: "顧客指標", url: "/customers", icon: Users, minRole: "viewer" as const },
   { title: "品質指標", url: "/quality", icon: CheckCircle, minRole: "viewer" as const },
-  { title: "レポート", url: "/ai", icon: FileText, minRole: "viewer" as const },
+  { title: "レポート", url: "/report", icon: FileText, minRole: "viewer" as const },
   { title: "設定", url: "/settings", icon: Settings, minRole: "manager" as const },
 ];
 

@@ -54,6 +54,7 @@ const AppRoutes = () => {
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/pl" element={<Navigate to="/management" replace />} />
+      <Route path="/ai" element={<Navigate to="/report" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
