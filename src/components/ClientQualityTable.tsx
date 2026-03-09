@@ -239,8 +239,6 @@ export function ClientQualityTable() {
     return map;
   }, [clientsMaster]);
 
-  const allClients = clientsQuery.data ?? [];
-  const qualityData = qualityQuery.data ?? [];
 
   // Build quality lookup: Map<displayName, Map<yearMonth, MonthlyQuality>>
   // Use Board display name to merge clients
