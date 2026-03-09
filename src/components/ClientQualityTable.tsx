@@ -279,32 +279,32 @@ export function ClientQualityTable() {
     return lookup;
   }, [qualityData, nameToDisplayName]);
 
-  // Build rows: group by normalized client name
+  // Build rows: group by Board display name
   const rows: ClientQualityRow[] = useMemo(() => {
     const result: ClientQualityRow[] = [];
-    const processedNormalized = new Set<string>();
+    const processedDisplayNames = new Set<string>();
 
-    // 1. Group project_pl clients by normalized name first
-    const clientsByNormalized = new Map<string, { id: string; name: string }[]>();
+    // 1. Group project_pl clients by Board display name
+    const clientsByDisplayName = new Map<string, { id: string; name: string; displayName: string }[]>();
     for (const client of allClients) {
-      const normalized = normalizeClientName(client.name);
-      if (!clientsByNormalized.has(normalized)) {
-        clientsByNormalized.set(normalized, []);
+      // Get display name from Board master, fallback to normalized name
+      const displayName = clientDisplayNameMap.get(client.id) 
+        ?? nameToDisplayName.get(client.name)
+        ?? nameToDisplayName.get(normalizeClientName(client.name))
+        ?? normalizeClientName(client.name);
+      
+      if (!clientsByDisplayName.has(displayName)) {
+        clientsByDisplayName.set(displayName, []);
       }
-      clientsByNormalized.get(normalized)!.push(client);
+      clientsByDisplayName.get(displayName)!.push({ ...client, displayName });
     }
 
-    // 2. Process each normalized group
-    for (const [normalized, clients] of clientsByNormalized.entries()) {
-      processedNormalized.add(normalized);
+    // 2. Process each display name group
+    for (const [displayName, clients] of clientsByDisplayName.entries()) {
+      processedDisplayNames.add(displayName);
       
-      // Use the first client's info as the display name (prefer shorter name)
-      const displayClient = clients.reduce((a, b) => 
-        a.name.length <= b.name.length ? a : b
-      );
-      
-      // Get quality data by normalized name
-      const monthlyData = qualityLookup.get(normalized) ?? new Map<string, MonthlyQuality>();
+      // Get quality data by display name
+      const monthlyData = qualityLookup.get(displayName) ?? new Map<string, MonthlyQuality>();
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -319,8 +319,8 @@ export function ClientQualityTable() {
       }
 
       result.push({
-        clientId: displayClient.id,
-        clientName: normalized || displayClient.name,
+        clientId: clients[0].id,
+        clientName: displayName,
         hasQualityData: totalDel > 0,
         monthly,
         totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
