@@ -171,6 +171,19 @@ export function ClientQualityTable() {
     },
   });
 
+  // Fetch clients from the clients table (Board master) to get display names
+  const clientsMasterQuery = useQuery({
+    queryKey: ["clients", "master_for_quality"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, name_disp")
+        .eq("org_id", ORG_ID);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   // Fetch all unique clients from project_pl for the fiscal year
   const clientsQuery = useQuery({
     queryKey: ["project_pl", "client_list_quality"],
@@ -194,22 +207,56 @@ export function ClientQualityTable() {
     },
   });
 
+  const clientsMaster = clientsMasterQuery.data ?? [];
   const allClients = clientsQuery.data ?? [];
   const qualityData = qualityQuery.data ?? [];
 
-  // Build quality lookup: Map<normalizedClientName, Map<yearMonth, MonthlyQuality>>
-  // Merge data for clients with same normalized name (e.g., "CyberZ" and "株式会社CyberZ")
+  // Build a map: client_id -> display name (name_disp from Board master)
+  const clientDisplayNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of clientsMaster) {
+      const displayName = c.name_disp || c.name || "";
+      if (displayName) {
+        map.set(String(c.id), displayName);
+      }
+    }
+    return map;
+  }, [clientsMaster]);
+
+  // Build reverse map: any name variant -> canonical display name
+  const nameToDisplayName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of clientsMaster) {
+      const displayName = c.name_disp || c.name || "";
+      if (!displayName) continue;
+      // Map both name and name_disp to the display name
+      if (c.name) map.set(c.name, displayName);
+      if (c.name_disp) map.set(c.name_disp, displayName);
+      // Also map normalized versions
+      if (c.name) map.set(normalizeClientName(c.name), displayName);
+      if (c.name_disp) map.set(normalizeClientName(c.name_disp), displayName);
+    }
+    return map;
+  }, [clientsMaster]);
+
+
+  // Build quality lookup: Map<displayName, Map<yearMonth, MonthlyQuality>>
+  // Use Board display name to merge clients
   const qualityLookup = useMemo(() => {
     const lookup = new Map<string, Map<string, MonthlyQuality>>();
     for (const row of qualityData) {
       if (row.client_id === "__total__") continue;
       const rawName = row.client_name ?? row.client_id ?? "";
       if (!rawName) continue;
-      const normalizedKey = normalizeClientName(rawName);
-      if (!normalizedKey) continue;
       
-      if (!lookup.has(normalizedKey)) lookup.set(normalizedKey, new Map());
-      const monthMap = lookup.get(normalizedKey)!;
+      // Try to find canonical display name from Board master
+      const displayName = nameToDisplayName.get(rawName) 
+        ?? nameToDisplayName.get(normalizeClientName(rawName))
+        ?? normalizeClientName(rawName);
+      if (!displayName) continue;
+      
+      if (!lookup.has(displayName)) lookup.set(displayName, new Map());
+      const monthMap = lookup.get(displayName)!;
       const existing = monthMap.get(row.year_month);
       
       // Merge if same month exists (sum the values)
@@ -228,34 +275,34 @@ export function ClientQualityTable() {
       }
     }
     return lookup;
-  }, [qualityData]);
+  }, [qualityData, nameToDisplayName]);
 
-  // Build rows: group by normalized client name
+  // Build rows: group by Board display name
   const rows: ClientQualityRow[] = useMemo(() => {
     const result: ClientQualityRow[] = [];
-    const processedNormalized = new Set<string>();
+    const processedDisplayNames = new Set<string>();
 
-    // 1. Group project_pl clients by normalized name first
-    const clientsByNormalized = new Map<string, { id: string; name: string }[]>();
+    // 1. Group project_pl clients by Board display name
+    const clientsByDisplayName = new Map<string, { id: string; name: string; displayName: string }[]>();
     for (const client of allClients) {
-      const normalized = normalizeClientName(client.name);
-      if (!clientsByNormalized.has(normalized)) {
-        clientsByNormalized.set(normalized, []);
+      // Get display name from Board master, fallback to normalized name
+      const displayName = clientDisplayNameMap.get(client.id) 
+        ?? nameToDisplayName.get(client.name)
+        ?? nameToDisplayName.get(normalizeClientName(client.name))
+        ?? normalizeClientName(client.name);
+      
+      if (!clientsByDisplayName.has(displayName)) {
+        clientsByDisplayName.set(displayName, []);
       }
-      clientsByNormalized.get(normalized)!.push(client);
+      clientsByDisplayName.get(displayName)!.push({ ...client, displayName });
     }
 
-    // 2. Process each normalized group
-    for (const [normalized, clients] of clientsByNormalized.entries()) {
-      processedNormalized.add(normalized);
+    // 2. Process each display name group
+    for (const [displayName, clients] of clientsByDisplayName.entries()) {
+      processedDisplayNames.add(displayName);
       
-      // Use the first client's info as the display name (prefer shorter name)
-      const displayClient = clients.reduce((a, b) => 
-        a.name.length <= b.name.length ? a : b
-      );
-      
-      // Get quality data by normalized name
-      const monthlyData = qualityLookup.get(normalized) ?? new Map<string, MonthlyQuality>();
+      // Get quality data by display name
+      const monthlyData = qualityLookup.get(displayName) ?? new Map<string, MonthlyQuality>();
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -270,8 +317,8 @@ export function ClientQualityTable() {
       }
 
       result.push({
-        clientId: displayClient.id,
-        clientName: normalized || displayClient.name,
+        clientId: clients[0].id,
+        clientName: displayName,
         hasQualityData: totalDel > 0,
         monthly,
         totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
@@ -280,9 +327,9 @@ export function ClientQualityTable() {
       });
     }
 
-    // 3. Quality-only clients not in project_pl (by normalized name)
-    for (const [normalizedKey, monthlyMap] of qualityLookup.entries()) {
-      if (processedNormalized.has(normalizedKey)) continue;
+    // 3. Quality-only clients not in project_pl (by display name)
+    for (const [displayName, monthlyMap] of qualityLookup.entries()) {
+      if (processedDisplayNames.has(displayName)) continue;
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -298,8 +345,8 @@ export function ClientQualityTable() {
       if (totalDel === 0) continue;
 
       result.push({
-        clientId: normalizedKey,
-        clientName: normalizedKey,
+        clientId: displayName,
+        clientName: displayName,
         hasQualityData: true,
         monthly,
         totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
@@ -309,7 +356,7 @@ export function ClientQualityTable() {
     }
 
     return result;
-  }, [allClients, qualityLookup]);
+  }, [allClients, qualityLookup, clientDisplayNameMap, nameToDisplayName]);
 
   // Sort based on active tab; clients without data go to bottom
   const sortedRows = useMemo(() => {
@@ -349,7 +396,7 @@ export function ClientQualityTable() {
     queryClient.invalidateQueries({ queryKey: ["quality_monthly"] });
   }, [queryClient]);
 
-  const isLoading = qualityQuery.isLoading || clientsQuery.isLoading;
+  const isLoading = qualityQuery.isLoading || clientsQuery.isLoading || clientsMasterQuery.isLoading;
 
   if (isLoading) {
     return (
