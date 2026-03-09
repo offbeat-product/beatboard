@@ -478,8 +478,20 @@ export function ClientQualityTable() {
             {FISCAL_MONTHS.map((ym) => (
               <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
             ))}
-            <TableHead className="text-right font-bold whitespace-nowrap min-w-[100px]">
-              {activeTab === "deliveries" ? "通期合計" : "通期平均"}
+            <TableHead className="text-right font-bold whitespace-nowrap min-w-[120px]">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSortDirection}
+                className="h-auto p-1 text-xs font-bold hover:bg-muted/50"
+              >
+                {activeTab === "deliveries" ? "通期合計" : "通期平均"}
+                {sortDirection === "desc" ? (
+                  <ArrowDown className="ml-1 h-3 w-3" />
+                ) : (
+                  <ArrowUp className="ml-1 h-3 w-3" />
+                )}
+              </Button>
             </TableHead>
           </TableRow>
         </TableHeader>
