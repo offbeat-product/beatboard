@@ -28,62 +28,7 @@ interface ClientQualityRow {
   avgRevisionRate: number;
 }
 
-// ── Summary Cards ──
-function QualitySummaryCards({ rows }: { rows: ClientQualityRow[] }) {
-  const clientsWithData = rows.filter((r) => r.totals.totalDeliveries > 0);
-  const total = clientsWithData.length;
-
-  const excellent = clientsWithData.filter(
-    (r) => r.avgOnTimeRate >= 95 && r.avgRevisionRate <= 20
-  );
-  const needsImprovement = clientsWithData.filter(
-    (r) => r.avgOnTimeRate < 95 && r.avgRevisionRate > 20
-  );
-  const caution = clientsWithData.filter(
-    (r) =>
-      (r.avgOnTimeRate < 95 || r.avgRevisionRate > 20) &&
-      !(r.avgOnTimeRate < 95 && r.avgRevisionRate > 20)
-  );
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div className="bg-card rounded-lg shadow-sm p-4 border-l-4 border-chart-green">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield className="h-4 w-4 text-chart-green" />
-          <span className="text-xs font-semibold text-muted-foreground">品質優良顧客</span>
-        </div>
-        <p className="text-xl font-bold font-mono tabular-nums">
-          {excellent.length}社 <span className="text-sm text-muted-foreground font-normal">/ 全{total}社</span>
-        </p>
-      </div>
-
-      <div className="bg-card rounded-lg shadow-sm p-4 border-l-4 border-yellow-500">
-        <div className="flex items-center gap-2 mb-1">
-          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          <span className="text-xs font-semibold text-muted-foreground">要注意顧客</span>
-        </div>
-        <p className="text-xl font-bold font-mono tabular-nums">{caution.length}社</p>
-      </div>
-
-      <div className="bg-card rounded-lg shadow-sm p-4 border-l-4 border-destructive">
-        <div className="flex items-center gap-2 mb-1">
-          <XCircle className="h-4 w-4 text-destructive" />
-          <span className="text-xs font-semibold text-muted-foreground">要改善顧客</span>
-        </div>
-        <p className="text-xl font-bold font-mono tabular-nums">{needsImprovement.length}社</p>
-        {needsImprovement.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {needsImprovement.map((r) => (
-              <span key={r.clientId} className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
-                {r.clientName}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// No summary cards in the new layout
 
 // ── Input Modal ──
 function QualityInputModal({
