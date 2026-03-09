@@ -230,18 +230,32 @@ export function ClientQualityTable() {
     return lookup;
   }, [qualityData]);
 
-  // Build rows: start from project_pl clients, merge quality data
+  // Build rows: group by normalized client name
   const rows: ClientQualityRow[] = useMemo(() => {
     const result: ClientQualityRow[] = [];
-    const processedIds = new Set<string>();
+    const processedNormalized = new Set<string>();
 
-    // 1. All project_pl clients
+    // 1. Group project_pl clients by normalized name first
+    const clientsByNormalized = new Map<string, { id: string; name: string }[]>();
     for (const client of allClients) {
-      processedIds.add(client.id);
-      // Try to find quality data by client_id or client_name
-      const byId = qualityLookup.get(client.id);
-      const byName = qualityLookup.get(client.name);
-      const monthlyData = byId ?? byName ?? new Map<string, MonthlyQuality>();
+      const normalized = normalizeClientName(client.name);
+      if (!clientsByNormalized.has(normalized)) {
+        clientsByNormalized.set(normalized, []);
+      }
+      clientsByNormalized.get(normalized)!.push(client);
+    }
+
+    // 2. Process each normalized group
+    for (const [normalized, clients] of clientsByNormalized.entries()) {
+      processedNormalized.add(normalized);
+      
+      // Use the first client's info as the display name (prefer shorter name)
+      const displayClient = clients.reduce((a, b) => 
+        a.name.length <= b.name.length ? a : b
+      );
+      
+      // Get quality data by normalized name
+      const monthlyData = qualityLookup.get(normalized) ?? new Map<string, MonthlyQuality>();
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -256,8 +270,8 @@ export function ClientQualityTable() {
       }
 
       result.push({
-        clientId: client.id,
-        clientName: client.name,
+        clientId: displayClient.id,
+        clientName: normalized || displayClient.name,
         hasQualityData: totalDel > 0,
         monthly,
         totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
