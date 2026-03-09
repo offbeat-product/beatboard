@@ -737,11 +737,13 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
 
                     if (sub.type === "計画") {
                       if (isCustomerMetric) {
-                        // Customer metrics plan
-                        if (row.customerPlanValue === "clientTarget") val = `${settings.annual_client_target}社`;
-                        else if (row.customerPlanValue === "clientUnitPrice") val = fmtC(annualClientUnitPrice);
+                        // Customer metrics plan - monthly: 顧客数・顧客単価は年間目標のみ
+                        if (row.customerPlanValue === "clientTarget") val = "—";
+                        else if (row.customerPlanValue === "clientUnitPrice") val = "—";
                         else if (row.customerPlanValue === "projectTarget") val = `${Math.round(monthlyProjectTargetAvg)}件`;
-                        else if (row.customerPlanValue === "projectUnitPrice") val = fmtC(annualProjectUnitPrice);
+                        else if (row.customerPlanValue === "projectUnitPrice") {
+                          val = monthlyProjectTargetAvg > 0 ? fmtC(mp.revPlan / monthlyProjectTargetAvg) : "—";
+                        }
                       } else if (row.label === "正社員数") val = String(mp.staff.fullTimeCount);
                       else if (row.label === "パート数") val = String(mp.staff.partTimeCount);
                       else if (row.label === "営業利益率") val = `${settings.operating_profit_rate}%`;
