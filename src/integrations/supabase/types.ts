@@ -84,6 +84,36 @@ export type Database = {
           },
         ]
       }
+      alert_settings: {
+        Row: {
+          created_at: string | null
+          danger_value: number | null
+          id: string
+          metric_key: string
+          org_id: string
+          updated_at: string | null
+          warn_value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          danger_value?: number | null
+          id?: string
+          metric_key: string
+          org_id: string
+          updated_at?: string | null
+          warn_value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          danger_value?: number | null
+          id?: string
+          metric_key?: string
+          org_id?: string
+          updated_at?: string | null
+          warn_value?: number | null
+        }
+        Relationships: []
+      }
       client_monthly_hours: {
         Row: {
           client_id: string
@@ -484,6 +514,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_settings: {
+        Row: {
+          annual_revenue_target: number | null
+          cost_rate: number | null
+          created_at: string | null
+          distribution_mode: string | null
+          fiscal_year: string
+          gp_per_hour_target: number | null
+          gp_per_project_hour_target: number | null
+          gross_profit_rate: number | null
+          id: string
+          it_rate: number | null
+          marketing_rate: number | null
+          monthly_revenue_distribution: Json | null
+          office_rate: number | null
+          on_time_delivery_target: number | null
+          operating_profit_rate: number | null
+          org_id: string
+          other_rate: number | null
+          personnel_cost_rate: number | null
+          professional_rate: number | null
+          recruitment_rate: number | null
+          revision_rate_target: number | null
+          staffing_plan: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_revenue_target?: number | null
+          cost_rate?: number | null
+          created_at?: string | null
+          distribution_mode?: string | null
+          fiscal_year: string
+          gp_per_hour_target?: number | null
+          gp_per_project_hour_target?: number | null
+          gross_profit_rate?: number | null
+          id?: string
+          it_rate?: number | null
+          marketing_rate?: number | null
+          monthly_revenue_distribution?: Json | null
+          office_rate?: number | null
+          on_time_delivery_target?: number | null
+          operating_profit_rate?: number | null
+          org_id: string
+          other_rate?: number | null
+          personnel_cost_rate?: number | null
+          professional_rate?: number | null
+          recruitment_rate?: number | null
+          revision_rate_target?: number | null
+          staffing_plan?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_revenue_target?: number | null
+          cost_rate?: number | null
+          created_at?: string | null
+          distribution_mode?: string | null
+          fiscal_year?: string
+          gp_per_hour_target?: number | null
+          gp_per_project_hour_target?: number | null
+          gross_profit_rate?: number | null
+          id?: string
+          it_rate?: number | null
+          marketing_rate?: number | null
+          monthly_revenue_distribution?: Json | null
+          office_rate?: number | null
+          on_time_delivery_target?: number | null
+          operating_profit_rate?: number | null
+          org_id?: string
+          other_rate?: number | null
+          personnel_cost_rate?: number | null
+          professional_rate?: number | null
+          recruitment_rate?: number | null
+          revision_rate_target?: number | null
+          staffing_plan?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
