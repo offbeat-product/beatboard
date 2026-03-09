@@ -310,14 +310,10 @@ export function ClientQualityTable() {
     const result: ClientQualityRow[] = [];
     const processedDisplayNames = new Set<string>();
 
-    // 1. Group project_pl clients by Board display name
+    // 1. Group project_pl clients by canonical Board display name
     const clientsByDisplayName = new Map<string, { id: string; name: string; displayName: string }[]>();
     for (const client of allClients) {
-      // Get display name from Board master, fallback to normalized name
-      const displayName = clientDisplayNameMap.get(client.id) 
-        ?? nameToDisplayName.get(client.name)
-        ?? nameToDisplayName.get(normalizeClientName(client.name))
-        ?? normalizeClientName(client.name);
+      const displayName = clientDisplayNameMap.get(client.id) ?? resolveDisplayName(client.name);
       
       if (!clientsByDisplayName.has(displayName)) {
         clientsByDisplayName.set(displayName, []);
