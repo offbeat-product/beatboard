@@ -123,11 +123,25 @@ function aggregateByClient(records: ParsedRecord[]): ClientAggregation[] {
   return Object.values(byClient).sort((a, b) => b.total_deliveries - a.total_deliveries);
 }
 
-function detectYearMonth(fileName: string): string | null {
-  // Try to find YYYYMM pattern in filename
-  const match = fileName.match(/(20\d{2})(0[1-9]|1[0-2])/);
+function detectYearMonthFromFilename(fileName: string): string | null {
+  // The filename pattern: 【202604期】..._-_202509.csv
+  // The trailing YYYYMM before .csv is the actual target month
+  // Try to match the last YYYYMM pattern (closest to extension)
+  const matches = [...fileName.matchAll(/(20\d{2})(0[1-9]|1[0-2])/g)];
+  if (matches.length > 0) {
+    // Use the LAST match (e.g. "202509" from "【202604期】..._-_202509.csv")
+    const last = matches[matches.length - 1];
+    return `${last[1]}-${last[2]}`;
+  }
+  return null;
+}
+
+function detectYearMonthFromContent(csvText: string): string | null {
+  // Look for patterns like "2025年9月" or "2025年09月" in the CSV content
+  const match = csvText.match(/(20\d{2})年(0?[1-9]|1[0-2])月/);
   if (match) {
-    return `${match[1]}-${match[2]}`;
+    const month = match[2].padStart(2, "0");
+    return `${match[1]}-${month}`;
   }
   return null;
 }
@@ -170,10 +184,12 @@ export function QualityCsvUpload() {
 
     setFileName(file.name);
 
-    // Auto-detect year_month from filename
-    const detected = detectYearMonth(file.name);
-    if (detected && FISCAL_MONTHS.includes(detected)) {
-      setSelectedYm(detected);
+    // Auto-detect year_month from filename (use last YYYYMM in filename)
+    const detectedFromName = detectYearMonthFromFilename(file.name);
+    let autoDetected = false;
+    if (detectedFromName && FISCAL_MONTHS.includes(detectedFromName)) {
+      setSelectedYm(detectedFromName);
+      autoDetected = true;
     }
 
     // Try UTF-8 first, fallback to Shift-JIS if garbled
@@ -187,6 +203,14 @@ export function QualityCsvUpload() {
     if (parsed.length === 0) {
       toast.error("CSVからデータをパースできませんでした。フォーマットを確認してください。");
       return;
+    }
+
+    // Fallback: detect year_month from CSV content if not detected from filename
+    if (!autoDetected) {
+      const detectedFromContent = detectYearMonthFromContent(text);
+      if (detectedFromContent && FISCAL_MONTHS.includes(detectedFromContent)) {
+        setSelectedYm(detectedFromContent);
+      }
     }
 
     setRecords(parsed);
