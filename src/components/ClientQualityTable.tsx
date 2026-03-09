@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Upload, Shield, AlertTriangle, XCircle } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -28,62 +28,7 @@ interface ClientQualityRow {
   avgRevisionRate: number;
 }
 
-// ── Summary Cards ──
-function QualitySummaryCards({ rows }: { rows: ClientQualityRow[] }) {
-  const clientsWithData = rows.filter((r) => r.totals.totalDeliveries > 0);
-  const total = clientsWithData.length;
-
-  const excellent = clientsWithData.filter(
-    (r) => r.avgOnTimeRate >= 95 && r.avgRevisionRate <= 20
-  );
-  const needsImprovement = clientsWithData.filter(
-    (r) => r.avgOnTimeRate < 95 && r.avgRevisionRate > 20
-  );
-  const caution = clientsWithData.filter(
-    (r) =>
-      (r.avgOnTimeRate < 95 || r.avgRevisionRate > 20) &&
-      !(r.avgOnTimeRate < 95 && r.avgRevisionRate > 20)
-  );
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div className="bg-card rounded-lg shadow-sm p-4 border-l-4 border-chart-green">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield className="h-4 w-4 text-chart-green" />
-          <span className="text-xs font-semibold text-muted-foreground">品質優良顧客</span>
-        </div>
-        <p className="text-xl font-bold font-mono tabular-nums">
-          {excellent.length}社 <span className="text-sm text-muted-foreground font-normal">/ 全{total}社</span>
-        </p>
-      </div>
-
-      <div className="bg-card rounded-lg shadow-sm p-4 border-l-4 border-yellow-500">
-        <div className="flex items-center gap-2 mb-1">
-          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          <span className="text-xs font-semibold text-muted-foreground">要注意顧客</span>
-        </div>
-        <p className="text-xl font-bold font-mono tabular-nums">{caution.length}社</p>
-      </div>
-
-      <div className="bg-card rounded-lg shadow-sm p-4 border-l-4 border-destructive">
-        <div className="flex items-center gap-2 mb-1">
-          <XCircle className="h-4 w-4 text-destructive" />
-          <span className="text-xs font-semibold text-muted-foreground">要改善顧客</span>
-        </div>
-        <p className="text-xl font-bold font-mono tabular-nums">{needsImprovement.length}社</p>
-        {needsImprovement.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {needsImprovement.map((r) => (
-              <span key={r.clientId} className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">
-                {r.clientName}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// No summary cards in the new layout
 
 // ── Input Modal ──
 function QualityInputModal({
@@ -398,25 +343,20 @@ export function ClientQualityTable() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Summary Cards */}
-      <QualitySummaryCards rows={rows} />
-
-      {/* Table */}
-      <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h3 className="text-sm font-semibold">顧客別品質分析</h3>
-          <div className="flex items-center gap-2">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
-              <TabsList className="h-8">
-                <TabsTrigger value="onTimeRate" className="text-xs px-3 h-7">納期遵守率</TabsTrigger>
-                <TabsTrigger value="revisionRate" className="text-xs px-3 h-7">修正発生率</TabsTrigger>
-                <TabsTrigger value="deliveries" className="text-xs px-3 h-7">案件数</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <QualityInputModal clientNames={clientNames} onSave={refetch} />
-          </div>
+    <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h3 className="text-sm font-semibold">顧客別品質管理</h3>
+        <div className="flex items-center gap-2">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="onTimeRate" className="text-xs px-3 h-7">納期遵守率</TabsTrigger>
+              <TabsTrigger value="revisionRate" className="text-xs px-3 h-7">修正発生率</TabsTrigger>
+              <TabsTrigger value="deliveries" className="text-xs px-3 h-7">案件数</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <QualityInputModal clientNames={clientNames} onSave={refetch} />
         </div>
+      </div>
 
         <Table>
           <TableHeader>
@@ -509,7 +449,6 @@ export function ClientQualityTable() {
             </TableRow>
           </TableBody>
         </Table>
-      </div>
     </div>
   );
 }
