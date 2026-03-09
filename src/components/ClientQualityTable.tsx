@@ -462,9 +462,9 @@ export function ClientQualityTable() {
         <div className="flex items-center gap-2">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
             <TabsList className="h-8">
+              <TabsTrigger value="deliveries" className="text-xs px-3 h-7">案件数</TabsTrigger>
               <TabsTrigger value="onTimeRate" className="text-xs px-3 h-7">納期遵守率</TabsTrigger>
               <TabsTrigger value="revisionRate" className="text-xs px-3 h-7">修正発生率</TabsTrigger>
-              <TabsTrigger value="deliveries" className="text-xs px-3 h-7">案件数</TabsTrigger>
             </TabsList>
           </Tabs>
           <QualityInputModal clientNames={allClients} onSave={refetch} />
@@ -478,19 +478,23 @@ export function ClientQualityTable() {
             {FISCAL_MONTHS.map((ym) => (
               <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
             ))}
-            <TableHead className="text-right font-bold whitespace-nowrap min-w-[120px]">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSortDirection}
-                className="h-auto p-1 text-xs font-bold hover:bg-muted/50"
-              >
-                {activeTab === "deliveries" ? "通期合計" : "通期平均"}
-                {sortDirection === "desc" ? (
-                  <ArrowDown className="ml-1 h-3 w-3" />
-                ) : (
-                  <ArrowUp className="ml-1 h-3 w-3" />
-                )}
+            {/* 3 summary columns always visible */}
+            <TableHead className="text-right font-bold whitespace-nowrap min-w-[80px]">
+              <Button variant="ghost" size="sm" onClick={() => { setActiveTab("deliveries"); toggleSortDirection(); }} className="h-auto p-1 text-xs font-bold hover:bg-muted/50">
+                案件数
+                {activeTab === "deliveries" && (sortDirection === "desc" ? <ArrowDown className="ml-0.5 h-3 w-3" /> : <ArrowUp className="ml-0.5 h-3 w-3" />)}
+              </Button>
+            </TableHead>
+            <TableHead className="text-right font-bold whitespace-nowrap min-w-[80px]">
+              <Button variant="ghost" size="sm" onClick={() => { setActiveTab("onTimeRate"); toggleSortDirection(); }} className="h-auto p-1 text-xs font-bold hover:bg-muted/50">
+                納期遵守率
+                {activeTab === "onTimeRate" && (sortDirection === "desc" ? <ArrowDown className="ml-0.5 h-3 w-3" /> : <ArrowUp className="ml-0.5 h-3 w-3" />)}
+              </Button>
+            </TableHead>
+            <TableHead className="text-right font-bold whitespace-nowrap min-w-[80px]">
+              <Button variant="ghost" size="sm" onClick={() => { setActiveTab("revisionRate"); toggleSortDirection(); }} className="h-auto p-1 text-xs font-bold hover:bg-muted/50">
+                修正発生率
+                {activeTab === "revisionRate" && (sortDirection === "desc" ? <ArrowDown className="ml-0.5 h-3 w-3" /> : <ArrowUp className="ml-0.5 h-3 w-3" />)}
               </Button>
             </TableHead>
           </TableRow>
@@ -530,16 +534,21 @@ export function ClientQualityTable() {
                   </TableCell>
                 );
               })}
-              {/* Total/Average column */}
+              {/* Always show all 3 summary columns */}
+              <TableCell className="text-right font-mono tabular-nums text-xs font-semibold whitespace-nowrap">
+                {row.hasQualityData ? `${row.totals.totalDeliveries}件` : "—"}
+              </TableCell>
               <TableCell className={cn(
                 "text-right font-mono tabular-nums text-xs font-semibold whitespace-nowrap",
-                activeTab === "onTimeRate" && row.totals.totalDeliveries > 0 && onTimeColor(row.totals.onTime, row.totals.totalDeliveries),
-                activeTab === "revisionRate" && row.totals.totalDeliveries > 0 && revisionColor(row.totals.revisions, row.totals.totalDeliveries),
+                row.totals.totalDeliveries > 0 && onTimeColor(row.totals.onTime, row.totals.totalDeliveries),
               )}>
-                {!row.hasQualityData ? "—"
-                  : activeTab === "onTimeRate" ? formatRate(row.totals.onTime, row.totals.totalDeliveries)
-                  : activeTab === "revisionRate" ? formatRate(row.totals.revisions, row.totals.totalDeliveries)
-                  : `${row.totals.totalDeliveries}件`}
+                {row.hasQualityData ? formatRate(row.totals.onTime, row.totals.totalDeliveries) : "—"}
+              </TableCell>
+              <TableCell className={cn(
+                "text-right font-mono tabular-nums text-xs font-semibold whitespace-nowrap",
+                row.totals.totalDeliveries > 0 && revisionColor(row.totals.revisions, row.totals.totalDeliveries),
+              )}>
+                {row.hasQualityData ? formatRate(row.totals.revisions, row.totals.totalDeliveries) : "—"}
               </TableCell>
             </TableRow>
           ))}
@@ -564,14 +573,20 @@ export function ClientQualityTable() {
                 </TableCell>
               );
             })}
+            <TableCell className="text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap">
+              {grandTotals.totalDel > 0 ? `${grandTotals.totalDel}件` : "—"}
+            </TableCell>
             <TableCell className={cn(
               "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
-              activeTab === "onTimeRate" && onTimeColor(grandTotals.totalOnTime, grandTotals.totalDel),
-              activeTab === "revisionRate" && revisionColor(grandTotals.totalRev, grandTotals.totalDel),
+              onTimeColor(grandTotals.totalOnTime, grandTotals.totalDel),
             )}>
-              {activeTab === "onTimeRate" ? formatRate(grandTotals.totalOnTime, grandTotals.totalDel)
-                : activeTab === "revisionRate" ? formatRate(grandTotals.totalRev, grandTotals.totalDel)
-                : grandTotals.totalDel > 0 ? `${grandTotals.totalDel}件` : "—"}
+              {formatRate(grandTotals.totalOnTime, grandTotals.totalDel)}
+            </TableCell>
+            <TableCell className={cn(
+              "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
+              revisionColor(grandTotals.totalRev, grandTotals.totalDel),
+            )}>
+              {formatRate(grandTotals.totalRev, grandTotals.totalDel)}
             </TableCell>
           </TableRow>
         </TableBody>
