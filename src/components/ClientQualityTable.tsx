@@ -398,7 +398,7 @@ export function ClientQualityTable() {
     queryClient.invalidateQueries({ queryKey: ["quality_monthly"] });
   }, [queryClient]);
 
-  const isLoading = qualityQuery.isLoading || clientsQuery.isLoading;
+  const isLoading = qualityQuery.isLoading || clientsQuery.isLoading || clientsMasterQuery.isLoading;
 
   if (isLoading) {
     return (
