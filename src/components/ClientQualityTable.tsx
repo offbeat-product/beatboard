@@ -328,11 +328,23 @@ export function ClientQualityTable() {
     }
 
     // 2. Process each display name group
-    for (const [displayName, clients] of clientsByDisplayName.entries()) {
+    for (const [key, clients] of clientsByMatchKey.entries()) {
+      const displayName = matchKeyToDisplayName.get(key) ?? clients[0].displayName;
       processedDisplayNames.add(displayName);
-      
-      // Get quality data by display name
-      const monthlyData = qualityLookup.get(displayName) ?? new Map<string, MonthlyQuality>();
+      // Also add the matchKey so quality-only lookup works
+      const qualityByKey = qualityLookup.get(displayName) ?? new Map<string, MonthlyQuality>();
+      // Also try matchKey-based lookup from qualityLookup
+      let monthlyData = qualityByKey;
+      if (monthlyData.size === 0) {
+        // Try to find by matchKey across all qualityLookup entries
+        for (const [qName, qMap] of qualityLookup.entries()) {
+          if (matchKey(qName) === key) {
+            monthlyData = qMap;
+            processedDisplayNames.add(qName);
+            break;
+          }
+        }
+      }
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
