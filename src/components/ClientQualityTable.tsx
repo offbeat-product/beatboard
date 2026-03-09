@@ -369,9 +369,12 @@ export function ClientQualityTable() {
       });
     }
 
-    // 3. Quality-only clients not in project_pl (by display name)
+    // 3. Quality-only clients not in project_pl
+    const processedMatchKeys = new Set([...processedDisplayNames].map(n => matchKey(n)));
     for (const [displayName, monthlyMap] of qualityLookup.entries()) {
-      if (processedDisplayNames.has(displayName)) continue;
+      const key = matchKey(displayName);
+      if (processedMatchKeys.has(key)) continue;
+      processedMatchKeys.add(key);
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
