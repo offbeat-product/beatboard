@@ -14,6 +14,7 @@ import Management from "./pages/Management";
 import Productivity from "./pages/Productivity";
 import Quality from "./pages/Quality";
 import Report from "./pages/Report";
+import Plan from "./pages/Plan";
 import SettingsPage from "./pages/SettingsPage";
 import Login from "./pages/Login";
 import InviteAccept from "./pages/InviteAccept";
@@ -28,7 +29,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (authLoading || roleLoading) return <div className="min-h-screen flex items-center justify-center bg-content-bg"><span className="text-muted-foreground text-sm">読み込み中...</span></div>;
   if (!session) return <Navigate to="/login" replace />;
 
-  // Deleted user or no profile (and not initial admin scenario)
   if (isDeleted) return <AccessBlockedScreen />;
 
   return <>{children}</>;
@@ -45,6 +45,7 @@ const AppRoutes = () => {
       <Route path="/invite/:token" element={<InviteAccept />} />
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Index />} />
+        <Route path="/plan" element={<Plan />} />
         <Route path="/management" element={<Management />} />
         <Route path="/productivity" element={<Productivity />} />
         <Route path="/customers" element={<Customers />} />
