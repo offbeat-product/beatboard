@@ -171,6 +171,19 @@ export function ClientQualityTable() {
     },
   });
 
+  // Fetch clients from the clients table (Board master) to get display names
+  const clientsMasterQuery = useQuery({
+    queryKey: ["clients", "master_for_quality"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, name_disp")
+        .eq("org_id", ORG_ID);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   // Fetch all unique clients from project_pl for the fiscal year
   const clientsQuery = useQuery({
     queryKey: ["project_pl", "client_list_quality"],
@@ -193,6 +206,38 @@ export function ClientQualityTable() {
       return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
     },
   });
+
+  const clientsMaster = clientsMasterQuery.data ?? [];
+  const allClients = clientsQuery.data ?? [];
+  const qualityData = qualityQuery.data ?? [];
+
+  // Build a map: client_id -> display name (name_disp from Board master)
+  const clientDisplayNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of clientsMaster) {
+      const displayName = c.name_disp || c.name || "";
+      if (displayName) {
+        map.set(String(c.id), displayName);
+      }
+    }
+    return map;
+  }, [clientsMaster]);
+
+  // Build reverse map: any name variant -> canonical display name
+  const nameToDisplayName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of clientsMaster) {
+      const displayName = c.name_disp || c.name || "";
+      if (!displayName) continue;
+      // Map both name and name_disp to the display name
+      if (c.name) map.set(c.name, displayName);
+      if (c.name_disp) map.set(c.name_disp, displayName);
+      // Also map normalized versions
+      if (c.name) map.set(normalizeClientName(c.name), displayName);
+      if (c.name_disp) map.set(normalizeClientName(c.name_disp), displayName);
+    }
+    return map;
+  }, [clientsMaster]);
 
   const allClients = clientsQuery.data ?? [];
   const qualityData = qualityQuery.data ?? [];
