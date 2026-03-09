@@ -313,22 +313,38 @@ export function ClientQualityTable() {
     const processedDisplayNames = new Set<string>();
 
     // 1. Group project_pl clients by canonical Board display name
-    const clientsByDisplayName = new Map<string, { id: string; name: string; displayName: string }[]>();
+    // Use matchKey to group clients with same normalized name (e.g. "CLEAR INNOVATION株式会社" vs "CLEAR INNOVATION 株式会社")
+    const clientsByMatchKey = new Map<string, { id: string; name: string; displayName: string }[]>();
+    const matchKeyToDisplayName = new Map<string, string>();
     for (const client of allClients) {
       const displayName = clientDisplayNameMap.get(client.id) ?? resolveDisplayName(client.name);
+      const key = matchKey(displayName);
       
-      if (!clientsByDisplayName.has(displayName)) {
-        clientsByDisplayName.set(displayName, []);
+      if (!clientsByMatchKey.has(key)) {
+        clientsByMatchKey.set(key, []);
+        matchKeyToDisplayName.set(key, displayName);
       }
-      clientsByDisplayName.get(displayName)!.push({ ...client, displayName });
+      clientsByMatchKey.get(key)!.push({ ...client, displayName });
     }
 
     // 2. Process each display name group
-    for (const [displayName, clients] of clientsByDisplayName.entries()) {
+    for (const [key, clients] of clientsByMatchKey.entries()) {
+      const displayName = matchKeyToDisplayName.get(key) ?? clients[0].displayName;
       processedDisplayNames.add(displayName);
-      
-      // Get quality data by display name
-      const monthlyData = qualityLookup.get(displayName) ?? new Map<string, MonthlyQuality>();
+      // Also add the matchKey so quality-only lookup works
+      const qualityByKey = qualityLookup.get(displayName) ?? new Map<string, MonthlyQuality>();
+      // Also try matchKey-based lookup from qualityLookup
+      let monthlyData = qualityByKey;
+      if (monthlyData.size === 0) {
+        // Try to find by matchKey across all qualityLookup entries
+        for (const [qName, qMap] of qualityLookup.entries()) {
+          if (matchKey(qName) === key) {
+            monthlyData = qMap;
+            processedDisplayNames.add(qName);
+            break;
+          }
+        }
+      }
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -353,9 +369,12 @@ export function ClientQualityTable() {
       });
     }
 
-    // 3. Quality-only clients not in project_pl (by display name)
+    // 3. Quality-only clients not in project_pl
+    const processedMatchKeys = new Set([...processedDisplayNames].map(n => matchKey(n)));
     for (const [displayName, monthlyMap] of qualityLookup.entries()) {
-      if (processedDisplayNames.has(displayName)) continue;
+      const key = matchKey(displayName);
+      if (processedMatchKeys.has(key)) continue;
+      processedMatchKeys.add(key);
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -553,42 +572,6 @@ export function ClientQualityTable() {
             </TableRow>
           ))}
 
-          {/* Grand totals row */}
-          <TableRow className="border-t-2 border-border font-semibold">
-            <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold text-xs">全体</TableCell>
-            {FISCAL_MONTHS.map((ym) => {
-              const m = grandTotals.monthly[ym];
-              const del = m?.totalDeliveries ?? 0;
-              const ot = m?.onTime ?? 0;
-              const rev = m?.revisions ?? 0;
-              return (
-                <TableCell key={ym} className={cn(
-                  "text-right font-mono tabular-nums text-xs whitespace-nowrap",
-                  activeTab === "onTimeRate" && onTimeColor(ot, del),
-                  activeTab === "revisionRate" && revisionColor(rev, del),
-                )}>
-                  {activeTab === "onTimeRate" ? formatRate(ot, del)
-                    : activeTab === "revisionRate" ? formatRate(rev, del)
-                    : del > 0 ? `${del}件` : "—"}
-                </TableCell>
-              );
-            })}
-            <TableCell className="text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap">
-              {grandTotals.totalDel > 0 ? `${grandTotals.totalDel}件` : "—"}
-            </TableCell>
-            <TableCell className={cn(
-              "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
-              onTimeColor(grandTotals.totalOnTime, grandTotals.totalDel),
-            )}>
-              {formatRate(grandTotals.totalOnTime, grandTotals.totalDel)}
-            </TableCell>
-            <TableCell className={cn(
-              "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
-              revisionColor(grandTotals.totalRev, grandTotals.totalDel),
-            )}>
-              {formatRate(grandTotals.totalRev, grandTotals.totalDel)}
-            </TableCell>
-          </TableRow>
         </TableBody>
       </Table>
     </div>
