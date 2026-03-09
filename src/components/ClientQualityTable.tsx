@@ -449,7 +449,6 @@ export function ClientQualityTable() {
             </TableRow>
           </TableBody>
         </Table>
-      </div>
     </div>
   );
 }

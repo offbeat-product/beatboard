@@ -364,7 +364,10 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
         </Table>
       </div>
 
-      {/* AI Advisor */}
+      {/* Section 4: Client Quality Table */}
+      <ClientQualityTable />
+
+      {/* Section 5: AI Advisor */}
       <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
         <div className="flex items-center gap-2 mb-3">
           <div className="h-7 w-7 rounded-sm bg-accent flex items-center justify-center">
@@ -414,10 +417,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
         </div>
       </div>
 
-      {/* Client Quality Table */}
-      <ClientQualityTable />
-
-      {/* Calculation Logic */}
+      {/* Section 6: Calculation Logic */}
       <Collapsible>
         <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
           <ChevronDown className="h-3 w-3" />
