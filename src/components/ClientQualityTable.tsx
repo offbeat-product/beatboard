@@ -15,13 +15,37 @@ import { Plus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-// Normalize client name by removing common prefixes
+// Normalize client name by removing legal entity suffixes/prefixes for matching
 function normalizeClientName(name: string): string {
   return name
     .replace(/^株式会社/g, "")
+    .replace(/株式会社$/g, "")
+    .replace(/^有限会社/g, "")
+    .replace(/有限会社$/g, "")
+    .replace(/^合同会社/g, "")
+    .replace(/合同会社$/g, "")
+    .replace(/^一般社団法人/g, "")
     .replace(/^（株）/g, "")
-    .replace(/^(株)/g, "")
+    .replace(/^[\(（]株[\)）]/g, "")
     .trim();
+}
+
+// Create a case-insensitive key for matching
+function matchKey(name: string): string {
+  return normalizeClientName(name).toLowerCase().replace(/\s+/g, "");
+}
+
+// Check if a quality_monthly row looks like junk data (not a real client name)
+function isJunkClientEntry(clientId: string | null, clientName: string | null): boolean {
+  const name = clientName ?? clientId ?? "";
+  if (!name || name === "__total__") return true;
+  // Pure numbers, percentages, very short
+  if (/^\d+(\.\d+)?%?$/.test(name.trim())) return true;
+  // Project-like entries (start with 【 or contain detailed project descriptions)
+  if (name.startsWith("【") || name.startsWith("「")) return true;
+  // Entries containing long descriptions with underscores
+  if (name.includes("_") && name.length > 30) return true;
+  return false;
 }
 
 const FISCAL_MONTHS = getFiscalYearMonths(2026);
@@ -223,43 +247,47 @@ export function ClientQualityTable() {
     return map;
   }, [clientsMaster]);
 
-  // Build reverse map: any name variant -> canonical display name
+  // Build reverse map: matchKey(name) -> canonical Board name
+  // This handles case differences, spacing, and 株式会社 prefix/suffix variants
   const nameToDisplayName = useMemo(() => {
     const map = new Map<string, string>();
     for (const c of clientsMaster) {
       const displayName = c.name_disp || c.name || "";
       if (!displayName) continue;
-      // Map both name and name_disp to the display name
-      if (c.name) map.set(c.name, displayName);
-      if (c.name_disp) map.set(c.name_disp, displayName);
-      // Also map normalized versions
-      if (c.name) map.set(normalizeClientName(c.name), displayName);
-      if (c.name_disp) map.set(normalizeClientName(c.name_disp), displayName);
+      const key = matchKey(displayName);
+      // First entry wins (canonical Board name)
+      if (!map.has(key)) {
+        map.set(key, displayName);
+      }
     }
     return map;
   }, [clientsMaster]);
 
+  // Helper to resolve any name to its Board canonical name
+  const resolveDisplayName = useCallback((rawName: string): string => {
+    const key = matchKey(rawName);
+    return nameToDisplayName.get(key) ?? normalizeClientName(rawName);
+  }, [nameToDisplayName]);
 
-  // Build quality lookup: Map<displayName, Map<yearMonth, MonthlyQuality>>
-  // Use Board display name to merge clients
+
+  // Build quality lookup: Map<canonicalDisplayName, Map<yearMonth, MonthlyQuality>>
   const qualityLookup = useMemo(() => {
     const lookup = new Map<string, Map<string, MonthlyQuality>>();
     for (const row of qualityData) {
-      if (row.client_id === "__total__") continue;
+      // Filter out junk entries and __total__ rows
+      if (isJunkClientEntry(row.client_id, row.client_name)) continue;
+      
       const rawName = row.client_name ?? row.client_id ?? "";
       if (!rawName) continue;
       
-      // Try to find canonical display name from Board master
-      const displayName = nameToDisplayName.get(rawName) 
-        ?? nameToDisplayName.get(normalizeClientName(rawName))
-        ?? normalizeClientName(rawName);
+      // Resolve to canonical Board display name
+      const displayName = resolveDisplayName(rawName);
       if (!displayName) continue;
       
       if (!lookup.has(displayName)) lookup.set(displayName, new Map());
       const monthMap = lookup.get(displayName)!;
       const existing = monthMap.get(row.year_month);
       
-      // Merge if same month exists (sum the values)
       if (existing) {
         monthMap.set(row.year_month, {
           totalDeliveries: existing.totalDeliveries + (row.total_deliveries ?? 0),
@@ -275,21 +303,17 @@ export function ClientQualityTable() {
       }
     }
     return lookup;
-  }, [qualityData, nameToDisplayName]);
+  }, [qualityData, resolveDisplayName]);
 
   // Build rows: group by Board display name
   const rows: ClientQualityRow[] = useMemo(() => {
     const result: ClientQualityRow[] = [];
     const processedDisplayNames = new Set<string>();
 
-    // 1. Group project_pl clients by Board display name
+    // 1. Group project_pl clients by canonical Board display name
     const clientsByDisplayName = new Map<string, { id: string; name: string; displayName: string }[]>();
     for (const client of allClients) {
-      // Get display name from Board master, fallback to normalized name
-      const displayName = clientDisplayNameMap.get(client.id) 
-        ?? nameToDisplayName.get(client.name)
-        ?? nameToDisplayName.get(normalizeClientName(client.name))
-        ?? normalizeClientName(client.name);
+      const displayName = clientDisplayNameMap.get(client.id) ?? resolveDisplayName(client.name);
       
       if (!clientsByDisplayName.has(displayName)) {
         clientsByDisplayName.set(displayName, []);
@@ -356,7 +380,7 @@ export function ClientQualityTable() {
     }
 
     return result;
-  }, [allClients, qualityLookup, clientDisplayNameMap, nameToDisplayName]);
+  }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName]);
 
   // Sort based on active tab; clients without data go to bottom
   const sortedRows = useMemo(() => {
