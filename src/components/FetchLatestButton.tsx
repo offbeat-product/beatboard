@@ -53,9 +53,9 @@ export function FetchLatestButton({ targets = "both" }: FetchLatestButtonProps) 
       const boardUrl = (settings.webhook_board_url as string) || DEFAULT_BOARD_URL;
       const freeeUrl = (settings.webhook_freee_url as string) || DEFAULT_FREEE_URL;
 
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const syncNow = new Date();
+      const year = syncNow.getFullYear();
+      const month = String(syncNow.getMonth() + 1).padStart(2, "0");
       const currentYearMonth = `${year}-${month}`;
 
       const calls: Promise<Response>[] = [];
