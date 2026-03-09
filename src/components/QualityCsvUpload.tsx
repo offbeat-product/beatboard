@@ -208,8 +208,10 @@ export function QualityCsvUpload() {
     }
 
     setRecords(parsed);
-    setPreviewed(false);
-    setAggregated([]);
+    // Auto-preview
+    const agg = aggregateByClient(parsed);
+    setAggregated(agg);
+    setPreviewed(true);
 
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
