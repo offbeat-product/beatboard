@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Upload } from "lucide-react";
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -51,6 +51,7 @@ function isJunkClientEntry(clientId: string | null, clientName: string | null): 
 const FISCAL_MONTHS = getFiscalYearMonths(2026);
 
 type TabType = "onTimeRate" | "revisionRate" | "deliveries";
+type SortDirection = "desc" | "asc";
 
 interface MonthlyQuality {
   totalDeliveries: number;
@@ -179,7 +180,8 @@ function QualityInputModal({
 // ── Main Component ──
 export function ClientQualityTable() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabType>("onTimeRate");
+  const [activeTab, setActiveTab] = useState<TabType>("deliveries"); // Default to deliveries (案件数)
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Default high to low
 
   // Fetch ALL quality_monthly data for the org
   const qualityQuery = useQuery({
@@ -382,22 +384,29 @@ export function ClientQualityTable() {
     return result;
   }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName]);
 
-  // Sort based on active tab; clients without data go to bottom
+  // Sort based on active tab and sort direction; clients without data go to bottom
   const sortedRows = useMemo(() => {
     const withData = rows.filter((r) => r.hasQualityData);
     const withoutData = rows.filter((r) => !r.hasQualityData);
 
+    const multiplier = sortDirection === "desc" ? 1 : -1;
+
     if (activeTab === "onTimeRate") {
-      withData.sort((a, b) => b.avgOnTimeRate - a.avgOnTimeRate);
+      withData.sort((a, b) => multiplier * (b.avgOnTimeRate - a.avgOnTimeRate));
     } else if (activeTab === "revisionRate") {
-      withData.sort((a, b) => a.avgRevisionRate - b.avgRevisionRate);
+      // For revision rate, lower is better, so flip the default
+      withData.sort((a, b) => multiplier * (a.avgRevisionRate - b.avgRevisionRate));
     } else {
-      withData.sort((a, b) => b.totals.totalDeliveries - a.totals.totalDeliveries);
+      withData.sort((a, b) => multiplier * (b.totals.totalDeliveries - a.totals.totalDeliveries));
     }
 
     withoutData.sort((a, b) => a.clientName.localeCompare(b.clientName));
     return [...withData, ...withoutData];
-  }, [rows, activeTab]);
+  }, [rows, activeTab, sortDirection]);
+
+  const toggleSortDirection = () => {
+    setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
 
   // Grand totals (only from rows with data)
   const grandTotals = useMemo(() => {
@@ -469,8 +478,20 @@ export function ClientQualityTable() {
             {FISCAL_MONTHS.map((ym) => (
               <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
             ))}
-            <TableHead className="text-right font-bold whitespace-nowrap min-w-[100px]">
-              {activeTab === "deliveries" ? "通期合計" : "通期平均"}
+            <TableHead className="text-right font-bold whitespace-nowrap min-w-[120px]">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSortDirection}
+                className="h-auto p-1 text-xs font-bold hover:bg-muted/50"
+              >
+                {activeTab === "deliveries" ? "通期合計" : "通期平均"}
+                {sortDirection === "desc" ? (
+                  <ArrowDown className="ml-1 h-3 w-3" />
+                ) : (
+                  <ArrowUp className="ml-1 h-3 w-3" />
+                )}
+              </Button>
             </TableHead>
           </TableRow>
         </TableHeader>
