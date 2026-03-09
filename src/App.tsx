@@ -13,7 +13,7 @@ import Customers from "./pages/Customers";
 import Management from "./pages/Management";
 import Productivity from "./pages/Productivity";
 import Quality from "./pages/Quality";
-import AIAdvisor from "./pages/AIAdvisor";
+import Report from "./pages/Report";
 import SettingsPage from "./pages/SettingsPage";
 import Login from "./pages/Login";
 import InviteAccept from "./pages/InviteAccept";
