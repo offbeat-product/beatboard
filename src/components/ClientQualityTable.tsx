@@ -14,21 +14,27 @@ import { Label } from "@/components/ui/label";
 import { Plus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { QualityCsvUpload } from "@/components/QualityCsvUpload";
 
 const FISCAL_MONTHS = getFiscalYearMonths(2026);
 
 type TabType = "onTimeRate" | "revisionRate" | "deliveries";
 
+interface MonthlyQuality {
+  totalDeliveries: number;
+  onTime: number;
+  revisions: number;
+}
+
 interface ClientQualityRow {
   clientId: string;
   clientName: string;
-  monthly: Record<string, { totalDeliveries: number; onTime: number; revisions: number }>;
+  hasQualityData: boolean;
+  monthly: Record<string, MonthlyQuality>;
   totals: { totalDeliveries: number; onTime: number; revisions: number };
   avgOnTimeRate: number;
   avgRevisionRate: number;
 }
-
-// No summary cards in the new layout
 
 // ── Input Modal ──
 function QualityInputModal({
@@ -45,7 +51,6 @@ function QualityInputModal({
   const [onTime, setOnTime] = useState(0);
   const [revisions, setRevisions] = useState(0);
   const [saving, setSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     if (!clientId) {
@@ -82,97 +87,60 @@ function QualityInputModal({
     }
   };
 
-  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    const lines = text.trim().split("\n").slice(1); // skip header
-    let count = 0;
-    for (const line of lines) {
-      const [csvYm, csvClientName, csvTotal, csvOnTime, csvRevision] = line.split(",").map((s) => s.trim());
-      if (!csvYm || !csvClientName) continue;
-      const matched = clientNames.find((c) => c.name === csvClientName);
-      const cid = matched?.id ?? csvClientName;
-      await supabase.from("quality_monthly").upsert(
-        {
-          org_id: ORG_ID,
-          year_month: csvYm,
-          client_id: cid,
-          client_name: csvClientName,
-          total_deliveries: Number(csvTotal) || 0,
-          on_time_deliveries: Number(csvOnTime) || 0,
-          revision_count: Number(csvRevision) || 0,
-        },
-        { onConflict: "org_id,year_month,client_id" }
-      );
-      count++;
-    }
-    toast.success(`${count}件のデータをアップロードしました`);
-    onSave();
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   return (
-    <div className="flex gap-2">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="text-xs gap-1 h-8">
-            <Plus className="h-3 w-3" /> データ入力
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>品質データ入力</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs">年月</Label>
-              <Select value={ym} onValueChange={setYm}>
-                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {FISCAL_MONTHS.map((m) => (
-                    <SelectItem key={m} value={m}>{getMonthLabel(m)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">顧客名</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="選択..." /></SelectTrigger>
-                <SelectContent>
-                  {clientNames.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs">納品数</Label>
-                <Input type="number" min={0} value={totalDel} onChange={(e) => setTotalDel(Number(e.target.value))} className="h-9" />
-              </div>
-              <div>
-                <Label className="text-xs">納期遵守数</Label>
-                <Input type="number" min={0} value={onTime} onChange={(e) => setOnTime(Number(e.target.value))} className="h-9" />
-              </div>
-              <div>
-                <Label className="text-xs">修正発生数</Label>
-                <Input type="number" min={0} value={revisions} onChange={(e) => setRevisions(Number(e.target.value))} className="h-9" />
-              </div>
-            </div>
-            <Button onClick={handleSave} disabled={saving} className="w-full">
-              {saving ? "保存中..." : "保存"}
-            </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-xs gap-1 h-8">
+          <Plus className="h-3 w-3" /> データ入力
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>品質データ入力</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-xs">年月</Label>
+            <Select value={ym} onValueChange={setYm}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {FISCAL_MONTHS.map((m) => (
+                  <SelectItem key={m} value={m}>{getMonthLabel(m)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Button variant="outline" size="sm" className="text-xs gap-1 h-8" onClick={() => fileInputRef.current?.click()}>
-        <Upload className="h-3 w-3" /> CSV
-      </Button>
-      <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} />
-    </div>
+          <div>
+            <Label className="text-xs">顧客名</Label>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="選択..." /></SelectTrigger>
+              <SelectContent>
+                {clientNames.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs">納品数</Label>
+              <Input type="number" min={0} value={totalDel} onChange={(e) => setTotalDel(Number(e.target.value))} className="h-9" />
+            </div>
+            <div>
+              <Label className="text-xs">納期遵守数</Label>
+              <Input type="number" min={0} value={onTime} onChange={(e) => setOnTime(Number(e.target.value))} className="h-9" />
+            </div>
+            <div>
+              <Label className="text-xs">修正発生数</Label>
+              <Input type="number" min={0} value={revisions} onChange={(e) => setRevisions(Number(e.target.value))} className="h-9" />
+            </div>
+          </div>
+          <Button onClick={handleSave} disabled={saving} className="w-full">
+            {saving ? "保存中..." : "保存"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -181,97 +149,158 @@ export function ClientQualityTable() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("onTimeRate");
 
-  // Fetch quality_monthly for all fiscal months
+  // Fetch ALL quality_monthly data for the org
   const qualityQuery = useQuery({
-    queryKey: ["quality_monthly", "client_quality"],
+    queryKey: ["quality_monthly", "client_quality_table"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quality_monthly")
         .select("*")
-        .eq("org_id", ORG_ID)
-        .in("year_month", FISCAL_MONTHS);
+        .eq("org_id", ORG_ID);
       if (error) throw error;
+      console.log("[ClientQualityTable] quality_monthly fetched:", data?.length, "rows");
       return data;
     },
   });
 
-  // Fetch project_pl client names for the dropdown
-  const clientNamesQuery = useQuery({
-    queryKey: ["project_pl", "client_names_quality"],
+  // Fetch all unique clients from project_pl for the fiscal year
+  const clientsQuery = useQuery({
+    queryKey: ["project_pl", "client_list_quality"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_pl")
         .select("client_id, client_name")
         .eq("org_id", ORG_ID)
-        .in("year_month", FISCAL_MONTHS)
-        .gt("revenue", 0);
+        .gte("year_month", "2025-05")
+        .lte("year_month", "2026-04");
       if (error) throw error;
+      // Deduplicate by client_id
       const map = new Map<string, string>();
       for (const r of data) {
         const cid = String(r.client_id ?? "");
-        if (cid && !map.has(cid)) map.set(cid, r.client_name ?? cid);
+        if (cid && r.client_name && !map.has(cid)) {
+          map.set(cid, r.client_name);
+        }
       }
       return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
     },
   });
 
-  const clientNames = clientNamesQuery.data ?? [];
+  const allClients = clientsQuery.data ?? [];
+  const qualityData = qualityQuery.data ?? [];
 
-  // Build rows from quality_monthly (exclude __total__ rows)
-  const rows: ClientQualityRow[] = useMemo(() => {
-    if (!qualityQuery.data) return [];
-    const clientMap = new Map<string, ClientQualityRow>();
-
-    for (const row of qualityQuery.data) {
+  // Build quality lookup: Map<clientKey, Map<yearMonth, MonthlyQuality>>
+  const qualityLookup = useMemo(() => {
+    const lookup = new Map<string, Map<string, MonthlyQuality>>();
+    for (const row of qualityData) {
       if (row.client_id === "__total__") continue;
-      const cid = row.client_id ?? "未分類";
-      if (!clientMap.has(cid)) {
-        clientMap.set(cid, {
-          clientId: cid,
-          clientName: row.client_name ?? "未分類",
-          monthly: {},
-          totals: { totalDeliveries: 0, onTime: 0, revisions: 0 },
-          avgOnTimeRate: 0,
-          avgRevisionRate: 0,
-        });
-      }
-      const entry = clientMap.get(cid)!;
-      entry.monthly[row.year_month] = {
+      // Try matching by client_id first, then client_name
+      const key = row.client_id ?? row.client_name ?? "";
+      if (!key) continue;
+      if (!lookup.has(key)) lookup.set(key, new Map());
+      lookup.get(key)!.set(row.year_month, {
         totalDeliveries: row.total_deliveries ?? 0,
         onTime: row.on_time_deliveries ?? 0,
         revisions: row.revision_count ?? 0,
-      };
+      });
     }
+    return lookup;
+  }, [qualityData]);
 
-    return Array.from(clientMap.values()).map((r) => {
+  // Build rows: start from project_pl clients, merge quality data
+  const rows: ClientQualityRow[] = useMemo(() => {
+    const result: ClientQualityRow[] = [];
+    const processedIds = new Set<string>();
+
+    // 1. All project_pl clients
+    for (const client of allClients) {
+      processedIds.add(client.id);
+      // Try to find quality data by client_id or client_name
+      const byId = qualityLookup.get(client.id);
+      const byName = qualityLookup.get(client.name);
+      const monthlyData = byId ?? byName ?? new Map<string, MonthlyQuality>();
+
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
+      const monthly: Record<string, MonthlyQuality> = {};
       for (const ym of FISCAL_MONTHS) {
-        const m = r.monthly[ym];
+        const m = monthlyData.get(ym);
         if (m) {
+          monthly[ym] = m;
           totalDel += m.totalDeliveries;
           totalOnTime += m.onTime;
           totalRev += m.revisions;
         }
       }
-      r.totals = { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev };
-      r.avgOnTimeRate = totalDel > 0 ? (totalOnTime / totalDel) * 100 : 0;
-      r.avgRevisionRate = totalDel > 0 ? (totalRev / totalDel) * 100 : 0;
-      return r;
-    });
-  }, [qualityQuery.data]);
 
-  // Sort based on active tab
+      result.push({
+        clientId: client.id,
+        clientName: client.name,
+        hasQualityData: totalDel > 0,
+        monthly,
+        totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
+        avgOnTimeRate: totalDel > 0 ? (totalOnTime / totalDel) * 100 : -1,
+        avgRevisionRate: totalDel > 0 ? (totalRev / totalDel) * 100 : -1,
+      });
+    }
+
+    // 2. Quality-only clients not in project_pl
+    for (const [key, monthlyMap] of qualityLookup.entries()) {
+      if (processedIds.has(key)) continue;
+      // Check if it matches any client name
+      const matchedByName = allClients.find((c) => c.name === key);
+      if (matchedByName) continue;
+
+      let totalDel = 0, totalOnTime = 0, totalRev = 0;
+      const monthly: Record<string, MonthlyQuality> = {};
+      for (const ym of FISCAL_MONTHS) {
+        const m = monthlyMap.get(ym);
+        if (m) {
+          monthly[ym] = m;
+          totalDel += m.totalDeliveries;
+          totalOnTime += m.onTime;
+          totalRev += m.revisions;
+        }
+      }
+      if (totalDel === 0) continue;
+
+      // Find client_name from quality data
+      const qualityRow = qualityData.find((r) => (r.client_id === key || r.client_name === key) && r.client_id !== "__total__");
+      const clientName = qualityRow?.client_name ?? key;
+
+      result.push({
+        clientId: key,
+        clientName,
+        hasQualityData: true,
+        monthly,
+        totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
+        avgOnTimeRate: totalDel > 0 ? (totalOnTime / totalDel) * 100 : -1,
+        avgRevisionRate: totalDel > 0 ? (totalRev / totalDel) * 100 : -1,
+      });
+    }
+
+    return result;
+  }, [allClients, qualityLookup, qualityData]);
+
+  // Sort based on active tab; clients without data go to bottom
   const sortedRows = useMemo(() => {
-    const sorted = [...rows];
-    if (activeTab === "onTimeRate") sorted.sort((a, b) => b.avgOnTimeRate - a.avgOnTimeRate);
-    else if (activeTab === "revisionRate") sorted.sort((a, b) => a.avgRevisionRate - b.avgRevisionRate);
-    else sorted.sort((a, b) => b.totals.totalDeliveries - a.totals.totalDeliveries);
-    return sorted;
+    const withData = rows.filter((r) => r.hasQualityData);
+    const withoutData = rows.filter((r) => !r.hasQualityData);
+
+    if (activeTab === "onTimeRate") {
+      withData.sort((a, b) => b.avgOnTimeRate - a.avgOnTimeRate);
+    } else if (activeTab === "revisionRate") {
+      withData.sort((a, b) => a.avgRevisionRate - b.avgRevisionRate);
+    } else {
+      withData.sort((a, b) => b.totals.totalDeliveries - a.totals.totalDeliveries);
+    }
+
+    withoutData.sort((a, b) => a.clientName.localeCompare(b.clientName));
+    return [...withData, ...withoutData];
   }, [rows, activeTab]);
 
-  // Totals
+  // Grand totals (only from rows with data)
   const grandTotals = useMemo(() => {
-    const monthly: Record<string, { totalDeliveries: number; onTime: number; revisions: number }> = {};
+    const monthly: Record<string, MonthlyQuality> = {};
     for (const ym of FISCAL_MONTHS) {
       let del = 0, ot = 0, rev = 0;
       for (const r of rows) {
@@ -290,7 +319,7 @@ export function ClientQualityTable() {
     queryClient.invalidateQueries({ queryKey: ["quality_monthly"] });
   }, [queryClient]);
 
-  const isLoading = qualityQuery.isLoading || clientNamesQuery.isLoading;
+  const isLoading = qualityQuery.isLoading || clientsQuery.isLoading;
 
   if (isLoading) {
     return (
@@ -300,32 +329,6 @@ export function ClientQualityTable() {
       </div>
     );
   }
-
-  // Badges
-  const getRankBadge = (index: number) => {
-    if (index === 0) return <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 text-[10px] font-bold mr-1.5">1</span>;
-    if (index === 1) return <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-[10px] font-bold mr-1.5">2</span>;
-    if (index === 2) return <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold mr-1.5">3</span>;
-    if (index <= 4) return <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold mr-1.5">{index + 1}</span>;
-    return null;
-  };
-
-  const getWorstBadge = (row: ClientQualityRow) => {
-    if (row.totals.totalDeliveries === 0) return null;
-    // For onTimeRate tab: worst = lowest on-time rate
-    // For revisionRate tab: worst = highest revision rate
-    const clientsWithData = rows.filter((r) => r.totals.totalDeliveries > 0);
-    if (activeTab === "onTimeRate") {
-      const sorted = [...clientsWithData].sort((a, b) => a.avgOnTimeRate - b.avgOnTimeRate);
-      const worstIdx = sorted.findIndex((r) => r.clientId === row.clientId);
-      if (worstIdx < 3) return <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded ml-1">要改善</span>;
-    } else if (activeTab === "revisionRate") {
-      const sorted = [...clientsWithData].sort((a, b) => b.avgRevisionRate - a.avgRevisionRate);
-      const worstIdx = sorted.findIndex((r) => r.clientId === row.clientId);
-      if (worstIdx < 3) return <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded ml-1">要改善</span>;
-    }
-    return null;
-  };
 
   const onTimeColor = (onTime: number, total: number) => {
     if (total <= 0) return "";
@@ -354,101 +357,104 @@ export function ClientQualityTable() {
               <TabsTrigger value="deliveries" className="text-xs px-3 h-7">案件数</TabsTrigger>
             </TabsList>
           </Tabs>
-          <QualityInputModal clientNames={clientNames} onSave={refetch} />
+          <QualityInputModal clientNames={allClients} onSave={refetch} />
+          <QualityCsvUpload />
         </div>
       </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="sticky left-0 bg-card z-10 min-w-[160px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">顧客名</TableHead>
-              {FISCAL_MONTHS.map((ym) => (
-                <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
-              ))}
-              <TableHead className="text-right font-bold whitespace-nowrap min-w-[100px]">通期平均</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedRows.map((row, idx) => (
-              <TableRow key={row.clientId}>
-                <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] whitespace-nowrap">
-                  <div className="flex items-center">
-                    {getRankBadge(idx)}
-                    <span className="text-xs font-medium truncate max-w-[100px]">{row.clientName}</span>
-                    {getWorstBadge(row)}
-                  </div>
-                </TableCell>
-                {FISCAL_MONTHS.map((ym) => {
-                  const m = row.monthly[ym];
-                  const del = m?.totalDeliveries ?? 0;
-                  const ot = m?.onTime ?? 0;
-                  const rev = m?.revisions ?? 0;
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="sticky left-0 bg-card z-10 min-w-[160px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">顧客名</TableHead>
+            {FISCAL_MONTHS.map((ym) => (
+              <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
+            ))}
+            <TableHead className="text-right font-bold whitespace-nowrap min-w-[100px]">
+              {activeTab === "deliveries" ? "通期合計" : "通期平均"}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedRows.map((row) => (
+            <TableRow key={row.clientId}>
+              <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] whitespace-nowrap">
+                <span className="text-xs font-medium truncate max-w-[140px] inline-block">{row.clientName}</span>
+              </TableCell>
+              {FISCAL_MONTHS.map((ym) => {
+                const m = row.monthly[ym];
+                if (!m) {
+                  return <TableCell key={ym} className="text-right text-xs text-muted-foreground">—</TableCell>;
+                }
+                const del = m.totalDeliveries;
+                const ot = m.onTime;
+                const rev = m.revisions;
 
-                  if (activeTab === "onTimeRate") {
-                    return (
-                      <TableCell key={ym} className={cn("text-right font-mono tabular-nums text-xs whitespace-nowrap", onTimeColor(ot, del))}>
-                        {formatRate(ot, del)}
-                      </TableCell>
-                    );
-                  }
-                  if (activeTab === "revisionRate") {
-                    return (
-                      <TableCell key={ym} className={cn("text-right font-mono tabular-nums text-xs whitespace-nowrap", revisionColor(rev, del))}>
-                        {formatRate(rev, del)}
-                      </TableCell>
-                    );
-                  }
+                if (activeTab === "onTimeRate") {
                   return (
-                    <TableCell key={ym} className="text-right font-mono tabular-nums text-xs whitespace-nowrap">
-                      {del > 0 ? `${del}件` : "—"}
+                    <TableCell key={ym} className={cn("text-right font-mono tabular-nums text-xs whitespace-nowrap", onTimeColor(ot, del))}>
+                      {formatRate(ot, del)}
                     </TableCell>
                   );
-                })}
-                {/* Total/Average column */}
-                <TableCell className={cn(
-                  "text-right font-mono tabular-nums text-xs font-semibold whitespace-nowrap",
-                  activeTab === "onTimeRate" && onTimeColor(row.totals.onTime, row.totals.totalDeliveries),
-                  activeTab === "revisionRate" && revisionColor(row.totals.revisions, row.totals.totalDeliveries),
-                )}>
-                  {activeTab === "onTimeRate" ? formatRate(row.totals.onTime, row.totals.totalDeliveries)
-                    : activeTab === "revisionRate" ? formatRate(row.totals.revisions, row.totals.totalDeliveries)
-                    : row.totals.totalDeliveries > 0 ? `${row.totals.totalDeliveries}件` : "—"}
-                </TableCell>
-              </TableRow>
-            ))}
-
-            {/* Grand totals row */}
-            <TableRow className="border-t-2 border-border font-semibold">
-              <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold">全体</TableCell>
-              {FISCAL_MONTHS.map((ym) => {
-                const m = grandTotals.monthly[ym];
-                const del = m?.totalDeliveries ?? 0;
-                const ot = m?.onTime ?? 0;
-                const rev = m?.revisions ?? 0;
+                }
+                if (activeTab === "revisionRate") {
+                  return (
+                    <TableCell key={ym} className={cn("text-right font-mono tabular-nums text-xs whitespace-nowrap", revisionColor(rev, del))}>
+                      {formatRate(rev, del)}
+                    </TableCell>
+                  );
+                }
                 return (
-                  <TableCell key={ym} className={cn(
-                    "text-right font-mono tabular-nums text-xs whitespace-nowrap",
-                    activeTab === "onTimeRate" && onTimeColor(ot, del),
-                    activeTab === "revisionRate" && revisionColor(rev, del),
-                  )}>
-                    {activeTab === "onTimeRate" ? formatRate(ot, del)
-                      : activeTab === "revisionRate" ? formatRate(rev, del)
-                      : del > 0 ? `${del}件` : "—"}
+                  <TableCell key={ym} className="text-right font-mono tabular-nums text-xs whitespace-nowrap">
+                    {del > 0 ? `${del}件` : "—"}
                   </TableCell>
                 );
               })}
+              {/* Total/Average column */}
               <TableCell className={cn(
-                "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
-                activeTab === "onTimeRate" && onTimeColor(grandTotals.totalOnTime, grandTotals.totalDel),
-                activeTab === "revisionRate" && revisionColor(grandTotals.totalRev, grandTotals.totalDel),
+                "text-right font-mono tabular-nums text-xs font-semibold whitespace-nowrap",
+                activeTab === "onTimeRate" && row.totals.totalDeliveries > 0 && onTimeColor(row.totals.onTime, row.totals.totalDeliveries),
+                activeTab === "revisionRate" && row.totals.totalDeliveries > 0 && revisionColor(row.totals.revisions, row.totals.totalDeliveries),
               )}>
-                {activeTab === "onTimeRate" ? formatRate(grandTotals.totalOnTime, grandTotals.totalDel)
-                  : activeTab === "revisionRate" ? formatRate(grandTotals.totalRev, grandTotals.totalDel)
-                  : grandTotals.totalDel > 0 ? `${grandTotals.totalDel}件` : "—"}
+                {!row.hasQualityData ? "—"
+                  : activeTab === "onTimeRate" ? formatRate(row.totals.onTime, row.totals.totalDeliveries)
+                  : activeTab === "revisionRate" ? formatRate(row.totals.revisions, row.totals.totalDeliveries)
+                  : `${row.totals.totalDeliveries}件`}
               </TableCell>
             </TableRow>
-          </TableBody>
-        </Table>
+          ))}
+
+          {/* Grand totals row */}
+          <TableRow className="border-t-2 border-border font-semibold">
+            <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold text-xs">全体</TableCell>
+            {FISCAL_MONTHS.map((ym) => {
+              const m = grandTotals.monthly[ym];
+              const del = m?.totalDeliveries ?? 0;
+              const ot = m?.onTime ?? 0;
+              const rev = m?.revisions ?? 0;
+              return (
+                <TableCell key={ym} className={cn(
+                  "text-right font-mono tabular-nums text-xs whitespace-nowrap",
+                  activeTab === "onTimeRate" && onTimeColor(ot, del),
+                  activeTab === "revisionRate" && revisionColor(rev, del),
+                )}>
+                  {activeTab === "onTimeRate" ? formatRate(ot, del)
+                    : activeTab === "revisionRate" ? formatRate(rev, del)
+                    : del > 0 ? `${del}件` : "—"}
+                </TableCell>
+              );
+            })}
+            <TableCell className={cn(
+              "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
+              activeTab === "onTimeRate" && onTimeColor(grandTotals.totalOnTime, grandTotals.totalDel),
+              activeTab === "revisionRate" && revisionColor(grandTotals.totalRev, grandTotals.totalDel),
+            )}>
+              {activeTab === "onTimeRate" ? formatRate(grandTotals.totalOnTime, grandTotals.totalDel)
+                : activeTab === "revisionRate" ? formatRate(grandTotals.totalRev, grandTotals.totalDel)
+                : grandTotals.totalDel > 0 ? `${grandTotals.totalDel}件` : "—"}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
   );
 }
