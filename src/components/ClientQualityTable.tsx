@@ -180,7 +180,8 @@ function QualityInputModal({
 // ── Main Component ──
 export function ClientQualityTable() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabType>("onTimeRate");
+  const [activeTab, setActiveTab] = useState<TabType>("deliveries"); // Default to deliveries (案件数)
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Default high to low
 
   // Fetch ALL quality_monthly data for the org
   const qualityQuery = useQuery({
