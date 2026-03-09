@@ -1,0 +1,625 @@
+import { useState, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
+import { useReportData } from "@/hooks/useReportData";
+import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
+import { CURRENT_MONTH } from "@/lib/fiscalYear";
+import { SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
+import { PageHeader } from "@/components/PageHeader";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Download, ChevronDown, Sparkles, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+
+/* ── Helpers ── */
+function prevMonth(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  const pm = m === 1 ? 12 : m - 1;
+  const py = m === 1 ? y - 1 : y;
+  return `${py}-${String(pm).padStart(2, "0")}`;
+}
+
+function getDefaultMonth(): string {
+  return prevMonth(CURRENT_MONTH);
+}
+
+function generateMonthOptions(): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [];
+  const [cy, cm] = CURRENT_MONTH.split("-").map(Number);
+  for (let i = 0; i < 24; i++) {
+    let m = cm - i;
+    let y = cy;
+    while (m <= 0) { m += 12; y -= 1; }
+    const ym = `${y}-${String(m).padStart(2, "0")}`;
+    options.push({ value: ym, label: `${y}年${m}月` });
+  }
+  return options;
+}
+
+const fmtCurrency = (v: number, unit: string) => {
+  if (unit === "万円") return `¥${(v / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 })}万`;
+  return `¥${v.toLocaleString()}`;
+};
+
+const fmtPct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+const fmtRate = (v: number) => `${v.toFixed(1)}%`;
+
+const colorClass = (actual: number, target: number, higherIsBetter = true) => {
+  if (target === 0) return "";
+  return higherIsBetter
+    ? actual >= target ? "text-green-600" : "text-destructive"
+    : actual <= target ? "text-green-600" : "text-destructive";
+};
+
+const momColorClass = (v: number) => v > 0 ? "text-green-600" : v < 0 ? "text-destructive" : "";
+
+/* ── Main ── */
+const Report = () => {
+  usePageTitle("月次レポート");
+  const [selectedYm, setSelectedYm] = useState(getDefaultMonth);
+  const { unit } = useCurrencyUnit();
+  const { isLoading, isError, managementData: mgmt, productivityData: prod, customersData: cust, qualityData: qual } = useReportData(selectedYm);
+
+  const monthOptions = generateMonthOptions();
+  const ymLabel = (() => {
+    const [y, m] = selectedYm.split("-").map(Number);
+    return `${y}年${m}月`;
+  })();
+
+  // AI streaming state
+  const [analysisContent, setAnalysisContent] = useState("");
+  const [actionContent, setActionContent] = useState("");
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const streamFromEdgeFunction = useCallback(async (
+    type: "analysis" | "action",
+    payload: Record<string, unknown>,
+    onDelta: (text: string) => void,
+    onDone: () => void,
+  ) => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-report-analysis`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ type, data: payload }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(err.error || `HTTP ${resp.status}`);
+    }
+    if (!resp.body) throw new Error("No response body");
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let accumulated = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let nlIdx: number;
+      while ((nlIdx = buffer.indexOf("\n")) !== -1) {
+        let line = buffer.slice(0, nlIdx);
+        buffer = buffer.slice(nlIdx + 1);
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") break;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            accumulated += content;
+            onDelta(accumulated);
+          }
+        } catch {
+          buffer = line + "\n" + buffer;
+          break;
+        }
+      }
+    }
+    onDone();
+    return accumulated;
+  }, []);
+
+  const handleGenerateAnalysis = useCallback(async () => {
+    setAnalysisContent("");
+    setAnalysisLoading(true);
+    try {
+      await streamFromEdgeFunction(
+        "analysis",
+        {
+          yearMonth: ymLabel,
+          revenue: mgmt.revenue,
+          revenueTarget: mgmt.revenueTarget,
+          revenueAchievementRate: mgmt.revenueAchievementRate,
+          grossProfit: mgmt.grossProfit,
+          grossProfitRate: mgmt.grossProfitRate.toFixed(1),
+          operatingProfit: mgmt.operatingProfit,
+          operatingProfitRate: mgmt.opRate.toFixed(1),
+          sgaTotal: mgmt.sgaTotal,
+          totalLaborHours: prod.totalLaborHours,
+          projectHours: prod.projectHours,
+          grossProfitPerHour: Math.round(prod.gph),
+          grossProfitPerProjectHour: Math.round(prod.projectGph),
+          clientCount: cust.currClientCount,
+          clientAvg: Math.round(cust.currClientAvg),
+          projectCount: cust.currProjectCount,
+          projectAvg: Math.round(cust.currProjectAvg),
+          qualityCount: qual.totalDeliveries,
+          onTimeRate: qual.onTimeRate.toFixed(1),
+          revisionRate: qual.revisionRate.toFixed(1),
+        },
+        (text) => setAnalysisContent(text),
+        () => setAnalysisLoading(false),
+      );
+    } catch (e: any) {
+      toast.error(e.message || "分析レポートの生成に失敗しました");
+      setAnalysisLoading(false);
+    }
+  }, [mgmt, prod, cust, qual, ymLabel, streamFromEdgeFunction]);
+
+  const handleGenerateAction = useCallback(async () => {
+    if (!analysisContent) {
+      toast.error("先に「数値評価・課題分析」タブで分析レポートを生成してください");
+      return;
+    }
+    setActionContent("");
+    setActionLoading(true);
+    try {
+      await streamFromEdgeFunction(
+        "action",
+        { analysisContent },
+        (text) => setActionContent(text),
+        () => setActionLoading(false),
+      );
+    } catch (e: any) {
+      toast.error(e.message || "アクション提案の生成に失敗しました");
+      setActionLoading(false);
+    }
+  }, [analysisContent, streamFromEdgeFunction]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-muted-foreground text-sm">読み込み中...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-destructive text-sm">データの取得に失敗しました</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header + Month Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-end gap-4 justify-between">
+        <PageHeader title="月次レポート" description="経営指標の振り返りと改善提案" />
+        <Select value={selectedYm} onValueChange={setSelectedYm}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {monthOptions.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="management" className="space-y-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="management">経営指標</TabsTrigger>
+            <TabsTrigger value="productivity">生産性指標</TabsTrigger>
+            <TabsTrigger value="customers">顧客指標</TabsTrigger>
+            <TabsTrigger value="quality">品質指標</TabsTrigger>
+            <TabsTrigger value="analysis">数値評価・課題分析</TabsTrigger>
+            <TabsTrigger value="action">解決策・来月アクション</TabsTrigger>
+          </TabsList>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1.5" />
+                レポート生成
+                <ChevronDown className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => toast.info("PDF生成機能は準備中です")}>
+                PDF生成
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast.info("PPTX生成機能は準備中です")}>
+                PPTX生成
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* ── Tab 1: Management ── */}
+        <TabsContent value="management" className="space-y-6">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <h3 className="text-sm font-semibold mb-4">■ 売上</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>指標</TableHead>
+                  <TableHead className="text-right">目標</TableHead>
+                  <TableHead className="text-right">実績</TableHead>
+                  <TableHead className="text-right">達成率</TableHead>
+                  <TableHead className="text-right">前月比</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">売上</TableCell>
+                  <TableCell className="text-right">{fmtCurrency(mgmt.revenueTarget, unit)}</TableCell>
+                  <TableCell className={cn("text-right font-semibold", colorClass(mgmt.revenue, mgmt.revenueTarget))}>{fmtCurrency(mgmt.revenue, unit)}</TableCell>
+                  <TableCell className={cn("text-right", colorClass(mgmt.revenueAchievementRate, 100))}>{mgmt.revenueAchievementRate}%</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(mgmt.revenueMom))}>{fmtPct(mgmt.revenueMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">粗利</TableCell>
+                  <TableCell className="text-right">{fmtCurrency(mgmt.grossProfitTarget, unit)}</TableCell>
+                  <TableCell className={cn("text-right font-semibold", colorClass(mgmt.grossProfit, mgmt.grossProfitTarget))}>{fmtCurrency(mgmt.grossProfit, unit)}</TableCell>
+                  <TableCell className={cn("text-right", colorClass(mgmt.grossProfitAchievementRate, 100))}>{mgmt.grossProfitAchievementRate}%</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(mgmt.grossProfitMom))}>{fmtPct(mgmt.grossProfitMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">粗利率</TableCell>
+                  <TableCell className="text-right">70.0%</TableCell>
+                  <TableCell className={cn("text-right font-semibold", colorClass(mgmt.grossProfitRate, 70))}>{fmtRate(mgmt.grossProfitRate)}</TableCell>
+                  <TableCell className={cn("text-right", colorClass(mgmt.grossProfitRate, 70))}>{mgmt.grossProfitRate >= 70 ? "達成" : "未達"}</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(mgmt.grossProfitRateMom))}>{fmtPct(mgmt.grossProfitRateMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">営業利益</TableCell>
+                  <TableCell className="text-right">{fmtCurrency(mgmt.opTarget, unit)}</TableCell>
+                  <TableCell className={cn("text-right font-semibold", colorClass(mgmt.operatingProfit, mgmt.opTarget))}>{fmtCurrency(mgmt.operatingProfit, unit)}</TableCell>
+                  <TableCell className={cn("text-right", colorClass(mgmt.opAchievementRate, 100))}>{mgmt.opAchievementRate}%</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(mgmt.opMom))}>{fmtPct(mgmt.opMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">営業利益率</TableCell>
+                  <TableCell className="text-right">20.0%</TableCell>
+                  <TableCell className={cn("text-right font-semibold", colorClass(mgmt.opRate, 20))}>{fmtRate(mgmt.opRate)}</TableCell>
+                  <TableCell className={cn("text-right", colorClass(mgmt.opRate, 20))}>{mgmt.opRate >= 20 ? "達成" : "未達"}</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(mgmt.opRateMom))}>{fmtPct(mgmt.opRateMom)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <h3 className="text-sm font-semibold mb-4">■ 販管費内訳</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>大項目</TableHead>
+                  <TableHead className="text-right">予算</TableHead>
+                  <TableHead className="text-right">実績</TableHead>
+                  <TableHead className="text-right">差異</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {SGA_CATEGORY_NAMES.map((cat) => {
+                  const budget = mgmt.sgaBudget[cat] ?? 0;
+                  const actual = mgmt.sgaCategoryBreakdown[cat] ?? 0;
+                  const diff = budget - actual;
+                  return (
+                    <TableRow key={cat}>
+                      <TableCell className="font-medium">{cat}</TableCell>
+                      <TableCell className="text-right">{fmtCurrency(budget, unit)}</TableCell>
+                      <TableCell className="text-right">{fmtCurrency(actual, unit)}</TableCell>
+                      <TableCell className={cn("text-right", diff >= 0 ? "text-green-600" : "text-destructive")}>
+                        {fmtCurrency(diff, unit)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* ── Tab 2: Productivity ── */}
+        <TabsContent value="productivity" className="space-y-6">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <h3 className="text-sm font-semibold mb-4">■ 労働時間・工数単価</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>指標</TableHead>
+                  <TableHead className="text-right">目標</TableHead>
+                  <TableHead className="text-right">実績</TableHead>
+                  <TableHead className="text-right">達成率</TableHead>
+                  <TableHead className="text-right">前月比</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">全体総労働時間</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right font-semibold">{prod.totalLaborHours.toFixed(1)}h</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(prod.totalLaborHoursMom))}>{fmtPct(prod.totalLaborHoursMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">全体案件工数</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right font-semibold">{prod.projectHours.toFixed(1)}h</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(prod.projectHoursMom))}>{fmtPct(prod.projectHoursMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">案件稼働率</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right font-semibold">{fmtRate(prod.utilizationRate)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(prod.utilizationRateMom))}>{fmtPct(prod.utilizationRateMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">粗利工数単価</TableCell>
+                  <TableCell className="text-right">¥{prod.gphTarget.toLocaleString()}</TableCell>
+                  <TableCell className={cn("text-right font-semibold", colorClass(prod.gph, prod.gphTarget))}>¥{Math.round(prod.gph).toLocaleString()}</TableCell>
+                  <TableCell className={cn("text-right", colorClass(prod.gphAchievementRate, 100))}>{prod.gphAchievementRate}%</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(prod.gphMom))}>{fmtPct(prod.gphMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">案件粗利工数単価</TableCell>
+                  <TableCell className="text-right">¥{prod.projectGphTarget.toLocaleString()}</TableCell>
+                  <TableCell className={cn("text-right font-semibold", colorClass(prod.projectGph, prod.projectGphTarget))}>¥{Math.round(prod.projectGph).toLocaleString()}</TableCell>
+                  <TableCell className={cn("text-right", colorClass(prod.projectGphAchievementRate, 100))}>{prod.projectGphAchievementRate}%</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(prod.projectGphMom))}>{fmtPct(prod.projectGphMom)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* ── Tab 3: Customers ── */}
+        <TabsContent value="customers" className="space-y-6">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <h3 className="text-sm font-semibold mb-4">■ 顧客数・単価</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>指標</TableHead>
+                  <TableHead className="text-right">前月</TableHead>
+                  <TableHead className="text-right">当月</TableHead>
+                  <TableHead className="text-right">前月比</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">顧客数</TableCell>
+                  <TableCell className="text-right">{cust.prevClientCount}社</TableCell>
+                  <TableCell className="text-right font-semibold">{cust.currClientCount}社</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(cust.clientCountMom))}>{fmtPct(cust.clientCountMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">顧客単価</TableCell>
+                  <TableCell className="text-right">{fmtCurrency(cust.prevClientAvg, unit)}</TableCell>
+                  <TableCell className="text-right font-semibold">{fmtCurrency(cust.currClientAvg, unit)}</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(cust.clientAvgMom))}>{fmtPct(cust.clientAvgMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">案件数</TableCell>
+                  <TableCell className="text-right">{cust.prevProjectCount}件</TableCell>
+                  <TableCell className="text-right font-semibold">{cust.currProjectCount}件</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(cust.projectCountMom))}>{fmtPct(cust.projectCountMom)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">案件単価</TableCell>
+                  <TableCell className="text-right">{fmtCurrency(cust.prevProjectAvg, unit)}</TableCell>
+                  <TableCell className="text-right font-semibold">{fmtCurrency(cust.currProjectAvg, unit)}</TableCell>
+                  <TableCell className={cn("text-right", momColorClass(cust.projectAvgMom))}>{fmtPct(cust.projectAvgMom)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <h3 className="text-sm font-semibold mb-4">■ 顧客別売上・粗利・粗利率</h3>
+            {cust.clientTableRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">データなし</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>顧客名</TableHead>
+                    <TableHead className="text-right">売上</TableHead>
+                    <TableHead className="text-right">粗利</TableHead>
+                    <TableHead className="text-right">粗利率</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cust.clientTableRows.map((row, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell className="text-right">{fmtCurrency(row.revenue, unit)}</TableCell>
+                      <TableCell className="text-right">{fmtCurrency(row.grossProfit, unit)}</TableCell>
+                      <TableCell className={cn("text-right", row.grossProfitRate < cust.avgGrossMarginRate ? "text-destructive" : "")}>
+                        {fmtRate(row.grossProfitRate)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ── Tab 4: Quality ── */}
+        <TabsContent value="quality" className="space-y-6">
+          {!qual.hasData ? (
+            <div className="bg-card rounded-lg shadow-sm border border-border p-8 text-center">
+              <p className="text-muted-foreground">品質データ未登録</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+                <h3 className="text-sm font-semibold mb-4">■ 全体品質</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>指標</TableHead>
+                      <TableHead className="text-right">目標</TableHead>
+                      <TableHead className="text-right">実績</TableHead>
+                      <TableHead className="text-right">前月比</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">案件数</TableCell>
+                      <TableCell className="text-right text-muted-foreground">—</TableCell>
+                      <TableCell className="text-right font-semibold">{qual.totalDeliveries}件</TableCell>
+                      <TableCell className={cn("text-right", momColorClass(qual.totalDeliveriesMom))}>{fmtPct(qual.totalDeliveriesMom)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">納期遵守数</TableCell>
+                      <TableCell className="text-right text-muted-foreground">—</TableCell>
+                      <TableCell className="text-right font-semibold">{qual.onTimeDeliveries}件</TableCell>
+                      <TableCell className={cn("text-right", momColorClass(qual.onTimeDeliveriesMom))}>{fmtPct(qual.onTimeDeliveriesMom)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">納期遵守率</TableCell>
+                      <TableCell className="text-right">95.0%</TableCell>
+                      <TableCell className={cn("text-right font-semibold", colorClass(qual.onTimeRate, 95))}>{fmtRate(qual.onTimeRate)}</TableCell>
+                      <TableCell className={cn("text-right", momColorClass(qual.onTimeRateMom))}>{fmtPct(qual.onTimeRateMom)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">修正発生数</TableCell>
+                      <TableCell className="text-right text-muted-foreground">—</TableCell>
+                      <TableCell className="text-right font-semibold">{qual.revisionCount}件</TableCell>
+                      <TableCell className={cn("text-right", momColorClass(-qual.revisionCountMom))}>{fmtPct(qual.revisionCountMom)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">修正発生率</TableCell>
+                      <TableCell className="text-right">20.0%以下</TableCell>
+                      <TableCell className={cn("text-right font-semibold", colorClass(qual.revisionRate, 20, false))}>{fmtRate(qual.revisionRate)}</TableCell>
+                      <TableCell className={cn("text-right", momColorClass(-qual.revisionRateMom))}>{fmtPct(qual.revisionRateMom)}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+                <h3 className="text-sm font-semibold mb-4">■ 顧客別品質</h3>
+                {qual.clientQualityRows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">顧客別品質データなし</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>顧客名</TableHead>
+                        <TableHead className="text-right">案件数</TableHead>
+                        <TableHead className="text-right">納期遵守数</TableHead>
+                        <TableHead className="text-right">遵守率</TableHead>
+                        <TableHead className="text-right">修正発生数</TableHead>
+                        <TableHead className="text-right">発生率</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {qual.clientQualityRows.map((row, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{row.clientName}</TableCell>
+                          <TableCell className="text-right">{row.totalDeliveries}</TableCell>
+                          <TableCell className="text-right">{row.onTimeDeliveries}</TableCell>
+                          <TableCell className={cn("text-right", row.onTimeRate < 95 ? "text-destructive" : "")}>
+                            {fmtRate(row.onTimeRate)}
+                          </TableCell>
+                          <TableCell className="text-right">{row.revisionCount}</TableCell>
+                          <TableCell className={cn("text-right", row.revisionRate > 20 ? "text-destructive" : "")}>
+                            {fmtRate(row.revisionRate)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* ── Tab 5: Analysis ── */}
+        <TabsContent value="analysis" className="space-y-4">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">■ 数値評価・課題分析</h3>
+              <Button onClick={handleGenerateAnalysis} disabled={analysisLoading} size="sm">
+                {analysisLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                )}
+                分析レポートを生成
+              </Button>
+            </div>
+            {analysisContent ? (
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>{analysisContent}</ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                「分析レポートを生成」ボタンをクリックすると、AIが{ymLabel}のデータを分析します。
+              </p>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ── Tab 6: Action ── */}
+        <TabsContent value="action" className="space-y-4">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">■ 解決策・来月アクション</h3>
+              <Button onClick={handleGenerateAction} disabled={actionLoading || !analysisContent} size="sm">
+                {actionLoading ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                )}
+                アクション提案を生成
+              </Button>
+            </div>
+            {!analysisContent && !actionContent && (
+              <p className="text-sm text-muted-foreground">
+                先に「数値評価・課題分析」タブで分析レポートを生成してください。
+              </p>
+            )}
+            {actionContent ? (
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>{actionContent}</ReactMarkdown>
+              </div>
+            ) : analysisContent && !actionLoading ? (
+              <p className="text-sm text-muted-foreground">
+                「アクション提案を生成」ボタンをクリックすると、分析結果に基づいた改善提案を生成します。
+              </p>
+            ) : null}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default Report;

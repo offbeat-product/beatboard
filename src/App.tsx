@@ -13,7 +13,7 @@ import Customers from "./pages/Customers";
 import Management from "./pages/Management";
 import Productivity from "./pages/Productivity";
 import Quality from "./pages/Quality";
-import AIAdvisor from "./pages/AIAdvisor";
+import Report from "./pages/Report";
 import SettingsPage from "./pages/SettingsPage";
 import Login from "./pages/Login";
 import InviteAccept from "./pages/InviteAccept";
@@ -49,11 +49,12 @@ const AppRoutes = () => {
         <Route path="/productivity" element={<Productivity />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/quality" element={<Quality />} />
-        <Route path="/ai" element={<AIAdvisor />} />
+        <Route path="/report" element={<Report />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/pl" element={<Navigate to="/management" replace />} />
+      <Route path="/ai" element={<Navigate to="/report" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
