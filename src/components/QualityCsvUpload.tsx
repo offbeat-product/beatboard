@@ -64,10 +64,10 @@ function parseCSVLine(line: string): string[] {
 function parseQualityCsv(csvText: string): ParsedRecord[] {
   const lines = csvText.split("\n");
 
-  // Find header row containing "NO," or "案件名"
+  // Find header row containing "案件名" and "顧客名"
   let headerIndex = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes("NO,") || lines[i].includes("案件名")) {
+    if (lines[i].includes("案件名") && lines[i].includes("顧客名")) {
       headerIndex = i;
       break;
     }
@@ -81,36 +81,24 @@ function parseQualityCsv(csvText: string): ParsedRecord[] {
     if (!line) continue;
 
     const cols = parseCSVLine(line);
-    if (cols.length < 5) continue;
+    if (cols.length < 4) continue;
 
-    // Columns: NO, (empty or extra), 案件名, 顧客名, 納期遵守, 修正発生
-    // Try to find the right columns by checking content
-    let projectName = "";
-    let clientName = "";
-    let onTimeStr = "";
-    let revisionStr = "";
+    // Use columns from the end to handle variable leading columns
+    const revision = cols[cols.length - 1]?.trim();
+    const onTimeStr = cols[cols.length - 2]?.trim();
+    const clientName = cols[cols.length - 3]?.trim();
+    const projectName = cols[cols.length - 4]?.trim() || "";
 
-    if (cols.length >= 6) {
-      // NO, (empty), 案件名, 顧客名, 納期遵守, 修正発生
-      projectName = cols[2]?.trim() || "";
-      clientName = cols[3]?.trim() || "";
-      onTimeStr = cols[4]?.trim() || "";
-      revisionStr = cols[5]?.trim() || "";
-    } else {
-      // NO, 案件名, 顧客名, 納期遵守, 修正発生
-      projectName = cols[1]?.trim() || "";
-      clientName = cols[2]?.trim() || "";
-      onTimeStr = cols[3]?.trim() || "";
-      revisionStr = cols[4]?.trim() || "";
-    }
+    if (!clientName || clientName === "顧客名") continue;
 
-    if (!clientName) continue;
+    const isOnTime = onTimeStr === "OK" || onTimeStr === "ok";
+    const hasRevision = revision === "あり" || revision === "アリ" || revision === "有";
 
     records.push({
       projectName,
       clientName,
-      onTime: onTimeStr === "OK",
-      hasRevision: revisionStr === "あり",
+      onTime: isOnTime,
+      hasRevision,
     });
   }
 
