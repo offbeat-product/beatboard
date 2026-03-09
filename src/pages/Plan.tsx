@@ -633,6 +633,7 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
   type RowDef = {
     label: string;
     section?: boolean;
+    sectionNote?: string;
     planKey?: string;
     actualKey?: string;
     showDiff?: boolean;
@@ -662,7 +663,7 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
     { label: "案件工数", planKey: "projectHoursPlan", actualKey: "projectHoursActual", isGph: true },
     { label: "粗利工数単価", planKey: "gphPlan", actualKey: "gphActual", isGph: true },
     { label: "案件粗利工数単価", planKey: "projectGphPlan", actualKey: "projectGphActual", isGph: true },
-    { label: "顧客", section: true },
+    { label: "顧客", section: true, sectionNote: "※顧客数・顧客単価は年間目標" },
     { label: "顧客数", customerPlanValue: "clientTarget", actualKey: "clientCount", isCount: true },
     { label: "顧客単価", customerPlanValue: "clientUnitPrice", actualKey: "clientAvg" },
     { label: "案件数", customerPlanValue: "projectTarget", actualKey: "projectCount", isCount: true },
@@ -700,6 +701,7 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
                   <TableRow key={row.label}>
                     <TableCell colSpan={months.length + 3} className="font-semibold text-xs bg-muted/50 border-l-4 border-l-primary">
                       {row.label}
+                      {row.sectionNote && <span className="ml-2 text-[10px] font-normal text-muted-foreground">{row.sectionNote}</span>}
                     </TableCell>
                   </TableRow>
                 );
@@ -735,11 +737,13 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
 
                     if (sub.type === "計画") {
                       if (isCustomerMetric) {
-                        // Customer metrics plan
-                        if (row.customerPlanValue === "clientTarget") val = `${settings.annual_client_target}社`;
-                        else if (row.customerPlanValue === "clientUnitPrice") val = fmtC(annualClientUnitPrice);
+                        // Customer metrics plan - monthly: 顧客数・顧客単価は年間目標のみ
+                        if (row.customerPlanValue === "clientTarget") val = "—";
+                        else if (row.customerPlanValue === "clientUnitPrice") val = "—";
                         else if (row.customerPlanValue === "projectTarget") val = `${Math.round(monthlyProjectTargetAvg)}件`;
-                        else if (row.customerPlanValue === "projectUnitPrice") val = fmtC(annualProjectUnitPrice);
+                        else if (row.customerPlanValue === "projectUnitPrice") {
+                          val = monthlyProjectTargetAvg > 0 ? fmtC(mp.revPlan / monthlyProjectTargetAvg) : "—";
+                        }
                       } else if (row.label === "正社員数") val = String(mp.staff.fullTimeCount);
                       else if (row.label === "パート数") val = String(mp.staff.partTimeCount);
                       else if (row.label === "営業利益率") val = `${settings.operating_profit_rate}%`;
