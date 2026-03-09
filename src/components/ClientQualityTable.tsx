@@ -38,7 +38,7 @@ function matchKey(name: string): string {
 // Check if a quality_monthly row looks like junk data (not a real client name)
 function isJunkClientEntry(clientId: string | null, clientName: string | null): boolean {
   const name = clientName ?? clientId ?? "";
-  if (!name || name === "__total__") return true;
+  if (!name || name === "__total__" || name === "合計") return true;
   // Pure numbers, percentages, very short
   if (/^\d+(\.\d+)?%?$/.test(name.trim())) return true;
   // Project-like entries (start with 【 or contain detailed project descriptions)
