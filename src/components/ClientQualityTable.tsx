@@ -313,14 +313,18 @@ export function ClientQualityTable() {
     const processedDisplayNames = new Set<string>();
 
     // 1. Group project_pl clients by canonical Board display name
-    const clientsByDisplayName = new Map<string, { id: string; name: string; displayName: string }[]>();
+    // Use matchKey to group clients with same normalized name (e.g. "CLEAR INNOVATION株式会社" vs "CLEAR INNOVATION 株式会社")
+    const clientsByMatchKey = new Map<string, { id: string; name: string; displayName: string }[]>();
+    const matchKeyToDisplayName = new Map<string, string>();
     for (const client of allClients) {
       const displayName = clientDisplayNameMap.get(client.id) ?? resolveDisplayName(client.name);
+      const key = matchKey(displayName);
       
-      if (!clientsByDisplayName.has(displayName)) {
-        clientsByDisplayName.set(displayName, []);
+      if (!clientsByMatchKey.has(key)) {
+        clientsByMatchKey.set(key, []);
+        matchKeyToDisplayName.set(key, displayName);
       }
-      clientsByDisplayName.get(displayName)!.push({ ...client, displayName });
+      clientsByMatchKey.get(key)!.push({ ...client, displayName });
     }
 
     // 2. Process each display name group
