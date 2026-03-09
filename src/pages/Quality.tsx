@@ -182,19 +182,6 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
         </div>
       )}
 
-      {/* Section 1: KPI Cards */}
-      {/* Row 1: 案件数 */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-          <Package className="h-4 w-4" /> 案件数
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiMiniCard label="前月 案件数" value={`${kpis.prevDel}件`} />
-          <KpiMiniCard label="今月 案件数" value={`${kpis.currDel}件`} />
-          <GrowthCard label="前月比" value={kpis.deliveriesGrowth} />
-          <KpiMiniCard label="通期 案件数" value={`${kpis.ytdDeliveries}件`} />
-        </div>
-      </div>
 
       {/* Row 2: 納期遵守数/率 */}
       <div className="space-y-2">
