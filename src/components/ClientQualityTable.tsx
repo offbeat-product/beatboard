@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { QualityCsvUpload } from "@/components/QualityCsvUpload";
+
 
 const FISCAL_MONTHS = getFiscalYearMonths(2026);
 
@@ -358,7 +358,6 @@ export function ClientQualityTable() {
             </TabsList>
           </Tabs>
           <QualityInputModal clientNames={allClients} onSave={refetch} />
-          <QualityCsvUpload />
         </div>
       </div>
 

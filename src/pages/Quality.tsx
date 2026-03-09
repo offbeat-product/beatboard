@@ -175,7 +175,12 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
 
   return (
     <div className="space-y-6">
-      {!embedded && <PageHeader title="品質指標" />}
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <PageHeader title="品質指標" />
+          <QualityCsvUpload />
+        </div>
+      )}
 
       {/* Section 1: KPI Cards */}
       {/* Row 1: 案件数 */}
@@ -266,7 +271,6 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">品質データ入力テーブル</h3>
           <div className="flex gap-2">
-            <QualityCsvUpload />
             <Button variant="outline" size="sm" onClick={resetInputs} className="text-xs gap-1">
               <RotateCcw className="h-3 w-3" /> リセット
             </Button>
