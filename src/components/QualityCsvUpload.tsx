@@ -184,10 +184,10 @@ export function QualityCsvUpload() {
 
     setFileName(file.name);
 
-    // Auto-detect year_month from filename
-    const detected = detectYearMonth(file.name);
-    if (detected && FISCAL_MONTHS.includes(detected)) {
-      setSelectedYm(detected);
+    // Auto-detect year_month from filename (use last YYYYMM in filename)
+    const detectedFromName = detectYearMonthFromFilename(file.name);
+    if (detectedFromName && FISCAL_MONTHS.includes(detectedFromName)) {
+      setSelectedYm(detectedFromName);
     }
 
     // Try UTF-8 first, fallback to Shift-JIS if garbled
