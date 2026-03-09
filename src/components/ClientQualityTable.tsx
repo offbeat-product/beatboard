@@ -384,22 +384,29 @@ export function ClientQualityTable() {
     return result;
   }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName]);
 
-  // Sort based on active tab; clients without data go to bottom
+  // Sort based on active tab and sort direction; clients without data go to bottom
   const sortedRows = useMemo(() => {
     const withData = rows.filter((r) => r.hasQualityData);
     const withoutData = rows.filter((r) => !r.hasQualityData);
 
+    const multiplier = sortDirection === "desc" ? 1 : -1;
+
     if (activeTab === "onTimeRate") {
-      withData.sort((a, b) => b.avgOnTimeRate - a.avgOnTimeRate);
+      withData.sort((a, b) => multiplier * (b.avgOnTimeRate - a.avgOnTimeRate));
     } else if (activeTab === "revisionRate") {
-      withData.sort((a, b) => a.avgRevisionRate - b.avgRevisionRate);
+      // For revision rate, lower is better, so flip the default
+      withData.sort((a, b) => multiplier * (a.avgRevisionRate - b.avgRevisionRate));
     } else {
-      withData.sort((a, b) => b.totals.totalDeliveries - a.totals.totalDeliveries);
+      withData.sort((a, b) => multiplier * (b.totals.totalDeliveries - a.totals.totalDeliveries));
     }
 
     withoutData.sort((a, b) => a.clientName.localeCompare(b.clientName));
     return [...withData, ...withoutData];
-  }, [rows, activeTab]);
+  }, [rows, activeTab, sortDirection]);
+
+  const toggleSortDirection = () => {
+    setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
 
   // Grand totals (only from rows with data)
   const grandTotals = useMemo(() => {
