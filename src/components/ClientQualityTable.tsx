@@ -280,12 +280,9 @@ export function ClientQualityTable() {
       });
     }
 
-    // 2. Quality-only clients not in project_pl
-    for (const [key, monthlyMap] of qualityLookup.entries()) {
-      if (processedIds.has(key)) continue;
-      // Check if it matches any client name
-      const matchedByName = allClients.find((c) => c.name === key);
-      if (matchedByName) continue;
+    // 3. Quality-only clients not in project_pl (by normalized name)
+    for (const [normalizedKey, monthlyMap] of qualityLookup.entries()) {
+      if (processedNormalized.has(normalizedKey)) continue;
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
@@ -300,13 +297,9 @@ export function ClientQualityTable() {
       }
       if (totalDel === 0) continue;
 
-      // Find client_name from quality data
-      const qualityRow = qualityData.find((r) => (r.client_id === key || r.client_name === key) && r.client_id !== "__total__");
-      const clientName = qualityRow?.client_name ?? key;
-
       result.push({
-        clientId: key,
-        clientName,
+        clientId: normalizedKey,
+        clientName: normalizedKey,
         hasQualityData: true,
         monthly,
         totals: { totalDeliveries: totalDel, onTime: totalOnTime, revisions: totalRev },
@@ -316,7 +309,7 @@ export function ClientQualityTable() {
     }
 
     return result;
-  }, [allClients, qualityLookup, qualityData]);
+  }, [allClients, qualityLookup]);
 
   // Sort based on active tab; clients without data go to bottom
   const sortedRows = useMemo(() => {
