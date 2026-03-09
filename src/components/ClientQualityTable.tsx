@@ -197,20 +197,35 @@ export function ClientQualityTable() {
   const allClients = clientsQuery.data ?? [];
   const qualityData = qualityQuery.data ?? [];
 
-  // Build quality lookup: Map<clientKey, Map<yearMonth, MonthlyQuality>>
+  // Build quality lookup: Map<normalizedClientName, Map<yearMonth, MonthlyQuality>>
+  // Merge data for clients with same normalized name (e.g., "CyberZ" and "株式会社CyberZ")
   const qualityLookup = useMemo(() => {
     const lookup = new Map<string, Map<string, MonthlyQuality>>();
     for (const row of qualityData) {
       if (row.client_id === "__total__") continue;
-      // Try matching by client_id first, then client_name
-      const key = row.client_id ?? row.client_name ?? "";
-      if (!key) continue;
-      if (!lookup.has(key)) lookup.set(key, new Map());
-      lookup.get(key)!.set(row.year_month, {
-        totalDeliveries: row.total_deliveries ?? 0,
-        onTime: row.on_time_deliveries ?? 0,
-        revisions: row.revision_count ?? 0,
-      });
+      const rawName = row.client_name ?? row.client_id ?? "";
+      if (!rawName) continue;
+      const normalizedKey = normalizeClientName(rawName);
+      if (!normalizedKey) continue;
+      
+      if (!lookup.has(normalizedKey)) lookup.set(normalizedKey, new Map());
+      const monthMap = lookup.get(normalizedKey)!;
+      const existing = monthMap.get(row.year_month);
+      
+      // Merge if same month exists (sum the values)
+      if (existing) {
+        monthMap.set(row.year_month, {
+          totalDeliveries: existing.totalDeliveries + (row.total_deliveries ?? 0),
+          onTime: existing.onTime + (row.on_time_deliveries ?? 0),
+          revisions: existing.revisions + (row.revision_count ?? 0),
+        });
+      } else {
+        monthMap.set(row.year_month, {
+          totalDeliveries: row.total_deliveries ?? 0,
+          onTime: row.on_time_deliveries ?? 0,
+          revisions: row.revision_count ?? 0,
+        });
+      }
     }
     return lookup;
   }, [qualityData]);
