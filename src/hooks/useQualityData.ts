@@ -64,11 +64,15 @@ export function useQualityData() {
 
   // Quality data per month (from quality_monthly, aggregated)
   const qualityForMonth = (ym: string) => {
-    const rows = qualityRows.filter((r) => r.year_month === ym);
-    return {
-      onTime: rows.reduce((s, r) => s + (r.on_time_deliveries ?? 0), 0),
-      revisions: rows.reduce((s, r) => s + (r.revision_count ?? 0), 0),
-    };
+    // Use only __total__ row (aggregated summary) to avoid double-counting with per-client rows
+    const totalRow = qualityRows.find((r) => r.year_month === ym && r.client_id === "__total__");
+    if (totalRow) {
+      return {
+        onTime: totalRow.on_time_deliveries ?? 0,
+        revisions: totalRow.revision_count ?? 0,
+      };
+    }
+    return { onTime: 0, revisions: 0 };
   };
 
   // Default editable values from DB
