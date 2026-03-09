@@ -270,26 +270,24 @@ export function ClientQualityTable() {
   }, [nameToDisplayName]);
 
 
-  // Build quality lookup: Map<displayName, Map<yearMonth, MonthlyQuality>>
-  // Use Board display name to merge clients
+  // Build quality lookup: Map<canonicalDisplayName, Map<yearMonth, MonthlyQuality>>
   const qualityLookup = useMemo(() => {
     const lookup = new Map<string, Map<string, MonthlyQuality>>();
     for (const row of qualityData) {
-      if (row.client_id === "__total__") continue;
+      // Filter out junk entries and __total__ rows
+      if (isJunkClientEntry(row.client_id, row.client_name)) continue;
+      
       const rawName = row.client_name ?? row.client_id ?? "";
       if (!rawName) continue;
       
-      // Try to find canonical display name from Board master
-      const displayName = nameToDisplayName.get(rawName) 
-        ?? nameToDisplayName.get(normalizeClientName(rawName))
-        ?? normalizeClientName(rawName);
+      // Resolve to canonical Board display name
+      const displayName = resolveDisplayName(rawName);
       if (!displayName) continue;
       
       if (!lookup.has(displayName)) lookup.set(displayName, new Map());
       const monthMap = lookup.get(displayName)!;
       const existing = monthMap.get(row.year_month);
       
-      // Merge if same month exists (sum the values)
       if (existing) {
         monthMap.set(row.year_month, {
           totalDeliveries: existing.totalDeliveries + (row.total_deliveries ?? 0),
@@ -305,7 +303,7 @@ export function ClientQualityTable() {
       }
     }
     return lookup;
-  }, [qualityData, nameToDisplayName]);
+  }, [qualityData, resolveDisplayName]);
 
   // Build rows: group by Board display name
   const rows: ClientQualityRow[] = useMemo(() => {
