@@ -517,6 +517,8 @@ export type Database = {
       }
       plan_settings: {
         Row: {
+          annual_client_target: number | null
+          annual_project_target: number | null
           annual_revenue_target: number | null
           cost_rate: number | null
           created_at: string | null
@@ -542,6 +544,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          annual_client_target?: number | null
+          annual_project_target?: number | null
           annual_revenue_target?: number | null
           cost_rate?: number | null
           created_at?: string | null
@@ -567,6 +571,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          annual_client_target?: number | null
+          annual_project_target?: number | null
           annual_revenue_target?: number | null
           cost_rate?: number | null
           created_at?: string | null
