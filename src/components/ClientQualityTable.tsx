@@ -358,7 +358,6 @@ export function ClientQualityTable() {
             </TabsList>
           </Tabs>
           <QualityInputModal clientNames={allClients} onSave={refetch} />
-          <QualityCsvUpload />
         </div>
       </div>
 
