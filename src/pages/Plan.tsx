@@ -633,6 +633,7 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
   type RowDef = {
     label: string;
     section?: boolean;
+    sectionNote?: string;
     planKey?: string;
     actualKey?: string;
     showDiff?: boolean;
