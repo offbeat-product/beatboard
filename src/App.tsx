@@ -49,7 +49,7 @@ const AppRoutes = () => {
         <Route path="/productivity" element={<Productivity />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/quality" element={<Quality />} />
-        <Route path="/ai" element={<AIAdvisor />} />
+        <Route path="/report" element={<Report />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
