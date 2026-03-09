@@ -662,7 +662,7 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
     { label: "案件工数", planKey: "projectHoursPlan", actualKey: "projectHoursActual", isGph: true },
     { label: "粗利工数単価", planKey: "gphPlan", actualKey: "gphActual", isGph: true },
     { label: "案件粗利工数単価", planKey: "projectGphPlan", actualKey: "projectGphActual", isGph: true },
-    { label: "顧客", section: true },
+    { label: "顧客", section: true, sectionNote: "※顧客数・顧客単価は年間目標" },
     { label: "顧客数", customerPlanValue: "clientTarget", actualKey: "clientCount", isCount: true },
     { label: "顧客単価", customerPlanValue: "clientUnitPrice", actualKey: "clientAvg" },
     { label: "案件数", customerPlanValue: "projectTarget", actualKey: "projectCount", isCount: true },
