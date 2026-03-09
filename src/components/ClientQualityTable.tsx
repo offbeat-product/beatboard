@@ -572,6 +572,42 @@ export function ClientQualityTable() {
             </TableRow>
           ))}
 
+          {/* Grand totals row */}
+          <TableRow className="border-t-2 border-border font-semibold">
+            <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold text-xs">全体</TableCell>
+            {FISCAL_MONTHS.map((ym) => {
+              const m = grandTotals.monthly[ym];
+              const del = m?.totalDeliveries ?? 0;
+              const ot = m?.onTime ?? 0;
+              const rev = m?.revisions ?? 0;
+              return (
+                <TableCell key={ym} className={cn(
+                  "text-right font-mono tabular-nums text-xs whitespace-nowrap",
+                  activeTab === "onTimeRate" && onTimeColor(ot, del),
+                  activeTab === "revisionRate" && revisionColor(rev, del),
+                )}>
+                  {activeTab === "onTimeRate" ? formatRate(ot, del)
+                    : activeTab === "revisionRate" ? formatRate(rev, del)
+                    : del > 0 ? `${del}件` : "—"}
+                </TableCell>
+              );
+            })}
+            <TableCell className="text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap">
+              {grandTotals.totalDel > 0 ? `${grandTotals.totalDel}件` : "—"}
+            </TableCell>
+            <TableCell className={cn(
+              "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
+              onTimeColor(grandTotals.totalOnTime, grandTotals.totalDel),
+            )}>
+              {formatRate(grandTotals.totalOnTime, grandTotals.totalDel)}
+            </TableCell>
+            <TableCell className={cn(
+              "text-right font-mono tabular-nums text-xs font-bold whitespace-nowrap",
+              revisionColor(grandTotals.totalRev, grandTotals.totalDel),
+            )}>
+              {formatRate(grandTotals.totalRev, grandTotals.totalDel)}
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </div>
