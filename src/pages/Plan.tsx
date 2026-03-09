@@ -46,6 +46,8 @@ interface PlanSettings {
   staffing_plan: StaffingRow[];
   monthly_revenue_distribution: number[];
   distribution_mode: string;
+  annual_client_target: number;
+  annual_project_target: number;
 }
 
 const DEFAULT_STAFFING = (months: string[]): StaffingRow[] =>
@@ -60,6 +62,15 @@ const DEFAULT_STAFFING = (months: string[]): StaffingRow[] =>
       partTimeTotalHours: isLaterPeriod ? 260 : 0,
     };
   });
+
+const DEFAULT_HALF_YEAR_DIST = (months: string[], annualTarget: number): number[] => {
+  const firstHalf = annualTarget * 0.4; // 30M of 75M
+  const secondHalf = annualTarget * 0.6; // 45M of 75M
+  return months.map((m) => {
+    const mm = parseInt(m.split("-")[1], 10);
+    return mm >= 5 && mm <= 10 ? firstHalf / 6 : secondHalf / 6;
+  });
+};
 
 const DEFAULT_SETTINGS = (months: string[]): PlanSettings => ({
   annual_revenue_target: 75000000,
@@ -78,8 +89,10 @@ const DEFAULT_SETTINGS = (months: string[]): PlanSettings => ({
   on_time_delivery_target: 95,
   revision_rate_target: 20,
   staffing_plan: DEFAULT_STAFFING(months),
-  monthly_revenue_distribution: months.map(() => 0),
-  distribution_mode: "equal",
+  monthly_revenue_distribution: DEFAULT_HALF_YEAR_DIST(months, 75000000),
+  distribution_mode: "half_year",
+  annual_client_target: 30,
+  annual_project_target: 250,
 });
 
 /* ── Helpers ── */
@@ -128,6 +141,20 @@ function Step1KpiInput({ fiscalYear, months, settings, setSettings, onSave, savi
 }) {
   const { unit } = useCurrencyUnit();
   const [open, setOpen] = useState(false);
+  const [firstHalfTarget, setFirstHalfTarget] = useState(30000000);
+  const [secondHalfTarget, setSecondHalfTarget] = useState(45000000);
+
+  // Sync half-year targets from distribution when loading
+  useEffect(() => {
+    if (settings.distribution_mode === "half_year" && settings.monthly_revenue_distribution.length === 12) {
+      const fh = settings.monthly_revenue_distribution.slice(0, 6).reduce((s, v) => s + v, 0);
+      const sh = settings.monthly_revenue_distribution.slice(6, 12).reduce((s, v) => s + v, 0);
+      if (fh > 0 || sh > 0) {
+        setFirstHalfTarget(fh);
+        setSecondHalfTarget(sh);
+      }
+    }
+  }, [settings.distribution_mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (field: keyof PlanSettings, value: any) => {
     const next = { ...settings, [field]: value };
@@ -150,8 +177,22 @@ function Step1KpiInput({ fiscalYear, months, settings, setSettings, onSave, savi
 
   const distSum = settings.distribution_mode === "manual"
     ? settings.monthly_revenue_distribution.reduce((s, v) => s + v, 0)
+    : settings.distribution_mode === "half_year"
+    ? firstHalfTarget + secondHalfTarget
     : settings.annual_revenue_target;
   const distValid = settings.distribution_mode === "equal" || Math.abs(distSum - settings.annual_revenue_target) < 1;
+
+  // Customer metrics auto-calc
+  const annualClientUnitPrice = settings.annual_client_target > 0 ? settings.annual_revenue_target / settings.annual_client_target : 0;
+  const annualProjectUnitPrice = settings.annual_project_target > 0 ? settings.annual_revenue_target / settings.annual_project_target : 0;
+
+  const applyHalfYearDist = (fh: number, sh: number) => {
+    const newDist = months.map((m) => {
+      const mm = parseInt(m.split("-")[1], 10);
+      return mm >= 5 && mm <= 10 ? fh / 6 : sh / 6;
+    });
+    update("monthly_revenue_distribution", newDist);
+  };
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -189,6 +230,29 @@ function Step1KpiInput({ fiscalYear, months, settings, setSettings, onSave, savi
                 <div>
                   <Label className="text-xs">販管費率 (自動計算)</Label>
                   <div className="mt-1 h-9 flex items-center px-3 rounded-md bg-muted text-sm font-medium">{(settings.gross_profit_rate - settings.operating_profit_rate).toFixed(1)}%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Customer Metrics */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">顧客指標目標</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-xs">年間取引顧客数目標 (社)</Label>
+                  <Input type="number" value={settings.annual_client_target} onChange={(e) => update("annual_client_target", parseInt(e.target.value) || 0)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">年間顧客単価目標 (自動計算)</Label>
+                  <div className="mt-1 h-9 flex items-center px-3 rounded-md bg-muted text-sm font-medium">{fmtNum(annualClientUnitPrice, unit)}</div>
+                </div>
+                <div>
+                  <Label className="text-xs">年間案件数目標 (件)</Label>
+                  <Input type="number" value={settings.annual_project_target} onChange={(e) => update("annual_project_target", parseInt(e.target.value) || 0)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">年間案件単価目標 (自動計算)</Label>
+                  <div className="mt-1 h-9 flex items-center px-3 rounded-md bg-muted text-sm font-medium">{fmtNum(annualProjectUnitPrice, unit)}</div>
                 </div>
               </div>
             </div>
@@ -290,21 +354,59 @@ function Step1KpiInput({ fiscalYear, months, settings, setSettings, onSave, savi
                   const next = { ...settings, distribution_mode: v };
                   if (v === "equal") {
                     next.monthly_revenue_distribution = months.map(() => settings.annual_revenue_target / 12);
+                  } else if (v === "half_year") {
+                    const fh = firstHalfTarget;
+                    const sh = secondHalfTarget;
+                    next.monthly_revenue_distribution = months.map((m) => {
+                      const mm = parseInt(m.split("-")[1], 10);
+                      return mm >= 5 && mm <= 10 ? fh / 6 : sh / 6;
+                    });
                   }
                   setSettings(next);
                 }}>
                   <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="equal">均等割</SelectItem>
+                    <SelectItem value="half_year">半期別</SelectItem>
                     <SelectItem value="manual">手動入力</SelectItem>
                   </SelectContent>
                 </Select>
-                {settings.distribution_mode === "manual" && (
+                {(settings.distribution_mode === "manual" || settings.distribution_mode === "half_year") && (
                   <span className={cn("text-xs font-medium", distValid ? "text-green-600" : "text-destructive")}>
                     合計: {fmtNum(distSum, unit)} / {fmtNum(settings.annual_revenue_target, unit)}
                   </span>
                 )}
               </div>
+              {settings.distribution_mode === "half_year" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <Label className="text-xs">上半期目標（5月〜10月）({unit === "thousand" ? "千円" : "円"})</Label>
+                    <Input
+                      type="text"
+                      value={fmtInputVal(firstHalfTarget, unit).toLocaleString()}
+                      onChange={(e) => {
+                        const v = parseInputVal(e.target.value, unit);
+                        setFirstHalfTarget(v);
+                        applyHalfYearDist(v, secondHalfTarget);
+                      }}
+                      className="mt-1 h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">下半期目標（11月〜4月）({unit === "thousand" ? "千円" : "円"})</Label>
+                    <Input
+                      type="text"
+                      value={fmtInputVal(secondHalfTarget, unit).toLocaleString()}
+                      onChange={(e) => {
+                        const v = parseInputVal(e.target.value, unit);
+                        setSecondHalfTarget(v);
+                        applyHalfYearDist(firstHalfTarget, v);
+                      }}
+                      className="mt-1 h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
               {settings.distribution_mode === "manual" && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
                   {months.map((m, i) => (
@@ -322,6 +424,21 @@ function Step1KpiInput({ fiscalYear, months, settings, setSettings, onSave, savi
                       />
                     </div>
                   ))}
+                </div>
+              )}
+              {settings.distribution_mode !== "manual" && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                  {months.map((m, i) => {
+                    const val = settings.distribution_mode === "equal"
+                      ? settings.annual_revenue_target / 12
+                      : (settings.monthly_revenue_distribution[i] || 0);
+                    return (
+                      <div key={m}>
+                        <Label className="text-xs text-muted-foreground">{getMonthLabel(m)}</Label>
+                        <div className="mt-1 h-7 flex items-center px-2 rounded-md bg-muted text-xs font-medium">{fmtNum(val, unit)}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -399,6 +516,11 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
   const qualityData = qualityQuery.data ?? [];
 
   const isLoading = salesQuery.isLoading || freeeQuery.isLoading || kpiQuery.isLoading || projectPlQuery.isLoading || qualityQuery.isLoading;
+
+  // Customer metrics plan values
+  const annualClientUnitPrice = settings.annual_client_target > 0 ? settings.annual_revenue_target / settings.annual_client_target : 0;
+  const annualProjectUnitPrice = settings.annual_project_target > 0 ? settings.annual_revenue_target / settings.annual_project_target : 0;
+  const monthlyProjectTargetAvg = settings.annual_project_target / 12;
 
   // Plan calculations per month
   const monthlyPlans = useMemo(() => {
@@ -481,8 +603,20 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
     const sumPlan = (field: string) => monthlyPlans.reduce((s, m) => s + ((m as any)[field] || 0), 0);
     const sumActual = (field: string) => monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + ((m as any)[field] || 0), 0);
     const monthsWithActual = monthlyPlans.filter(m => m.hasActual).length;
-    return { sumPlan, sumActual, monthsWithActual };
-  }, [monthlyPlans]);
+
+    // Customer totals across all months with actuals
+    const allActualProjectPl = projectPl.filter(r => {
+      const ym = r.year_month;
+      return months.includes(ym) && Number(r.revenue ?? 0) > 0;
+    });
+    const totalUniqueClients = new Set(allActualProjectPl.map(r => r.client_id)).size;
+    const totalProjectCount = allActualProjectPl.length;
+    const totalPlRevenue = allActualProjectPl.reduce((s, r) => s + Number(r.revenue ?? 0), 0);
+    const totalClientAvg = totalUniqueClients > 0 ? totalPlRevenue / totalUniqueClients : 0;
+    const totalProjectAvg = totalProjectCount > 0 ? totalPlRevenue / totalProjectCount : 0;
+
+    return { sumPlan, sumActual, monthsWithActual, totalUniqueClients, totalProjectCount, totalClientAvg, totalProjectAvg };
+  }, [monthlyPlans, projectPl, months]);
 
   // Landing forecast
   const monthsElapsed = totals.monthsWithActual;
@@ -505,9 +639,10 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
     isRate?: boolean;
     isGph?: boolean;
     isCount?: boolean;
-    invertDiff?: boolean; // true means lower actual is better (costs)
+    invertDiff?: boolean;
     planOnly?: boolean;
     actualOnly?: boolean;
+    customerPlanValue?: string; // for customer metrics plan display
   };
 
   const rows: RowDef[] = [
@@ -528,10 +663,10 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
     { label: "粗利工数単価", planKey: "gphPlan", actualKey: "gphActual", isGph: true },
     { label: "案件粗利工数単価", planKey: "projectGphPlan", actualKey: "projectGphActual", isGph: true },
     { label: "顧客", section: true },
-    { label: "顧客数", actualOnly: true, isCount: true },
-    { label: "顧客単価", actualOnly: true },
-    { label: "案件数", actualOnly: true, isCount: true },
-    { label: "案件単価", actualOnly: true },
+    { label: "顧客数", customerPlanValue: "clientTarget", actualKey: "clientCount", isCount: true },
+    { label: "顧客単価", customerPlanValue: "clientUnitPrice", actualKey: "clientAvg" },
+    { label: "案件数", customerPlanValue: "projectTarget", actualKey: "projectCount", isCount: true },
+    { label: "案件単価", customerPlanValue: "projectUnitPrice", actualKey: "projectAvg" },
     { label: "品質", section: true },
     { label: "納期遵守率", isRate: true, actualKey: "onTimeRate" },
     { label: "修正発生率", isRate: true, actualKey: "revisionRate" },
@@ -570,10 +705,19 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
                 );
               }
 
+              // Customer metrics rows have plan + actual
+              const isCustomerMetric = !!row.customerPlanValue;
               const subRows: { type: string; bgClass: string }[] = [];
-              if (!row.actualOnly) subRows.push({ type: "計画", bgClass: "bg-blue-50/50 dark:bg-blue-950/20" });
-              if (!row.planOnly) subRows.push({ type: "実績", bgClass: "" });
-              if (row.showDiff) subRows.push({ type: "差異", bgClass: "" });
+              if (isCustomerMetric) {
+                subRows.push({ type: "計画", bgClass: "bg-blue-50/50 dark:bg-blue-950/20" });
+                subRows.push({ type: "実績", bgClass: "" });
+              } else if (row.actualOnly) {
+                subRows.push({ type: "実績", bgClass: "" });
+              } else {
+                if (!row.actualOnly) subRows.push({ type: "計画", bgClass: "bg-blue-50/50 dark:bg-blue-950/20" });
+                if (!row.planOnly) subRows.push({ type: "実績", bgClass: "" });
+                if (row.showDiff) subRows.push({ type: "差異", bgClass: "" });
+              }
 
               return subRows.map((sub, si) => (
                 <TableRow key={`${row.label}-${sub.type}`} className={sub.bgClass}>
@@ -590,7 +734,13 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
                     let val: string = "—";
 
                     if (sub.type === "計画") {
-                      if (row.label === "正社員数") val = String(mp.staff.fullTimeCount);
+                      if (isCustomerMetric) {
+                        // Customer metrics plan
+                        if (row.customerPlanValue === "clientTarget") val = `${settings.annual_client_target}社`;
+                        else if (row.customerPlanValue === "clientUnitPrice") val = fmtC(annualClientUnitPrice);
+                        else if (row.customerPlanValue === "projectTarget") val = `${Math.round(monthlyProjectTargetAvg)}件`;
+                        else if (row.customerPlanValue === "projectUnitPrice") val = fmtC(annualProjectUnitPrice);
+                      } else if (row.label === "正社員数") val = String(mp.staff.fullTimeCount);
                       else if (row.label === "パート数") val = String(mp.staff.partTimeCount);
                       else if (row.label === "営業利益率") val = `${settings.operating_profit_rate}%`;
                       else if (row.label === "納期遵守率") val = `${settings.on_time_delivery_target}%`;
@@ -602,7 +752,7 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
                         if (row.label === "総労働時間" || row.label === "案件工数") val = `${Math.round(pv).toLocaleString()}h`;
                       }
                     } else if (sub.type === "実績") {
-                      if (!mp.hasActual && !row.actualOnly) { val = "—"; }
+                      if (!mp.hasActual && !isCustomerMetric) { val = "—"; }
                       else if (row.label === "顧客数") val = mp.clientCount > 0 ? `${mp.clientCount}社` : "—";
                       else if (row.label === "案件数") val = mp.projectCount > 0 ? `${mp.projectCount}件` : "—";
                       else if (row.label === "顧客単価") val = mp.clientCount > 0 ? fmtC(mp.clientAvg) : "—";
@@ -649,6 +799,12 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
                   <TableCell className="text-center bg-muted/30 font-medium">
                     {(() => {
                       if (sub.type === "計画") {
+                        if (isCustomerMetric) {
+                          if (row.customerPlanValue === "clientTarget") return `${settings.annual_client_target}社`;
+                          if (row.customerPlanValue === "clientUnitPrice") return fmtC(annualClientUnitPrice);
+                          if (row.customerPlanValue === "projectTarget") return `${settings.annual_project_target}件`;
+                          if (row.customerPlanValue === "projectUnitPrice") return fmtC(annualProjectUnitPrice);
+                        }
                         if (row.isRate || row.isCount || row.label === "正社員数" || row.label === "パート数" || row.label === "営業利益率" || row.label === "納期遵守率" || row.label === "修正発生率") return "—";
                         if (row.planKey) {
                           const total = monthlyPlans.reduce((s, m) => s + ((m as any)[row.planKey!] || 0), 0);
@@ -658,6 +814,12 @@ function Step2MonthlyPlanTable({ months, settings, fiscalYear }: {
                         }
                         return "—";
                       } else if (sub.type === "実績") {
+                        if (isCustomerMetric) {
+                          if (row.label === "顧客数") return totals.totalUniqueClients > 0 ? `${totals.totalUniqueClients}社` : "—";
+                          if (row.label === "顧客単価") return totals.totalClientAvg > 0 ? fmtC(totals.totalClientAvg) : "—";
+                          if (row.label === "案件数") return totals.totalProjectCount > 0 ? `${totals.totalProjectCount}件` : "—";
+                          if (row.label === "案件単価") return totals.totalProjectAvg > 0 ? fmtC(totals.totalProjectAvg) : "—";
+                        }
                         if (row.isRate || row.isCount || row.actualOnly) return "—";
                         if (row.actualKey && !row.isGph) {
                           const total = monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + ((m as any)[row.actualKey!] || 0), 0);
@@ -746,8 +908,10 @@ const Plan = () => {
           on_time_delivery_target: Number(d.on_time_delivery_target) || 95,
           revision_rate_target: Number(d.revision_rate_target) || 20,
           staffing_plan: Array.isArray(d.staffing_plan) && d.staffing_plan.length > 0 ? d.staffing_plan : DEFAULT_STAFFING(months),
-          monthly_revenue_distribution: Array.isArray(d.monthly_revenue_distribution) && d.monthly_revenue_distribution.length > 0 ? d.monthly_revenue_distribution : months.map(() => 0),
-          distribution_mode: d.distribution_mode || "equal",
+          monthly_revenue_distribution: Array.isArray(d.monthly_revenue_distribution) && d.monthly_revenue_distribution.length > 0 ? d.monthly_revenue_distribution : DEFAULT_HALF_YEAR_DIST(months, Number(d.annual_revenue_target) || 75000000),
+          distribution_mode: d.distribution_mode || "half_year",
+          annual_client_target: Number(d.annual_client_target) || 30,
+          annual_project_target: Number(d.annual_project_target) || 250,
         });
       } else {
         setSettings(DEFAULT_SETTINGS(months));
@@ -781,6 +945,8 @@ const Plan = () => {
         staffing_plan: settings.staffing_plan,
         monthly_revenue_distribution: settings.monthly_revenue_distribution,
         distribution_mode: settings.distribution_mode,
+        annual_client_target: settings.annual_client_target,
+        annual_project_target: settings.annual_project_target,
         updated_at: new Date().toISOString(),
       };
 
