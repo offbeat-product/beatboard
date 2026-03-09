@@ -15,6 +15,14 @@ import { Plus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+// Normalize client name by removing common prefixes
+function normalizeClientName(name: string): string {
+  return name
+    .replace(/^株式会社/g, "")
+    .replace(/^（株）/g, "")
+    .replace(/^(株)/g, "")
+    .trim();
+}
 
 const FISCAL_MONTHS = getFiscalYearMonths(2026);
 
