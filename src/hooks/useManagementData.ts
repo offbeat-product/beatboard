@@ -51,7 +51,7 @@ export function useManagementData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("monthly_sales")
-        .select("year_month, revenue, cost, gross_profit")
+        .select("year_month, revenue, cost, cost_total, gross_profit")
         .eq("org_id", ORG_ID)
         .in("year_month", fiscalMonths);
       if (error) throw error;
@@ -94,7 +94,7 @@ export function useManagementData() {
   const monthlyData = fiscalMonths.map((ym) => {
     const salesRows = sales.filter((s) => s.year_month === ym);
     const revenue = salesRows.reduce((s, r) => s + r.revenue, 0);
-    const cost = salesRows.reduce((s, r) => s + r.cost, 0);
+    const cost = salesRows.reduce((s, r) => s + Number(r.cost_total ?? r.cost ?? 0), 0);
     const grossProfit = salesRows.reduce((s, r) => s + r.gross_profit, 0);
     const grossMarginRate = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
 
