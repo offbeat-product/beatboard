@@ -11,6 +11,9 @@ export interface FinanceMonthly {
   interest_expense: number;
   income_amount: number;
   expense_amount: number;
+  total_assets: number;
+  total_liabilities: number;
+  net_assets: number;
 }
 
 export interface FinanceRow {
