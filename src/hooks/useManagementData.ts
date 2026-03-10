@@ -51,7 +51,7 @@ export function useManagementData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("monthly_sales")
-        .select("year_month, revenue, cost, gross_profit")
+        .select("year_month, revenue, cost, cost_total, gross_profit")
         .eq("org_id", ORG_ID)
         .in("year_month", fiscalMonths);
       if (error) throw error;
