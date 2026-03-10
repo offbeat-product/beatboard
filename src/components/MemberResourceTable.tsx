@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getFiscalYearMonths, ORG_ID, getMonthLabel } from "@/lib/fiscalYear";
@@ -20,6 +20,7 @@ interface MemberClassRow {
 
 export function MemberResourceTable() {
   const fiscalMonths = getFiscalYearMonths(2026);
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
 
   const hoursQuery = useQuery({
     queryKey: ["member_client_monthly_hours"],
@@ -177,9 +178,39 @@ export function MemberResourceTable() {
     return "";
   };
 
+  const displayMembers = selectedMember ? [selectedMember] : members;
+
   return (
     <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
-      <h3 className="text-sm font-semibold mb-4">メンバー別 リソース内訳</h3>
+      <h3 className="text-sm font-semibold mb-3">メンバー別 リソース内訳</h3>
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        <button
+          onClick={() => setSelectedMember(null)}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+            selectedMember === null
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-muted-foreground hover:bg-accent"
+          )}
+        >
+          全員
+        </button>
+        {members.map((m) => (
+          <button
+            key={m}
+            onClick={() => setSelectedMember(m)}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              selectedMember === m
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground hover:bg-accent"
+            )}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -192,20 +223,22 @@ export function MemberResourceTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {members.map((member) => (
+          {displayMembers.map((member) => (
             <>
-              {/* Member header row */}
-              <TableRow key={`${member}-header`} className="bg-muted/50">
-                <TableCell
-                  colSpan={fiscalMonths.length + 1}
-                  className="font-semibold text-xs sticky left-0 z-10 bg-muted/50"
-                >
-                  {member}
-                </TableCell>
-              </TableRow>
+              {/* Member header row (only in 全員 mode) */}
+              {selectedMember === null && (
+                <TableRow key={`${member}-header`} className="bg-muted/50">
+                  <TableCell
+                    colSpan={fiscalMonths.length + 1}
+                    className="font-semibold text-xs sticky left-0 z-10 bg-muted/50"
+                  >
+                    {member}
+                  </TableCell>
+                </TableRow>
+              )}
               {rowDefs.map((rd) => (
                 <TableRow key={`${member}-${rd.key}`}>
-                  <TableCell className="text-xs pl-6 sticky left-0 bg-card z-10 whitespace-nowrap">
+                  <TableCell className={cn("text-xs sticky left-0 bg-card z-10 whitespace-nowrap", selectedMember === null ? "pl-6" : "pl-3 font-medium")}>
                     {rd.label}
                   </TableCell>
                   {fiscalMonths.map((ym) => (
