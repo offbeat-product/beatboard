@@ -1,4 +1,4 @@
-import { Home, Target, TrendingUp, BarChart3, Users, CheckCircle, FileText, Settings, LogOut } from "lucide-react";
+import { Home, Target, TrendingUp, Wallet, BarChart3, Users, CheckCircle, FileText, Settings, LogOut } from "lucide-react";
 import offbeatIcon from "@/assets/offbeat-icon.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
