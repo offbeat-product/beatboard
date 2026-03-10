@@ -119,9 +119,15 @@ const Finance = () => {
     { label: "借入金残高", key: "borrowings", summaryType: "last" },
     { label: "支払利息", key: "interest", summaryType: "sum" },
     { label: "運転資金月数", key: "workingCapitalMonths", summaryType: "avg" },
-    { label: "資産合計", key: "totalAssets", summaryType: "last" },
-    { label: "負債合計", key: "totalLiabilities", summaryType: "last" },
-    { label: "純資産", key: "netAssets", summaryType: "last" },
+  ];
+
+  // B/S table defs
+  type BsRowDef = { label: string; key: string; type: "yen" | "pct" };
+  const bsDefs: BsRowDef[] = [
+    { label: "資産合計", key: "totalAssets", type: "yen" },
+    { label: "負債合計", key: "totalLiabilities", type: "yen" },
+    { label: "純資産", key: "netAssets", type: "yen" },
+    { label: "自己資本比率", key: "equityRatio", type: "pct" },
   ];
 
   const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
