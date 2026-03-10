@@ -9,7 +9,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Save, RotateCcw, Trophy, Award, Medal } from "lucide-react";
+import { Save, RotateCcw, Trophy, Award, Medal, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
