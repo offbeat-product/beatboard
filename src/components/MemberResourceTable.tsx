@@ -178,7 +178,6 @@ export function MemberResourceTable() {
     return "";
   };
 
-  const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const displayMembers = selectedMember ? [selectedMember] : members;
 
   return (
