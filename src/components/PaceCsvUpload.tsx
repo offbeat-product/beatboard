@@ -229,6 +229,7 @@ export function PaceCsvUpload() {
     const summaryByMonth: Record<string, ClientSummary[]> = {};
     const memberSummaryByMonth: Record<string, MemberSummary[]> = {};
     const resourceSummaryByMonth: Record<string, ResourceSummary> = {};
+    const memberClientByMonth: Record<string, MemberClientHours[]> = {};
 
     for (const ym of months) {
       const monthRows = parsed.filter((r) => getYearMonth(r.date) === ym);
