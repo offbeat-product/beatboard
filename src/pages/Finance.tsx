@@ -153,6 +153,33 @@ const Finance = () => {
     return formatAmount(v);
   };
 
+  const getBsValue = (row: typeof d.rows[0], key: string): string => {
+    const hasFinance = d.financeMap.has(row.month);
+    if (!hasFinance) return "—";
+    if (key === "equityRatio") {
+      if (row.totalAssets === 0) return "—";
+      return `${((row.netAssets / row.totalAssets) * 100).toFixed(1)}%`;
+    }
+    const v = (row as any)[key] as number;
+    return v !== 0 ? fmtYen(v) : "—";
+  };
+
+  const getBsSummary = (key: string): string => {
+    if (!lastRow) return "—";
+    if (key === "equityRatio") {
+      if (lastRow.totalAssets === 0) return "—";
+      return `${((lastRow.netAssets / lastRow.totalAssets) * 100).toFixed(1)}%`;
+    }
+    const v = (lastRow as any)[key] as number;
+    return v !== 0 ? fmtYen(v) : "—";
+  };
+
+  const getBsCellClass = (row: typeof d.rows[0], key: string): string => {
+    if (key === "netAssets" && row.netAssets < 0) return "text-destructive";
+    if (key === "equityRatio" && row.totalAssets > 0 && row.netAssets < 0) return "text-destructive";
+    return "";
+  };
+
   const getSummaryValue = (def: RowDef): string => {
     if (def.summaryType === "none") return "—";
     if (def.summaryType === "last") return lastRow ? formatAmount((lastRow as any)[def.key]) : "—";
