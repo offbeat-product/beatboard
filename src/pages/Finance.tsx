@@ -175,6 +175,7 @@ const Finance = () => {
       if (cf < 0) return "text-destructive";
       if (cf > 0) return "text-chart-green";
     }
+    if (key === "netAssets" && row.netAssets < 0) return "text-destructive";
     return "";
   };
 

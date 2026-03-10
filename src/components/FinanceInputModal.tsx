@@ -26,6 +26,9 @@ const fields = [
   { key: "interest_expense", label: "支払利息" },
   { key: "income_amount", label: "入金額" },
   { key: "expense_amount", label: "出金額" },
+  { key: "total_assets", label: "資産合計" },
+  { key: "total_liabilities", label: "負債合計" },
+  { key: "net_assets", label: "純資産" },
 ] as const;
 
 export function FinanceInputModal({ open, onOpenChange, fiscalMonths, onSaved }: Props) {
