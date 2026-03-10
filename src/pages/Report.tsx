@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useReportData } from "@/hooks/useReportData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
-import { CURRENT_MONTH } from "@/lib/fiscalYear";
+import { CURRENT_MONTH, ORG_ID } from "@/lib/fiscalYear";
 import { SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { supabase } from "@/integrations/supabase/client";
 
 const N8N_WEBHOOK_URL = "https://offbeat-inc.app.n8n.cloud/webhook/wf06-report-generate";
 
@@ -68,6 +69,20 @@ const fmtDiff = (v: number, unit: string) => {
   return `${prefix}${fmtCurrency(v, unit)}`;
 };
 
+const fmtGeneratedAt = (iso: string | null): string => {
+  if (!iso) return "未生成";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "未生成";
+  // Convert to JST
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const y = jst.getUTCFullYear();
+  const mo = jst.getUTCMonth() + 1;
+  const day = jst.getUTCDate();
+  const h = String(jst.getUTCHours()).padStart(2, "0");
+  const min = String(jst.getUTCMinutes()).padStart(2, "0");
+  return `${y}年${mo}月${day}日 ${h}:${min}`;
+};
+
 /* ── Main ── */
 const Report = () => {
   usePageTitle("月次レポート");
@@ -86,8 +101,41 @@ const Report = () => {
   const [actionContent, setActionContent] = useState("");
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [analysisGeneratedAt, setAnalysisGeneratedAt] = useState<string | null>(null);
+  const [actionGeneratedAt, setActionGeneratedAt] = useState<string | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
   const actionRef = useRef<HTMLDivElement>(null);
+
+  // Load cached reports when month changes
+  useEffect(() => {
+    let cancelled = false;
+    const loadCache = async () => {
+      const { data } = await supabase
+        .from("report_cache")
+        .select("report_type, report_content, generated_at")
+        .eq("org_id", ORG_ID)
+        .eq("year_month", selectedYm)
+        .in("report_type", ["analysis", "action"]);
+      if (cancelled || !data) return;
+      const analysis = data.find((r) => r.report_type === "analysis");
+      const action = data.find((r) => r.report_type === "action");
+      setAnalysisContent(analysis?.report_content ?? "");
+      setAnalysisGeneratedAt(analysis?.generated_at ?? null);
+      setActionContent(action?.report_content ?? "");
+      setActionGeneratedAt(action?.generated_at ?? null);
+    };
+    loadCache();
+    return () => { cancelled = true; };
+  }, [selectedYm]);
+
+  const upsertCache = useCallback(async (reportType: string, content: string) => {
+    const now = new Date().toISOString();
+    await supabase.from("report_cache").upsert(
+      { org_id: ORG_ID, year_month: selectedYm, report_type: reportType, report_content: content, generated_at: now },
+      { onConflict: "org_id,year_month,report_type" }
+    );
+    return now;
+  }, [selectedYm]);
 
   const callN8nWebhook = useCallback(async (reportType: "analysis" | "action"): Promise<string> => {
     const resp = await fetch(N8N_WEBHOOK_URL, {
@@ -110,12 +158,14 @@ const Report = () => {
     try {
       const report = await callN8nWebhook("analysis");
       setAnalysisContent(report);
+      const ts = await upsertCache("analysis", report);
+      setAnalysisGeneratedAt(ts);
     } catch (e: any) {
       toast.error(e.message || "分析レポートの生成に失敗しました");
     } finally {
       setAnalysisLoading(false);
     }
-  }, [callN8nWebhook]);
+  }, [callN8nWebhook, upsertCache]);
 
   const handleGenerateAction = useCallback(async () => {
     if (!analysisContent) {
@@ -127,12 +177,14 @@ const Report = () => {
     try {
       const report = await callN8nWebhook("action");
       setActionContent(report);
+      const ts = await upsertCache("action", report);
+      setActionGeneratedAt(ts);
     } catch (e: any) {
       toast.error(e.message || "アクション提案の生成に失敗しました");
     } finally {
       setActionLoading(false);
     }
-  }, [analysisContent, callN8nWebhook]);
+  }, [analysisContent, callN8nWebhook, upsertCache]);
 
   const handleExportPdf = useCallback(async (content: string, title: string) => {
     if (!content) {
@@ -715,7 +767,7 @@ const Report = () => {
         {/* ── Tab 6: Analysis ── */}
         <TabsContent value="analysis" className="space-y-4">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold">■ 数値評価・課題分析</h3>
               <Button onClick={handleGenerateAnalysis} disabled={analysisLoading} size="sm">
                 {analysisLoading ? (
@@ -726,6 +778,7 @@ const Report = () => {
                 分析レポートを生成
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mb-4">最終生成: {fmtGeneratedAt(analysisGeneratedAt)}</p>
             {analysisContent ? (
               <div className="report-markdown max-w-4xl">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisContent}</ReactMarkdown>
@@ -741,7 +794,7 @@ const Report = () => {
         {/* ── Tab 7: Action ── */}
         <TabsContent value="action" className="space-y-4">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold">■ 解決策・来月アクション</h3>
               <Button onClick={handleGenerateAction} disabled={actionLoading || !analysisContent} size="sm">
                 {actionLoading ? (
@@ -752,6 +805,7 @@ const Report = () => {
                 アクション提案を生成
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mb-4">最終生成: {fmtGeneratedAt(actionGeneratedAt)}</p>
             {!analysisContent && !actionContent && (
               <p className="text-sm text-muted-foreground">
                 先に「数値評価・課題分析」タブで分析レポートを生成してください。

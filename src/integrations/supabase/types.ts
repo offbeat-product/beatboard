@@ -892,6 +892,33 @@ export type Database = {
           },
         ]
       }
+      report_cache: {
+        Row: {
+          generated_at: string
+          id: string
+          org_id: string
+          report_content: string
+          report_type: string
+          year_month: string
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          org_id: string
+          report_content: string
+          report_type: string
+          year_month: string
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          org_id?: string
+          report_content?: string
+          report_type?: string
+          year_month?: string
+        }
+        Relationships: []
+      }
       targets: {
         Row: {
           created_at: string
