@@ -9,6 +9,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { CurrencyUnitProvider } from "@/hooks/useCurrencyUnit";
 import { AccessBlockedScreen } from "@/components/AccessBlockedScreen";
 import Index from "./pages/Index";
+import Finance from "./pages/Finance";
 import Customers from "./pages/Customers";
 import Management from "./pages/Management";
 import Productivity from "./pages/Productivity";
