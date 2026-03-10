@@ -121,7 +121,7 @@ export function MemberResourceTable() {
     return { members, data: result };
   }, [hours, ceoNames, fiscalMonths]);
 
-  const { members, data, totalProjectByMonth } = memberData;
+  const { members, data } = memberData;
 
   if (isLoading) return null;
   if (members.length === 0) return null;
