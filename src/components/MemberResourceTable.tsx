@@ -118,19 +118,10 @@ export function MemberResourceTable() {
       }
     }
 
-    // All members' project hours per month (for GP allocation)
-    const totalProjectByMonth: Record<string, number> = {};
-    for (const m of members) {
-      for (const ym of fiscalMonths) {
-        const proj = result[m]?.[ym]?.project ?? 0;
-        totalProjectByMonth[ym] = (totalProjectByMonth[ym] ?? 0) + proj;
-      }
-    }
-
-    return { members, data: result, totalProjectByMonth };
+    return { members, data: result };
   }, [hours, ceoNames, fiscalMonths]);
 
-  const { members, data, totalProjectByMonth } = memberData;
+  const { members, data } = memberData;
 
   if (isLoading) return null;
   if (members.length === 0) return null;
@@ -158,16 +149,14 @@ export function MemberResourceTable() {
     }
 
     const monthGp = gpByMonth[ym] ?? 0;
-    const totalProj = totalProjectByMonth[ym] ?? 0;
-    const allocatedGp = totalProj > 0 ? monthGp * (project / totalProj) : 0;
 
     if (key === "gph") {
       if (total === 0) return "—";
-      return fmtYen(allocatedGp / total);
+      return fmtYen(monthGp / total);
     }
     if (key === "projectGph") {
       if (project === 0) return "—";
-      return fmtYen(allocatedGp / project);
+      return fmtYen(monthGp / project);
     }
     return "—";
   };

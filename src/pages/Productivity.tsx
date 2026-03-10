@@ -25,138 +25,133 @@ import { toast } from "sonner";
 import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
 import { MemberResourceTable } from "@/components/MemberResourceTable";
-import { useQuery } from "@tanstack/react-query";
-
-function DebugMemberHours() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["debug_member_hours"],
-    queryFn: async () => {
-      const { data, error } = await (supabase.from("member_client_monthly_hours" as any) as any)
-        .select("member_name, client_name, hours")
-        .eq("org_id", ORG_ID)
-        .eq("year_month", "2026-02")
-        .eq("member_name", "中村 健");
-      if (error) throw error;
-      return data as { member_name: string; client_name: string; hours: number }[];
-    },
-  });
-  if (isLoading) return <p className="text-xs text-muted-foreground">Loading debug data...</p>;
-  return (
-    <div className="bg-card rounded-lg shadow-sm p-4 border border-dashed border-destructive">
-      <h4 className="text-xs font-bold text-destructive mb-2">🐛 DEBUG: member_client_monthly_hours (2026-02, 中村 健)</h4>
-      <table className="text-xs w-full">
-        <thead><tr className="border-b"><th className="text-left p-1">member_name</th><th className="text-left p-1">client_name</th><th className="text-right p-1">hours</th></tr></thead>
-        <tbody>
-          {(data ?? []).map((r, i) => (
-            <tr key={i} className="border-b border-muted"><td className="p-1">{r.member_name}</td><td className="p-1">{r.client_name}</td><td className="text-right p-1">{r.hours}</td></tr>
-          ))}
-          {(!data || data.length === 0) && <tr><td colSpan={3} className="p-1 text-muted-foreground">No data found</td></tr>}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-const Productivity = ({ embedded }: { embedded?: boolean }) => {
+const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "生産性指標");
-  const queryClient = useQueryClient();
-  const { formatAmount } = useCurrencyUnit();
   const d = useProductivityData();
-  const [logicOpen, setLogicOpen] = useState(false);
+  const { formatAmount } = useCurrencyUnit();
+  const queryClient = useQueryClient();
+
   const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
+  const [logicOpen, setLogicOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Editable hours state: { "2025-05": { employeeTotalHours, ... }, ... }
   const [hoursMap, setHoursMap] = useState<Record<string, MonthlyHoursInput>>({});
-  const [hoursInitialized, setHoursInitialized] = useState(false);
 
-  // Stable JSON key to detect when default hours actually change
-  const defaultHoursKey = useMemo(() => {
-    if (d.isLoading || !d.defaultHoursMap) return "";
-    return JSON.stringify(d.defaultHoursMap);
-  }, [d.isLoading, d.defaultHoursMap]);
-
-  // Re-initialize from default when data loads (only when actual values change)
   useEffect(() => {
-    if (defaultHoursKey) {
-      setHoursMap(JSON.parse(defaultHoursKey));
-      setHoursInitialized(true);
+    if (d.monthlyData.length > 0 && Object.keys(hoursMap).length === 0) {
+      const map: Record<string, MonthlyHoursInput> = {};
+      for (const m of d.monthlyData) {
+        map[m.ym] = {
+          employeeTotalHours: m.employeeTotalHours,
+          employeeProjectHours: m.employeeProjectHours,
+          partTimerTotalHours: m.partTimerTotalHours,
+          partTimerProjectHours: m.partTimerProjectHours,
+        };
+      }
+      setHoursMap(map);
     }
-  }, [defaultHoursKey]);
+  }, [d.monthlyData]);
 
-  // Recompute monthly data from editable hours
-  const editedMonthlyData: MonthlyProductivityRow[] = useMemo(() => {
-    if (!d.fiscalMonths || Object.keys(hoursMap).length === 0) return d.monthlyData;
-    return d.fiscalMonths.map((ym) => {
-      const hours = hoursMap[ym] ?? d.defaultHoursMap[ym];
-      return d.computeMonthlyRow(ym, hours);
-    });
-  }, [hoursMap, d.fiscalMonths, d.defaultHoursMap, d.computeMonthlyRow, d.sales]);
-
-  // Recompute KPI values
-  const kpis = useMemo(() => {
-    const currentData = editedMonthlyData.find((m) => m.ym === d.currentMonth);
-    const prevData = editedMonthlyData.find((m) => m.ym === d.previousMonth);
-    const currentGPH = currentData?.gph ?? 0;
-    const prevGPH = prevData?.gph ?? 0;
-    const gphMomChange = prevGPH > 0 ? ((currentGPH - prevGPH) / prevGPH) * 100 : 0;
-    const currentProjectGPH = currentData?.projectGph ?? 0;
-    const prevProjectGPH = prevData?.projectGph ?? 0;
-    const projectGphMomChange = prevProjectGPH > 0 ? ((currentProjectGPH - prevProjectGPH) / prevProjectGPH) * 100 : 0;
-    const activeMonths = editedMonthlyData.slice(0, d.currentIdx + 1).filter((m) => m.gph > 0);
-    const avgGPH = activeMonths.length > 0 ? activeMonths.reduce((s, m) => s + m.gph, 0) / activeMonths.length : 0;
-    const activeProjectMonths = editedMonthlyData.slice(0, d.currentIdx + 1).filter((m) => m.projectGph > 0);
-    const avgProjectGPH = activeProjectMonths.length > 0 ? activeProjectMonths.reduce((s, m) => s + m.projectGph, 0) / activeProjectMonths.length : 0;
-    return { currentGPH, prevGPH, gphMomChange, currentProjectGPH, prevProjectGPH, projectGphMomChange, avgGPH, avgProjectGPH };
-  }, [editedMonthlyData, d.currentMonth, d.previousMonth, d.currentIdx]);
-
-  // Chart data from edited
-  const gphChartData = useMemo(() => editedMonthlyData.map((m) => ({
-    name: m.label,
-    粗利工数単価: Math.round(m.gph),
-    案件粗利工数単価: Math.round(m.projectGph),
-  })), [editedMonthlyData]);
-
-  const perHeadChartData = useMemo(() => editedMonthlyData.map((m) => ({
-    name: m.label,
-    "1人あたり売上": Math.round(m.revenuePerHead),
-    "1人あたり粗利": Math.round(m.grossProfitPerHead),
-  })), [editedMonthlyData]);
-
-  const updateHours = useCallback((ym: string, field: keyof MonthlyHoursInput, value: number) => {
+  const updateHours = (ym: string, field: keyof MonthlyHoursInput, value: number) => {
     setHoursMap((prev) => ({
       ...prev,
-      [ym]: { ...prev[ym], [field]: value },
+      [ym]: { ...(prev[ym] ?? { employeeTotalHours: 0, employeeProjectHours: 0, partTimerTotalHours: 0, partTimerProjectHours: 0 }), [field]: value },
     }));
-  }, []);
+  };
+
+  const editedMonthlyData: MonthlyProductivityRow[] = useMemo(() =>
+    d.monthlyData.map((m) => {
+      const h = hoursMap[m.ym];
+      if (!h) return m;
+      const totalLaborHours = h.employeeTotalHours + h.partTimerTotalHours;
+      const projectHours = h.employeeProjectHours + h.partTimerProjectHours;
+      const utilizationRate = totalLaborHours > 0 ? (projectHours / totalLaborHours) * 100 : 0;
+      const gph = totalLaborHours > 0 ? m.grossProfit / totalLaborHours : 0;
+      const projectGph = projectHours > 0 ? m.grossProfit / projectHours : 0;
+      return {
+        ...m,
+        employeeTotalHours: h.employeeTotalHours,
+        employeeProjectHours: h.employeeProjectHours,
+        partTimerTotalHours: h.partTimerTotalHours,
+        partTimerProjectHours: h.partTimerProjectHours,
+        totalLaborHours,
+        projectHours,
+        utilizationRate,
+        gph,
+        projectGph,
+      };
+    }),
+    [d.monthlyData, hoursMap]
+  );
+
+  const kpis = useMemo(() => {
+    const current = editedMonthlyData.find((m) => m.ym === d.currentMonth);
+    const prev = editedMonthlyData.find((m) => m.ym === d.previousMonth);
+    const currentGPH = current?.gph ?? 0;
+    const prevGPH = prev?.gph ?? 0;
+    const currentProjectGPH = current?.projectGph ?? 0;
+    const prevProjectGPH = prev?.projectGph ?? 0;
+    const gphMomChange = prevGPH > 0 ? ((currentGPH - prevGPH) / prevGPH) * 100 : 0;
+    const projectGphMomChange = prevProjectGPH > 0 ? ((currentProjectGPH - prevProjectGPH) / prevProjectGPH) * 100 : 0;
+
+    const withData = editedMonthlyData.filter((m) => m.totalLaborHours > 0);
+    const totalGP = withData.reduce((s, m) => s + m.grossProfit, 0);
+    const totalHours = withData.reduce((s, m) => s + m.totalLaborHours, 0);
+    const totalProjectHours = withData.reduce((s, m) => s + m.projectHours, 0);
+    const avgGPH = totalHours > 0 ? totalGP / totalHours : 0;
+    const avgProjectGPH = totalProjectHours > 0 ? totalGP / totalProjectHours : 0;
+
+    return { currentGPH, prevGPH, currentProjectGPH, prevProjectGPH, gphMomChange, projectGphMomChange, avgGPH, avgProjectGPH };
+  }, [editedMonthlyData, d.currentMonth, d.previousMonth]);
+
+  const gphChartData = useMemo(() =>
+    editedMonthlyData.map((m) => ({
+      name: m.label,
+      粗利工数単価: Math.round(m.gph),
+      案件粗利工数単価: Math.round(m.projectGph),
+    })),
+    [editedMonthlyData]
+  );
+
+  const perHeadChartData = useMemo(() =>
+    editedMonthlyData.map((m) => ({
+      name: m.label,
+      "1人あたり売上": Math.round(m.revenuePerHead),
+      "1人あたり粗利": Math.round(m.grossProfitPerHead),
+    })),
+    [editedMonthlyData]
+  );
 
   const resetHours = useCallback(() => {
-    setHoursMap({ ...d.defaultHoursMap });
-    toast.success("デフォルト値にリセットしました");
-  }, [d.defaultHoursMap]);
+    const map: Record<string, MonthlyHoursInput> = {};
+    for (const m of d.monthlyData) {
+      map[m.ym] = {
+        employeeTotalHours: m.employeeTotalHours,
+        employeeProjectHours: m.employeeProjectHours,
+        partTimerTotalHours: m.partTimerTotalHours,
+        partTimerProjectHours: m.partTimerProjectHours,
+      };
+    }
+    setHoursMap(map);
+  }, [d.monthlyData]);
 
   const saveHours = useCallback(async () => {
     setSaving(true);
     try {
-      // Save each month's hours as kpi_snapshots
-      const metrics = ["employee_total_hours", "employee_project_hours", "parttimer_total_hours", "parttimer_project_hours"] as const;
-      const fieldMap: Record<string, keyof MonthlyHoursInput> = {
-        employee_total_hours: "employeeTotalHours",
-        employee_project_hours: "employeeProjectHours",
-        parttimer_total_hours: "partTimerTotalHours",
-        parttimer_project_hours: "partTimerProjectHours",
-      };
-
       for (const ym of d.fiscalMonths) {
-        const hours = hoursMap[ym];
-        if (!hours) continue;
-        for (const metric of metrics) {
-          const value = hours[fieldMap[metric]];
+        const h = hoursMap[ym];
+        if (!h) continue;
+        for (const [metric, value] of [
+          ["employee_total_hours", h.employeeTotalHours],
+          ["employee_project_hours", h.employeeProjectHours],
+          ["part_timer_total_hours", h.partTimerTotalHours],
+          ["part_timer_project_hours", h.partTimerProjectHours],
+        ] as const) {
           const snapshotDate = `${ym}-01`;
-          // Upsert: delete then insert
           await supabase
             .from("kpi_snapshots")
             .delete()
@@ -536,8 +531,7 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
       {/* Member Resource Breakdown */}
       <MemberResourceTable />
 
-      {/* DEBUG: member_client_monthly_hours raw data */}
-      <DebugMemberHours />
+
 
       {/* Client GPH Table */}
       <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
