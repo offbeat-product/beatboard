@@ -727,8 +727,8 @@ const Report = () => {
               </Button>
             </div>
             {analysisContent ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown>{analysisContent}</ReactMarkdown>
+              <div className="report-markdown max-w-4xl">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisContent}</ReactMarkdown>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
