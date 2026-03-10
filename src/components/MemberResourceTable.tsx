@@ -149,8 +149,6 @@ export function MemberResourceTable() {
     }
 
     const monthGp = gpByMonth[ym] ?? 0;
-    const totalProj = totalProjectByMonth[ym] ?? 0;
-    const allocatedGp = totalProj > 0 ? monthGp * (project / totalProj) : 0;
 
     if (key === "gph") {
       if (total === 0) return "—";
