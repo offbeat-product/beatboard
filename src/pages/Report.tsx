@@ -69,6 +69,20 @@ const fmtDiff = (v: number, unit: string) => {
   return `${prefix}${fmtCurrency(v, unit)}`;
 };
 
+const fmtGeneratedAt = (iso: string | null): string => {
+  if (!iso) return "未生成";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "未生成";
+  // Convert to JST
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const y = jst.getUTCFullYear();
+  const mo = jst.getUTCMonth() + 1;
+  const day = jst.getUTCDate();
+  const h = String(jst.getUTCHours()).padStart(2, "0");
+  const min = String(jst.getUTCMinutes()).padStart(2, "0");
+  return `${y}年${mo}月${day}日 ${h}:${min}`;
+};
+
 /* ── Main ── */
 const Report = () => {
   usePageTitle("月次レポート");
