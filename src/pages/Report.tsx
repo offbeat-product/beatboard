@@ -186,37 +186,56 @@ const Report = () => {
     }
   }, [analysisContent, callN8nWebhook, upsertCache]);
 
-  const handleExportPdf = useCallback(async (content: string, title: string) => {
-    if (!content) {
+  const handleExportPdf = useCallback(async () => {
+    if (!analysisContent && !actionContent) {
       toast.error("先にレポートを生成してください");
       return;
     }
     toast.info("PDF生成中...");
     const html2pdf = (await import("html2pdf.js")).default;
+    const { marked } = await import("marked");
     const container = document.createElement("div");
     container.style.padding = "24px";
     container.style.fontFamily = "sans-serif";
     container.style.fontSize = "12px";
     container.style.lineHeight = "1.6";
-    container.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">${title} - ${ymLabel}</h1>`;
-    // Render markdown to HTML
-    const tempDiv = document.createElement("div");
-    const { marked } = await import("marked");
-    tempDiv.innerHTML = await marked(content) as string;
-    container.appendChild(tempDiv);
+
+    if (analysisContent) {
+      const sec1 = document.createElement("div");
+      sec1.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">数値評価・課題分析 - ${ymLabel}</h1>`;
+      const md1 = document.createElement("div");
+      md1.innerHTML = await marked(analysisContent) as string;
+      sec1.appendChild(md1);
+      container.appendChild(sec1);
+    }
+
+    if (actionContent) {
+      if (analysisContent) {
+        const pageBreak = document.createElement("div");
+        pageBreak.style.pageBreakBefore = "always";
+        container.appendChild(pageBreak);
+      }
+      const sec2 = document.createElement("div");
+      sec2.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">解決策・来月アクション - ${ymLabel}</h1>`;
+      const md2 = document.createElement("div");
+      md2.innerHTML = await marked(actionContent) as string;
+      sec2.appendChild(md2);
+      container.appendChild(sec2);
+    }
 
     html2pdf()
       .set({
         margin: 10,
-        filename: `${title}_${selectedYm}.pdf`,
+        filename: `Off Beat_月次レポート_${selectedYm}.pdf`,
         html2canvas: { scale: 2 },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
       })
       .from(container)
       .save()
       .then(() => toast.success("PDFを保存しました"))
       .catch(() => toast.error("PDF生成に失敗しました"));
-  }, [ymLabel, selectedYm]);
+  }, [ymLabel, selectedYm, analysisContent, actionContent]);
 
   const handleExportPptx = useCallback(async () => {
     toast.info("PPTX生成中...");
