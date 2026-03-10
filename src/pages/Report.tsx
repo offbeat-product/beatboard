@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const N8N_WEBHOOK_URL = "https://offbeat-inc.app.n8n.cloud/webhook/wf06-report-generate";
 
@@ -726,8 +727,8 @@ const Report = () => {
               </Button>
             </div>
             {analysisContent ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown>{analysisContent}</ReactMarkdown>
+              <div className="report-markdown max-w-4xl">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisContent}</ReactMarkdown>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -757,8 +758,8 @@ const Report = () => {
               </p>
             )}
             {actionContent ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown>{actionContent}</ReactMarkdown>
+              <div className="report-markdown max-w-4xl">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{actionContent}</ReactMarkdown>
               </div>
             ) : analysisContent && !actionLoading ? (
               <p className="text-sm text-muted-foreground">

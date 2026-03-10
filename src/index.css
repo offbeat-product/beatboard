@@ -69,3 +69,65 @@
     font-family: 'JetBrains Mono', monospace;
   }
 }
+
+/* ── Report Markdown Styling ── */
+.report-markdown {
+  @apply text-sm leading-relaxed text-foreground;
+}
+.report-markdown h1 {
+  @apply text-xl font-bold mt-6 mb-3 text-foreground;
+}
+.report-markdown h2 {
+  @apply text-lg font-semibold mt-5 mb-2 text-foreground border-b border-border pb-1;
+}
+.report-markdown h3 {
+  @apply text-base font-semibold mt-4 mb-2 text-foreground;
+}
+.report-markdown h4 {
+  @apply text-sm font-semibold mt-3 mb-1 text-foreground;
+}
+.report-markdown p {
+  @apply mb-3;
+}
+.report-markdown ul {
+  @apply list-disc pl-6 mb-3 space-y-1;
+}
+.report-markdown ol {
+  @apply list-decimal pl-6 mb-3 space-y-1;
+}
+.report-markdown li {
+  @apply text-sm;
+}
+.report-markdown table {
+  @apply w-full border-collapse border border-border mb-4 text-sm;
+}
+.report-markdown thead {
+  @apply bg-muted;
+}
+.report-markdown th {
+  @apply border border-border px-3 py-2 text-left font-medium text-muted-foreground;
+}
+.report-markdown td {
+  @apply border border-border px-3 py-2;
+}
+.report-markdown tr:hover {
+  @apply bg-muted/50;
+}
+.report-markdown pre {
+  @apply bg-muted rounded-md p-3 mb-3 overflow-x-auto text-xs;
+}
+.report-markdown code {
+  @apply bg-muted px-1 py-0.5 rounded text-xs font-mono;
+}
+.report-markdown pre code {
+  @apply bg-transparent p-0;
+}
+.report-markdown blockquote {
+  @apply border-l-4 border-primary pl-4 italic text-muted-foreground mb-3;
+}
+.report-markdown hr {
+  @apply border-border my-4;
+}
+.report-markdown strong {
+  @apply font-semibold;
+}
