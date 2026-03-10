@@ -133,7 +133,7 @@ export function ClientGphTable() {
       if (sortOrder === "asc") return a.avgGph - b.avgGph;
       return b.avgGph - a.avgGph; // default: high to low
     });
-  }, [clients, hoursEdits, savedHoursMap]);
+  }, [clients, hoursEdits, savedHoursMap, sortOrder]);
 
   // Totals
   const totals = useMemo(() => {
