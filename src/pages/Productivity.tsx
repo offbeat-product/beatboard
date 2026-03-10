@@ -25,6 +25,149 @@ import { toast } from "sonner";
 import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
 import { MemberResourceTable } from "@/components/MemberResourceTable";
+
+const fmtPct = (v: number) => `${v.toFixed(1)}%`;
+
+const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "生産性指標");
+  const d = useProductivityData();
+  const { formatAmount } = useCurrencyUnit();
+  const queryClient = useQueryClient();
+
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
+  const [logicOpen, setLogicOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [hoursMap, setHoursMap] = useState<Record<string, MonthlyHoursInput>>({});
+
+  useEffect(() => {
+    if (d.monthlyData.length > 0 && Object.keys(hoursMap).length === 0) {
+      const map: Record<string, MonthlyHoursInput> = {};
+      for (const m of d.monthlyData) {
+        map[m.ym] = {
+          employeeTotalHours: m.employeeTotalHours,
+          employeeProjectHours: m.employeeProjectHours,
+          partTimerTotalHours: m.partTimerTotalHours,
+          partTimerProjectHours: m.partTimerProjectHours,
+        };
+      }
+      setHoursMap(map);
+    }
+  }, [d.monthlyData]);
+
+  const updateHours = (ym: string, field: keyof MonthlyHoursInput, value: number) => {
+    setHoursMap((prev) => ({
+      ...prev,
+      [ym]: { ...(prev[ym] ?? { employeeTotalHours: 0, employeeProjectHours: 0, partTimerTotalHours: 0, partTimerProjectHours: 0 }), [field]: value },
+    }));
+  };
+
+  const editedMonthlyData: MonthlyProductivityRow[] = useMemo(() =>
+    d.monthlyData.map((m) => {
+      const h = hoursMap[m.ym];
+      if (!h) return m;
+      const totalLaborHours = h.employeeTotalHours + h.partTimerTotalHours;
+      const projectHours = h.employeeProjectHours + h.partTimerProjectHours;
+      const utilizationRate = totalLaborHours > 0 ? (projectHours / totalLaborHours) * 100 : 0;
+      const gph = totalLaborHours > 0 ? m.grossProfit / totalLaborHours : 0;
+      const projectGph = projectHours > 0 ? m.grossProfit / projectHours : 0;
+      return {
+        ...m,
+        employeeTotalHours: h.employeeTotalHours,
+        employeeProjectHours: h.employeeProjectHours,
+        partTimerTotalHours: h.partTimerTotalHours,
+        partTimerProjectHours: h.partTimerProjectHours,
+        totalLaborHours,
+        projectHours,
+        utilizationRate,
+        gph,
+        projectGph,
+      };
+    }),
+    [d.monthlyData, hoursMap]
+  );
+
+  const kpis = useMemo(() => {
+    const current = editedMonthlyData.find((m) => m.ym === d.currentMonth);
+    const prev = editedMonthlyData.find((m) => m.ym === d.previousMonth);
+    const currentGPH = current?.gph ?? 0;
+    const prevGPH = prev?.gph ?? 0;
+    const currentProjectGPH = current?.projectGph ?? 0;
+    const prevProjectGPH = prev?.projectGph ?? 0;
+    const gphMomChange = prevGPH > 0 ? ((currentGPH - prevGPH) / prevGPH) * 100 : 0;
+    const projectGphMomChange = prevProjectGPH > 0 ? ((currentProjectGPH - prevProjectGPH) / prevProjectGPH) * 100 : 0;
+
+    const withData = editedMonthlyData.filter((m) => m.totalLaborHours > 0);
+    const totalGP = withData.reduce((s, m) => s + m.grossProfit, 0);
+    const totalHours = withData.reduce((s, m) => s + m.totalLaborHours, 0);
+    const totalProjectHours = withData.reduce((s, m) => s + m.projectHours, 0);
+    const avgGPH = totalHours > 0 ? totalGP / totalHours : 0;
+    const avgProjectGPH = totalProjectHours > 0 ? totalGP / totalProjectHours : 0;
+
+    return { currentGPH, prevGPH, currentProjectGPH, prevProjectGPH, gphMomChange, projectGphMomChange, avgGPH, avgProjectGPH };
+  }, [editedMonthlyData, d.currentMonth, d.previousMonth]);
+
+  const gphChartData = useMemo(() =>
+    editedMonthlyData.map((m) => ({
+      name: m.label,
+      粗利工数単価: Math.round(m.gph),
+      案件粗利工数単価: Math.round(m.projectGph),
+    })),
+    [editedMonthlyData]
+  );
+
+  const perHeadChartData = useMemo(() =>
+    editedMonthlyData.map((m) => ({
+      name: m.label,
+      "1人あたり売上": Math.round(m.revenuePerHead),
+      "1人あたり粗利": Math.round(m.grossProfitPerHead),
+    })),
+    [editedMonthlyData]
+  );
+
+  const resetHours = useCallback(() => {
+    const map: Record<string, MonthlyHoursInput> = {};
+    for (const m of d.monthlyData) {
+      map[m.ym] = {
+        employeeTotalHours: m.employeeTotalHours,
+        employeeProjectHours: m.employeeProjectHours,
+        partTimerTotalHours: m.partTimerTotalHours,
+        partTimerProjectHours: m.partTimerProjectHours,
+      };
+    }
+    setHoursMap(map);
+  }, [d.monthlyData]);
+
+  const saveHours = useCallback(async () => {
+    setSaving(true);
+    try {
+      for (const ym of d.fiscalMonths) {
+        const h = hoursMap[ym];
+        if (!h) continue;
+        for (const [metric, value] of [
+          ["employee_total_hours", h.employeeTotalHours],
+          ["employee_project_hours", h.employeeProjectHours],
+          ["part_timer_total_hours", h.partTimerTotalHours],
+          ["part_timer_project_hours", h.partTimerProjectHours],
+        ] as const) {
+          const snapshotDate = `${ym}-01`;
+          await supabase
+            .from("kpi_snapshots")
+            .delete()
+            .eq("org_id", ORG_ID)
+            .eq("metric_name", metric)
+            .eq("snapshot_date", snapshotDate);
+          await supabase
+            .from("kpi_snapshots")
+            .insert({
+              org_id: ORG_ID,
+              metric_name: metric,
+              snapshot_date: snapshotDate,
+              actual_value: value,
+            });
+        }
+      }
       // Also save computed total_labor_hours and project_hours
       for (const m of editedMonthlyData) {
         const snapshotDate = `${m.ym}-01`;
