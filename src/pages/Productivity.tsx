@@ -24,6 +24,7 @@ import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
+import { MemberResourceTable } from "@/components/MemberResourceTable";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -500,6 +501,9 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Member Resource Breakdown */}
+      <MemberResourceTable />
 
       {/* Client GPH Table */}
       <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
