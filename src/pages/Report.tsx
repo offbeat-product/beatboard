@@ -186,37 +186,56 @@ const Report = () => {
     }
   }, [analysisContent, callN8nWebhook, upsertCache]);
 
-  const handleExportPdf = useCallback(async (content: string, title: string) => {
-    if (!content) {
+  const handleExportPdf = useCallback(async () => {
+    if (!analysisContent && !actionContent) {
       toast.error("先にレポートを生成してください");
       return;
     }
     toast.info("PDF生成中...");
     const html2pdf = (await import("html2pdf.js")).default;
+    const { marked } = await import("marked");
     const container = document.createElement("div");
     container.style.padding = "24px";
     container.style.fontFamily = "sans-serif";
     container.style.fontSize = "12px";
     container.style.lineHeight = "1.6";
-    container.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">${title} - ${ymLabel}</h1>`;
-    // Render markdown to HTML
-    const tempDiv = document.createElement("div");
-    const { marked } = await import("marked");
-    tempDiv.innerHTML = await marked(content) as string;
-    container.appendChild(tempDiv);
+
+    if (analysisContent) {
+      const sec1 = document.createElement("div");
+      sec1.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">数値評価・課題分析 - ${ymLabel}</h1>`;
+      const md1 = document.createElement("div");
+      md1.innerHTML = await marked(analysisContent) as string;
+      sec1.appendChild(md1);
+      container.appendChild(sec1);
+    }
+
+    if (actionContent) {
+      if (analysisContent) {
+        const pageBreak = document.createElement("div");
+        pageBreak.style.pageBreakBefore = "always";
+        container.appendChild(pageBreak);
+      }
+      const sec2 = document.createElement("div");
+      sec2.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">解決策・来月アクション - ${ymLabel}</h1>`;
+      const md2 = document.createElement("div");
+      md2.innerHTML = await marked(actionContent) as string;
+      sec2.appendChild(md2);
+      container.appendChild(sec2);
+    }
 
     html2pdf()
       .set({
         margin: 10,
-        filename: `${title}_${selectedYm}.pdf`,
+        filename: `Off Beat_月次レポート_${selectedYm}.pdf`,
         html2canvas: { scale: 2 },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
       })
       .from(container)
       .save()
       .then(() => toast.success("PDFを保存しました"))
       .catch(() => toast.error("PDF生成に失敗しました"));
-  }, [ymLabel, selectedYm]);
+  }, [ymLabel, selectedYm, analysisContent, actionContent]);
 
   const handleExportPptx = useCallback(async () => {
     toast.info("PPTX生成中...");
@@ -232,8 +251,8 @@ const Report = () => {
       const analysisReport = data?.find((r) => r.report_type === "analysis")?.report_content;
       const actionReport = data?.find((r) => r.report_type === "action")?.report_content;
 
-      if (!analysisReport || !actionReport) {
-        toast.error("PPTXを生成するには「数値評価・課題分析」と「解決策・来月アクション」の両方のレポートが必要です。先にAI分析タブから生成してください。");
+      if (!analysisReport && !actionReport) {
+        toast.error("先にレポートを生成してください");
         return;
       }
 
@@ -422,21 +441,25 @@ const Report = () => {
       cover.addText("• • • • •", { x: 7, y: 6.2, w: 2.5, h: 0.4, fontSize: 14, color: C.midGray, fontFace: FONT, align: "right" });
 
       // ══════════════════════════════════════
-      // PART 2 – Analysis
+      // PART 2 – Analysis (if available)
       // ══════════════════════════════════════
-      addSectionDivider(pptx, "01", "数値評価・課題分析");
-      const analysisSlides = parseMarkdownToSlides(analysisReport);
-      for (const sl of analysisSlides) {
-        addContentSlide(pptx, sl.title, sl.blocks);
+      if (analysisReport) {
+        addSectionDivider(pptx, "01", "数値評価・課題分析");
+        const analysisSlides = parseMarkdownToSlides(analysisReport);
+        for (const sl of analysisSlides) {
+          addContentSlide(pptx, sl.title, sl.blocks);
+        }
       }
 
       // ══════════════════════════════════════
-      // PART 3 – Action
+      // PART 3 – Action (if available)
       // ══════════════════════════════════════
-      addSectionDivider(pptx, "02", "解決策・来月アクション");
-      const actionSlides = parseMarkdownToSlides(actionReport);
-      for (const sl of actionSlides) {
-        addContentSlide(pptx, sl.title, sl.blocks);
+      if (actionReport) {
+        addSectionDivider(pptx, analysisReport ? "02" : "01", "解決策・来月アクション");
+        const actionSlides = parseMarkdownToSlides(actionReport);
+        for (const sl of actionSlides) {
+          addContentSlide(pptx, sl.title, sl.blocks);
+        }
       }
 
       // ══════════════════════════════════════
@@ -531,17 +554,13 @@ const Report = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExportPdf(analysisContent, "数値評価・課題分析")} disabled={!analysisContent}>
+              <DropdownMenuItem onClick={() => handleExportPdf()}>
                 <FileText className="h-4 w-4 mr-2" />
-                数値評価・課題分析をPDFで保存
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPdf(actionContent, "解決策・来月アクション")} disabled={!actionContent}>
-                <FileText className="h-4 w-4 mr-2" />
-                解決策・アクションをPDFで保存
+                PDFで保存（全レポート）
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExportPptx()}>
                 <Presentation className="h-4 w-4 mr-2" />
-                PPTXで保存
+                PPTXで保存（全レポート）
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
