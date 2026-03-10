@@ -9,7 +9,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Save, RotateCcw, Trophy, Award, Medal } from "lucide-react";
+import { Save, RotateCcw, Trophy, Award, Medal, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -44,6 +44,7 @@ export function ClientGphTable() {
   const [hoursEdits, setHoursEdits] = useState<Record<string, Record<string, number>>>({});
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
 
   // Fetch project_pl for Nov-Apr
   const projectPlQuery = useQuery({
@@ -125,11 +126,14 @@ export function ClientGphTable() {
       const avgGph = totalHours > 0 ? totalGrossProfit / totalHours : 0;
       return { clientId: c.id, clientName: c.name, monthlyGrossProfit, monthlyHours, totalGrossProfit, totalHours, avgGph };
     }).filter((row) => {
-      // Hide clients with no GPH data across all months
       const hasAnyGph = DISPLAY_MONTHS.some((ym) => (row.monthlyHours[ym] ?? 0) > 0);
       return hasAnyGph;
-    }).sort((a, b) => b.avgGph - a.avgGph);
-  }, [clients, hoursEdits, savedHoursMap]);
+    }).sort((a, b) => {
+      if (sortOrder === "desc") return b.avgGph - a.avgGph;
+      if (sortOrder === "asc") return a.avgGph - b.avgGph;
+      return b.avgGph - a.avgGph; // default: high to low
+    });
+  }, [clients, hoursEdits, savedHoursMap, sortOrder]);
 
   // Totals
   const totals = useMemo(() => {
@@ -222,6 +226,17 @@ export function ClientGphTable() {
               <TabsTrigger value="hours" className="text-xs px-3 h-7">工数</TabsTrigger>
             </TabsList>
           </Tabs>
+          {activeTab === "gph" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder((prev) => prev === "default" ? "desc" : prev === "desc" ? "asc" : "default")}
+              className={cn("text-xs gap-1 h-8", sortOrder !== "default" && "border-primary text-primary")}
+            >
+              {sortOrder === "desc" ? <ArrowDown className="h-3 w-3" /> : sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3" />}
+              {sortOrder === "desc" ? "高い順" : sortOrder === "asc" ? "低い順" : "並べ替え"}
+            </Button>
+          )}
           {activeTab === "hours" && (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={resetHours} className="text-xs gap-1 h-8">

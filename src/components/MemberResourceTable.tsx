@@ -6,7 +6,6 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 const SELF_PATTERNS = ["Off Beat株式会社（自社）", "Off Beat株式会社(自社)"];
 const MEMBER_ORDER = ["中村", "岩谷", "久恒", "石川", "林"];
@@ -23,7 +22,6 @@ interface MemberClassRow {
 export function MemberResourceTable() {
   const fiscalMonths = getFiscalYearMonths(2026);
   const [selectedMember, setSelectedMember] = useState<string>("");
-  const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
 
   const hoursQuery = useQuery({
     queryKey: ["member_client_monthly_hours"],
@@ -134,42 +132,8 @@ export function MemberResourceTable() {
 
   const { members, data, totalProjectByMonth } = memberData;
 
-  // Compute full-year GPH per member for sorting (must be before early returns)
-  const memberGphMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const m of members) {
-      let totalAllocGp = 0;
-      let totalHrs = 0;
-      for (const ym of fiscalMonths) {
-        const d2 = data[m]?.[ym];
-        const total = d2?.total ?? 0;
-        const project = d2?.project ?? 0;
-        const monthGp2 = gpByMonth[ym] ?? 0;
-        const totalProj2 = totalProjectByMonth[ym] ?? 0;
-        const allocGp = totalProj2 > 0 ? monthGp2 * (project / totalProj2) : 0;
-        totalAllocGp += allocGp;
-        totalHrs += total;
-      }
-      map[m] = totalHrs > 0 ? totalAllocGp / totalHrs : 0;
-    }
-    return map;
-  }, [members, data, fiscalMonths, gpByMonth, totalProjectByMonth]);
-
-  const sortedMembers = useMemo(() => {
-    if (sortOrder === "default") return members;
-    return [...members].sort((a, b) =>
-      sortOrder === "desc"
-        ? (memberGphMap[b] ?? 0) - (memberGphMap[a] ?? 0)
-        : (memberGphMap[a] ?? 0) - (memberGphMap[b] ?? 0)
-    );
-  }, [members, sortOrder, memberGphMap]);
-
   if (isLoading) return null;
   if (members.length === 0) return null;
-
-  const cycleSortOrder = () => {
-    setSortOrder((prev) => prev === "default" ? "desc" : prev === "desc" ? "asc" : "default");
-  };
 
   type RowDef = { label: string; key: string };
   const rowDefs: RowDef[] = [
@@ -228,8 +192,8 @@ export function MemberResourceTable() {
     <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
       <h3 className="text-sm font-semibold mb-3">メンバー別 リソース内訳</h3>
       {/* Tabs */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-4">
-        {sortedMembers.map((m) => (
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {members.map((m) => (
           <button
             key={m}
             onClick={() => setSelectedMember(m)}
@@ -243,19 +207,6 @@ export function MemberResourceTable() {
             {m}
           </button>
         ))}
-        <button
-          onClick={cycleSortOrder}
-          className={cn(
-            "ml-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1",
-            sortOrder !== "default"
-              ? "bg-primary/10 text-primary"
-              : "bg-secondary text-muted-foreground hover:bg-accent"
-          )}
-          title="粗利工数単価で並べ替え"
-        >
-          {sortOrder === "desc" ? <ArrowDown className="h-3 w-3" /> : sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3" />}
-          GPH順
-        </button>
       </div>
       <Table>
         <TableHeader>
