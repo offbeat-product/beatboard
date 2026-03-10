@@ -126,10 +126,13 @@ export function ClientGphTable() {
       const avgGph = totalHours > 0 ? totalGrossProfit / totalHours : 0;
       return { clientId: c.id, clientName: c.name, monthlyGrossProfit, monthlyHours, totalGrossProfit, totalHours, avgGph };
     }).filter((row) => {
-      // Hide clients with no GPH data across all months
       const hasAnyGph = DISPLAY_MONTHS.some((ym) => (row.monthlyHours[ym] ?? 0) > 0);
       return hasAnyGph;
-    }).sort((a, b) => b.avgGph - a.avgGph);
+    }).sort((a, b) => {
+      if (sortOrder === "desc") return b.avgGph - a.avgGph;
+      if (sortOrder === "asc") return a.avgGph - b.avgGph;
+      return b.avgGph - a.avgGph; // default: high to low
+    });
   }, [clients, hoursEdits, savedHoursMap]);
 
   // Totals
