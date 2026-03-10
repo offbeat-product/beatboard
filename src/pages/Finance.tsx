@@ -308,6 +308,7 @@ const Finance = () => {
                         "text-right text-xs font-mono-num bg-muted/30 font-semibold",
                         def.key === "cashFlow" && totalCashFlow < 0 && "text-destructive",
                         def.key === "cashFlow" && totalCashFlow > 0 && "text-chart-green",
+                        def.key === "netAssets" && lastRow && lastRow.netAssets < 0 && "text-destructive",
                       )}>
                         {getSummaryValue(def)}
                       </TableCell>
