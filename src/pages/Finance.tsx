@@ -81,6 +81,8 @@ const Finance = () => {
     name: r.label,
     現預金残高: toDisplayValue(r.cash),
     運転資金月数: r.workingCapitalMonths > 0 ? Number(r.workingCapitalMonths.toFixed(1)) : null,
+    入金額: r.income > 0 ? toDisplayValue(r.income) : null,
+    出金額: r.expense > 0 ? toDisplayValue(r.expense) : null,
   }));
 
   const safetyLine = toDisplayValue(d.currentSga * 3);
