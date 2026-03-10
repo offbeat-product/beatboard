@@ -288,10 +288,9 @@ export function PaceCsvUpload() {
       const totalAll = ftTotal + ptTotal;
       const projectAll = ftProject + ptProject;
 
-      // --- Member × Client summary (exclude 井手 大貴, exclude self) ---
+      // --- Member × Client summary (exclude 井手 大貴, include self-work for total hours) ---
       const memberClientRows = monthRows.filter((r) => {
         if (r.member.includes("井手 大貴")) return false;
-        if (isSelfWork(r.clientName)) return false;
         return true;
       });
       const byMemberClient: Record<string, number> = {};
