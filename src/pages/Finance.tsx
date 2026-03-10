@@ -81,6 +81,8 @@ const Finance = () => {
     name: r.label,
     現預金残高: toDisplayValue(r.cash),
     運転資金月数: r.workingCapitalMonths > 0 ? Number(r.workingCapitalMonths.toFixed(1)) : null,
+    入金額: r.income > 0 ? toDisplayValue(r.income) : null,
+    出金額: r.expense > 0 ? toDisplayValue(r.expense) : null,
   }));
 
   const safetyLine = toDisplayValue(d.currentSga * 3);
@@ -101,6 +103,7 @@ const Finance = () => {
   const totalIncome = d.rows.reduce((s, r) => s + r.income, 0);
   const totalExpense = d.rows.reduce((s, r) => s + r.expense, 0);
   const totalInterest = d.rows.reduce((s, r) => s + r.interest, 0);
+  const totalCashFlow = totalIncome - totalExpense;
 
   type RowDef = { label: string; key: string; summaryType: "last" | "avg" | "sum" | "none" };
   const tableDefs: RowDef[] = [
@@ -112,14 +115,22 @@ const Finance = () => {
     { label: "買掛回転日数", key: "apDays", summaryType: "avg" },
     { label: "入金額", key: "income", summaryType: "sum" },
     { label: "出金額", key: "expense", summaryType: "sum" },
+    { label: "収支差額", key: "cashFlow", summaryType: "sum" },
     { label: "借入金残高", key: "borrowings", summaryType: "last" },
     { label: "支払利息", key: "interest", summaryType: "sum" },
     { label: "運転資金月数", key: "workingCapitalMonths", summaryType: "avg" },
   ];
 
+  const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
+
   const getCellValue = (row: typeof d.rows[0], key: string): string => {
     const hasFinance = d.financeMap.has(row.month);
-    if (!hasFinance && !["cashDelta"].includes(key)) return "—";
+    if (!hasFinance && !["cashDelta", "cashFlow"].includes(key)) return "—";
+    if (key === "cashFlow") {
+      if (!hasFinance) return "—";
+      const cf = row.income - row.expense;
+      return fmtYen(cf);
+    }
     const v = (row as any)[key] as number;
     if (key === "cashDelta") {
       const idx = d.fiscalMonths.indexOf(row.month);
@@ -128,6 +139,7 @@ const Finance = () => {
     }
     if (["arDays", "apDays"].includes(key)) return v > 0 ? v.toFixed(1) : "—";
     if (key === "workingCapitalMonths") return v > 0 ? v.toFixed(1) : "—";
+    if (["income", "expense"].includes(key)) return v > 0 ? fmtYen(v) : "—";
     return formatAmount(v);
   };
 
@@ -135,8 +147,9 @@ const Finance = () => {
     if (def.summaryType === "none") return "—";
     if (def.summaryType === "last") return lastRow ? formatAmount((lastRow as any)[def.key]) : "—";
     if (def.summaryType === "sum") {
-      if (def.key === "income") return formatAmount(totalIncome);
-      if (def.key === "expense") return formatAmount(totalExpense);
+      if (def.key === "income") return fmtYen(totalIncome);
+      if (def.key === "expense") return fmtYen(totalExpense);
+      if (def.key === "cashFlow") return fmtYen(totalCashFlow);
       if (def.key === "interest") return formatAmount(totalInterest);
     }
     if (def.summaryType === "avg") {
@@ -153,6 +166,11 @@ const Finance = () => {
       if (row.workingCapitalMonths < 3) return "bg-chart-yellow/10";
     }
     if (key === "arDays" && row.arDays >= 60) return "text-destructive";
+    if (key === "cashFlow") {
+      const cf = row.income - row.expense;
+      if (cf < 0) return "text-destructive";
+      if (cf > 0) return "text-chart-green";
+    }
     return "";
   };
 
@@ -228,6 +246,8 @@ const Finance = () => {
                     <ReferenceLine yAxisId="left" y={safetyLine} stroke="hsl(var(--chart-red))" strokeDasharray="5 5" label={{ value: "安全水準(3ヶ月)", position: "right", fontSize: 10 }} />
                   )}
                   <Line yAxisId="right" type="monotone" dataKey="運転資金月数" stroke="hsl(var(--chart-green))" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line yAxisId="left" type="monotone" dataKey="入金額" stroke="hsl(var(--chart-blue))" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 3" />
+                  <Line yAxisId="left" type="monotone" dataKey="出金額" stroke="hsl(var(--chart-red))" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 3" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -279,7 +299,11 @@ const Finance = () => {
                           {getCellValue(r, def.key)}
                         </TableCell>
                       ))}
-                      <TableCell className="text-right text-xs font-mono-num bg-muted/30 font-semibold">
+                      <TableCell className={cn(
+                        "text-right text-xs font-mono-num bg-muted/30 font-semibold",
+                        def.key === "cashFlow" && totalCashFlow < 0 && "text-destructive",
+                        def.key === "cashFlow" && totalCashFlow > 0 && "text-chart-green",
+                      )}>
                         {getSummaryValue(def)}
                       </TableCell>
                     </TableRow>
