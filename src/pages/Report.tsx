@@ -251,8 +251,8 @@ const Report = () => {
       const analysisReport = data?.find((r) => r.report_type === "analysis")?.report_content;
       const actionReport = data?.find((r) => r.report_type === "action")?.report_content;
 
-      if (!analysisReport || !actionReport) {
-        toast.error("PPTXを生成するには「数値評価・課題分析」と「解決策・来月アクション」の両方のレポートが必要です。先にAI分析タブから生成してください。");
+      if (!analysisReport && !actionReport) {
+        toast.error("先にレポートを生成してください");
         return;
       }
 
