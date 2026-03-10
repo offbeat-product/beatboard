@@ -8,6 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const SELF_PATTERNS = ["Off Beat株式会社（自社）", "Off Beat株式会社(自社)"];
+const MEMBER_ORDER = ["中村", "岩谷", "久恒", "石川", "林"];
 const isSelfWork = (name: string) => !name || SELF_PATTERNS.includes(name);
 const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
 
@@ -20,7 +21,7 @@ interface MemberClassRow {
 
 export function MemberResourceTable() {
   const fiscalMonths = getFiscalYearMonths(2026);
-  const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  const [selectedMember, setSelectedMember] = useState<string>("");
 
   const hoursQuery = useQuery({
     queryKey: ["member_client_monthly_hours"],
@@ -92,7 +93,14 @@ export function MemberResourceTable() {
 
     // Get unique members
     const memberSet = new Set(filtered.map((h) => h.member_name));
-    const members = Array.from(memberSet).sort();
+    // Sort by predefined order
+    const members = Array.from(memberSet).sort((a, b) => {
+      const idxA = MEMBER_ORDER.findIndex((n) => a.includes(n));
+      const idxB = MEMBER_ORDER.findIndex((n) => b.includes(n));
+      const oA = idxA >= 0 ? idxA : 999;
+      const oB = idxB >= 0 ? idxB : 999;
+      return oA - oB;
+    });
 
     // Per member, per month: totalHours, projectHours
     const result: Record<string, Record<string, { total: number; project: number }>> = {};
@@ -178,31 +186,22 @@ export function MemberResourceTable() {
     return "";
   };
 
-  const displayMembers = selectedMember ? [selectedMember] : members;
+  // Default to first member (中村)
+  const activeMember = selectedMember && members.includes(selectedMember) ? selectedMember : members[0];
+  const displayMembers = [activeMember];
 
   return (
     <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
       <h3 className="text-sm font-semibold mb-3">メンバー別 リソース内訳</h3>
       {/* Tabs */}
       <div className="flex flex-wrap gap-1.5 mb-4">
-        <button
-          onClick={() => setSelectedMember(null)}
-          className={cn(
-            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-            selectedMember === null
-              ? "bg-primary text-primary-foreground"
-              : "bg-secondary text-muted-foreground hover:bg-accent"
-          )}
-        >
-          全員
-        </button>
         {members.map((m) => (
           <button
             key={m}
             onClick={() => setSelectedMember(m)}
             className={cn(
               "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-              selectedMember === m
+              activeMember === m
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-muted-foreground hover:bg-accent"
             )}
@@ -225,20 +224,9 @@ export function MemberResourceTable() {
         <TableBody>
           {displayMembers.map((member) => (
             <>
-              {/* Member header row (only in 全員 mode) */}
-              {selectedMember === null && (
-                <TableRow key={`${member}-header`} className="bg-muted/50">
-                  <TableCell
-                    colSpan={fiscalMonths.length + 1}
-                    className="font-semibold text-xs sticky left-0 z-10 bg-muted/50"
-                  >
-                    {member}
-                  </TableCell>
-                </TableRow>
-              )}
               {rowDefs.map((rd) => (
                 <TableRow key={`${member}-${rd.key}`}>
-                  <TableCell className={cn("text-xs sticky left-0 bg-card z-10 whitespace-nowrap", selectedMember === null ? "pl-6" : "pl-3 font-medium")}>
+                  <TableCell className="text-xs pl-3 font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
                     {rd.label}
                   </TableCell>
                   {fiscalMonths.map((ym) => (
