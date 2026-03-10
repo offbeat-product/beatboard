@@ -53,6 +53,13 @@ interface ResourceSummary {
   utilizationRate: number;
 }
 
+interface MemberClientHours {
+  memberName: string;
+  clientName: string;
+  clientId: string;
+  hours: number;
+}
+
 interface PreviewData {
   months: string[];
   excludedMemberRows: number;
@@ -61,6 +68,7 @@ interface PreviewData {
   summaryByMonth: Record<string, ClientSummary[]>;
   memberSummaryByMonth: Record<string, MemberSummary[]>;
   resourceSummaryByMonth: Record<string, ResourceSummary>;
+  memberClientByMonth: Record<string, MemberClientHours[]>;
 }
 
 interface MemberClassRow {
@@ -221,6 +229,7 @@ export function PaceCsvUpload() {
     const summaryByMonth: Record<string, ClientSummary[]> = {};
     const memberSummaryByMonth: Record<string, MemberSummary[]> = {};
     const resourceSummaryByMonth: Record<string, ResourceSummary> = {};
+    const memberClientByMonth: Record<string, MemberClientHours[]> = {};
 
     for (const ym of months) {
       const monthRows = parsed.filter((r) => getYearMonth(r.date) === ym);
@@ -279,6 +288,27 @@ export function PaceCsvUpload() {
       const totalAll = ftTotal + ptTotal;
       const projectAll = ftProject + ptProject;
 
+      // --- Member × Client summary (exclude 井手 大貴, exclude self) ---
+      const memberClientRows = monthRows.filter((r) => {
+        if (r.member.includes("井手 大貴")) return false;
+        if (isSelfWork(r.clientName)) return false;
+        return true;
+      });
+      const byMemberClient: Record<string, number> = {};
+      for (const r of memberClientRows) {
+        const key = `${r.member}|||${r.clientName}`;
+        byMemberClient[key] = (byMemberClient[key] ?? 0) + r.hours;
+      }
+      memberClientByMonth[ym] = Object.entries(byMemberClient).map(([key, hours]) => {
+        const [memberName, clName] = key.split("|||");
+        return {
+          memberName,
+          clientName: clName,
+          clientId: clientMap.get(clName) ?? clName,
+          hours: Math.round(hours * 10) / 10,
+        };
+      });
+
       resourceSummaryByMonth[ym] = {
         fulltimeCount: fulltime.length,
         fulltimeTotalHours: Math.round(ftTotal * 10) / 10,
@@ -300,6 +330,7 @@ export function PaceCsvUpload() {
       summaryByMonth,
       memberSummaryByMonth,
       resourceSummaryByMonth,
+      memberClientByMonth,
     });
 
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -319,7 +350,23 @@ export function PaceCsvUpload() {
           );
         }
 
-        // 2. Save resource metrics to kpi_snapshots
+        // 2. Save member_client_monthly_hours
+        const memberClientData = preview.memberClientByMonth[ym] ?? [];
+        for (const mc of memberClientData) {
+          await (supabase.from("member_client_monthly_hours" as any) as any).upsert(
+            {
+              org_id: ORG_ID,
+              year_month: ym,
+              member_name: mc.memberName,
+              client_id: mc.clientId,
+              client_name: mc.clientName,
+              hours: mc.hours,
+            },
+            { onConflict: "org_id,year_month,member_name,client_name" }
+          );
+        }
+
+        // 3. Save resource metrics to kpi_snapshots
         const res = preview.resourceSummaryByMonth[ym];
         const snapshotDate = getLastDayOfMonth(ym);
 

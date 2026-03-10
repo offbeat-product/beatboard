@@ -425,6 +425,39 @@ export type Database = {
         }
         Relationships: []
       }
+      member_client_monthly_hours: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string | null
+          hours: number
+          id: string
+          member_name: string
+          org_id: string
+          year_month: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string | null
+          hours?: number
+          id?: string
+          member_name: string
+          org_id: string
+          year_month: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string | null
+          hours?: number
+          id?: string
+          member_name?: string
+          org_id?: string
+          year_month?: string
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           created_at: string
