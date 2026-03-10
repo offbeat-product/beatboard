@@ -143,6 +143,7 @@ const Finance = () => {
     if (["arDays", "apDays"].includes(key)) return v > 0 ? v.toFixed(1) : "—";
     if (key === "workingCapitalMonths") return v > 0 ? v.toFixed(1) : "—";
     if (["income", "expense"].includes(key)) return v > 0 ? fmtYen(v) : "—";
+    if (["totalAssets", "totalLiabilities", "netAssets"].includes(key)) return v !== 0 ? fmtYen(v) : "—";
     return formatAmount(v);
   };
 
