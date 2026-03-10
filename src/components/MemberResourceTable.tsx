@@ -204,6 +204,9 @@ export function MemberResourceTable() {
                       {getCellValue(member, ym, rd.key)}
                     </TableCell>
                   ))}
+                  <TableCell className="text-center text-xs font-mono tabular-nums whitespace-nowrap bg-muted/50 font-semibold">
+                    {getAnnualValue(member, rd.key)}
+                  </TableCell>
                 </TableRow>
               ))}
             </>
