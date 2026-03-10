@@ -44,6 +44,7 @@ export function ClientGphTable() {
   const [hoursEdits, setHoursEdits] = useState<Record<string, Record<string, number>>>({});
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
 
   // Fetch project_pl for Nov-Apr
   const projectPlQuery = useQuery({
