@@ -288,6 +288,27 @@ export function PaceCsvUpload() {
       const totalAll = ftTotal + ptTotal;
       const projectAll = ftProject + ptProject;
 
+      // --- Member × Client summary (exclude 井手 大貴, exclude self) ---
+      const memberClientRows = monthRows.filter((r) => {
+        if (r.member.includes("井手 大貴")) return false;
+        if (isSelfWork(r.clientName)) return false;
+        return true;
+      });
+      const byMemberClient: Record<string, number> = {};
+      for (const r of memberClientRows) {
+        const key = `${r.member}|||${r.clientName}`;
+        byMemberClient[key] = (byMemberClient[key] ?? 0) + r.hours;
+      }
+      memberClientByMonth[ym] = Object.entries(byMemberClient).map(([key, hours]) => {
+        const [memberName, clName] = key.split("|||");
+        return {
+          memberName,
+          clientName: clName,
+          clientId: clientMap.get(clName) ?? clName,
+          hours: Math.round(hours * 10) / 10,
+        };
+      });
+
       resourceSummaryByMonth[ym] = {
         fulltimeCount: fulltime.length,
         fulltimeTotalHours: Math.round(ftTotal * 10) / 10,
