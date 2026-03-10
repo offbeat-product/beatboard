@@ -8,6 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const SELF_PATTERNS = ["Off Beat株式会社（自社）", "Off Beat株式会社(自社)"];
+const MEMBER_ORDER = ["中村", "岩谷", "久恒", "石川", "林"];
 const isSelfWork = (name: string) => !name || SELF_PATTERNS.includes(name);
 const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
 
