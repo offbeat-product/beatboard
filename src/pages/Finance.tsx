@@ -121,9 +121,16 @@ const Finance = () => {
     { label: "運転資金月数", key: "workingCapitalMonths", summaryType: "avg" },
   ];
 
+  const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
+
   const getCellValue = (row: typeof d.rows[0], key: string): string => {
     const hasFinance = d.financeMap.has(row.month);
-    if (!hasFinance && !["cashDelta"].includes(key)) return "—";
+    if (!hasFinance && !["cashDelta", "cashFlow"].includes(key)) return "—";
+    if (key === "cashFlow") {
+      if (!hasFinance) return "—";
+      const cf = row.income - row.expense;
+      return fmtYen(cf);
+    }
     const v = (row as any)[key] as number;
     if (key === "cashDelta") {
       const idx = d.fiscalMonths.indexOf(row.month);
@@ -132,6 +139,7 @@ const Finance = () => {
     }
     if (["arDays", "apDays"].includes(key)) return v > 0 ? v.toFixed(1) : "—";
     if (key === "workingCapitalMonths") return v > 0 ? v.toFixed(1) : "—";
+    if (["income", "expense"].includes(key)) return v > 0 ? fmtYen(v) : "—";
     return formatAmount(v);
   };
 
