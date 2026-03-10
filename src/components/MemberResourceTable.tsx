@@ -20,6 +20,7 @@ interface MemberClassRow {
 
 export function MemberResourceTable() {
   const fiscalMonths = getFiscalYearMonths(2026);
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
 
   const hoursQuery = useQuery({
     queryKey: ["member_client_monthly_hours"],
