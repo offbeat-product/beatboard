@@ -215,8 +215,8 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />
-        <FetchLatestButton targets="both" />
+        {!embedded && <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />}
+        {!embedded && <FetchLatestButton targets="both" />}
       </div>
 
       {/* KPI Cards */}
