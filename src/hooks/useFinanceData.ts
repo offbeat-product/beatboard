@@ -94,6 +94,9 @@ export function useFinanceData() {
       interest_expense: Number(r.interest_expense ?? 0),
       income_amount: Number(r.income_amount ?? 0),
       expense_amount: Number(r.expense_amount ?? 0),
+      total_assets: Number(r.total_assets ?? 0),
+      total_liabilities: Number(r.total_liabilities ?? 0),
+      net_assets: Number(r.net_assets ?? 0),
     });
   });
 
