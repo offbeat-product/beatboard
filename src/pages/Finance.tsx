@@ -22,8 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-const Finance = () => {
-  usePageTitle("財務指標");
+const Finance = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "財務指標");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useFinanceData();
