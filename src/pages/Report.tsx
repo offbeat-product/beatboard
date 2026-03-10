@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useReportData } from "@/hooks/useReportData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Download, ChevronDown, Sparkles, Loader2 } from "lucide-react";
+import { Download, ChevronDown, Sparkles, Loader2, FileText, Presentation } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+
+const N8N_WEBHOOK_URL = "https://offbeat-inc.app.n8n.cloud/webhook/wf06-report-generate";
 
 /* ── Helpers ── */
 function prevMonth(ym: string): string {
