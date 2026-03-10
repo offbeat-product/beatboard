@@ -224,20 +224,9 @@ export function MemberResourceTable() {
         <TableBody>
           {displayMembers.map((member) => (
             <>
-              {/* Member header row (only in 全員 mode) */}
-              {selectedMember === null && (
-                <TableRow key={`${member}-header`} className="bg-muted/50">
-                  <TableCell
-                    colSpan={fiscalMonths.length + 1}
-                    className="font-semibold text-xs sticky left-0 z-10 bg-muted/50"
-                  >
-                    {member}
-                  </TableCell>
-                </TableRow>
-              )}
               {rowDefs.map((rd) => (
                 <TableRow key={`${member}-${rd.key}`}>
-                  <TableCell className={cn("text-xs sticky left-0 bg-card z-10 whitespace-nowrap", selectedMember === null ? "pl-6" : "pl-3 font-medium")}>
+                  <TableCell className="text-xs pl-3 font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
                     {rd.label}
                   </TableCell>
                   {fiscalMonths.map((ym) => (
