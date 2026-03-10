@@ -341,9 +341,45 @@ const Finance = () => {
                         "text-right text-xs font-mono-num bg-muted/30 font-semibold",
                         def.key === "cashFlow" && totalCashFlow < 0 && "text-destructive",
                         def.key === "cashFlow" && totalCashFlow > 0 && "text-chart-green",
-                        def.key === "netAssets" && lastRow && lastRow.netAssets < 0 && "text-destructive",
                       )}>
                         {getSummaryValue(def)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* B/S Table */}
+          <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
+            <h3 className="text-sm font-semibold mb-4">月次貸借対照表（B/S）</h3>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]">項目</TableHead>
+                    {d.rows.map((r) => (
+                      <TableHead key={r.month} className="text-right min-w-[90px]">{r.label}</TableHead>
+                    ))}
+                    <TableHead className="text-right min-w-[100px] bg-muted/30">直近</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bsDefs.map((def) => (
+                    <TableRow key={def.key}>
+                      <TableCell className="sticky left-0 bg-card z-10 font-medium text-xs">{def.label}</TableCell>
+                      {d.rows.map((r) => (
+                        <TableCell key={r.month} className={cn("text-right text-xs font-mono-num", getBsCellClass(r, def.key))}>
+                          {getBsValue(r, def.key)}
+                        </TableCell>
+                      ))}
+                      <TableCell className={cn(
+                        "text-right text-xs font-mono-num bg-muted/30 font-semibold",
+                        def.key === "netAssets" && lastRow && lastRow.netAssets < 0 && "text-destructive",
+                        def.key === "equityRatio" && lastRow && lastRow.totalAssets > 0 && lastRow.netAssets < 0 && "text-destructive",
+                      )}>
+                        {getBsSummary(def.key)}
                       </TableCell>
                     </TableRow>
                   ))}
