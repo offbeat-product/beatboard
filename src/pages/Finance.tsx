@@ -147,8 +147,9 @@ const Finance = () => {
     if (def.summaryType === "none") return "—";
     if (def.summaryType === "last") return lastRow ? formatAmount((lastRow as any)[def.key]) : "—";
     if (def.summaryType === "sum") {
-      if (def.key === "income") return formatAmount(totalIncome);
-      if (def.key === "expense") return formatAmount(totalExpense);
+      if (def.key === "income") return fmtYen(totalIncome);
+      if (def.key === "expense") return fmtYen(totalExpense);
+      if (def.key === "cashFlow") return fmtYen(totalCashFlow);
       if (def.key === "interest") return formatAmount(totalInterest);
     }
     if (def.summaryType === "avg") {
