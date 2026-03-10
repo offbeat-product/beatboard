@@ -158,7 +158,10 @@ const Finance = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />
+      <div className="flex items-center justify-between">
+        <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />
+        <FetchLatestButton targets="both" />
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
