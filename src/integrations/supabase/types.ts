@@ -225,6 +225,51 @@ export type Database = {
           },
         ]
       }
+      finance_monthly: {
+        Row: {
+          accounts_payable: number | null
+          accounts_receivable: number | null
+          borrowings: number | null
+          cash_and_deposits: number | null
+          created_at: string | null
+          expense_amount: number | null
+          id: string
+          income_amount: number | null
+          interest_expense: number | null
+          org_id: string
+          updated_at: string | null
+          year_month: string
+        }
+        Insert: {
+          accounts_payable?: number | null
+          accounts_receivable?: number | null
+          borrowings?: number | null
+          cash_and_deposits?: number | null
+          created_at?: string | null
+          expense_amount?: number | null
+          id?: string
+          income_amount?: number | null
+          interest_expense?: number | null
+          org_id: string
+          updated_at?: string | null
+          year_month: string
+        }
+        Update: {
+          accounts_payable?: number | null
+          accounts_receivable?: number | null
+          borrowings?: number | null
+          cash_and_deposits?: number | null
+          created_at?: string | null
+          expense_amount?: number | null
+          id?: string
+          income_amount?: number | null
+          interest_expense?: number | null
+          org_id?: string
+          updated_at?: string | null
+          year_month?: string
+        }
+        Relationships: []
+      }
       freee_monthly_pl: {
         Row: {
           cost_of_sales: number | null
