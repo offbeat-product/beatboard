@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useReportData } from "@/hooks/useReportData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
-import { CURRENT_MONTH } from "@/lib/fiscalYear";
+import { CURRENT_MONTH, ORG_ID } from "@/lib/fiscalYear";
 import { SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { supabase } from "@/integrations/supabase/client";
 
 const N8N_WEBHOOK_URL = "https://offbeat-inc.app.n8n.cloud/webhook/wf06-report-generate";
 
