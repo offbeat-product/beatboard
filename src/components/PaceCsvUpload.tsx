@@ -53,6 +53,13 @@ interface ResourceSummary {
   utilizationRate: number;
 }
 
+interface MemberClientHours {
+  memberName: string;
+  clientName: string;
+  clientId: string;
+  hours: number;
+}
+
 interface PreviewData {
   months: string[];
   excludedMemberRows: number;
@@ -61,6 +68,7 @@ interface PreviewData {
   summaryByMonth: Record<string, ClientSummary[]>;
   memberSummaryByMonth: Record<string, MemberSummary[]>;
   resourceSummaryByMonth: Record<string, ResourceSummary>;
+  memberClientByMonth: Record<string, MemberClientHours[]>;
 }
 
 interface MemberClassRow {
