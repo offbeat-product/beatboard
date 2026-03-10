@@ -87,8 +87,41 @@ const Report = () => {
   const [actionContent, setActionContent] = useState("");
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [analysisGeneratedAt, setAnalysisGeneratedAt] = useState<string | null>(null);
+  const [actionGeneratedAt, setActionGeneratedAt] = useState<string | null>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
   const actionRef = useRef<HTMLDivElement>(null);
+
+  // Load cached reports when month changes
+  useEffect(() => {
+    let cancelled = false;
+    const loadCache = async () => {
+      const { data } = await supabase
+        .from("report_cache")
+        .select("report_type, report_content, generated_at")
+        .eq("org_id", ORG_ID)
+        .eq("year_month", selectedYm)
+        .in("report_type", ["analysis", "action"]);
+      if (cancelled || !data) return;
+      const analysis = data.find((r) => r.report_type === "analysis");
+      const action = data.find((r) => r.report_type === "action");
+      setAnalysisContent(analysis?.report_content ?? "");
+      setAnalysisGeneratedAt(analysis?.generated_at ?? null);
+      setActionContent(action?.report_content ?? "");
+      setActionGeneratedAt(action?.generated_at ?? null);
+    };
+    loadCache();
+    return () => { cancelled = true; };
+  }, [selectedYm]);
+
+  const upsertCache = useCallback(async (reportType: string, content: string) => {
+    const now = new Date().toISOString();
+    await supabase.from("report_cache").upsert(
+      { org_id: ORG_ID, year_month: selectedYm, report_type: reportType, report_content: content, generated_at: now },
+      { onConflict: "org_id,year_month,report_type" }
+    );
+    return now;
+  }, [selectedYm]);
 
   const callN8nWebhook = useCallback(async (reportType: "analysis" | "action"): Promise<string> => {
     const resp = await fetch(N8N_WEBHOOK_URL, {
@@ -111,12 +144,14 @@ const Report = () => {
     try {
       const report = await callN8nWebhook("analysis");
       setAnalysisContent(report);
+      const ts = await upsertCache("analysis", report);
+      setAnalysisGeneratedAt(ts);
     } catch (e: any) {
       toast.error(e.message || "分析レポートの生成に失敗しました");
     } finally {
       setAnalysisLoading(false);
     }
-  }, [callN8nWebhook]);
+  }, [callN8nWebhook, upsertCache]);
 
   const handleGenerateAction = useCallback(async () => {
     if (!analysisContent) {
@@ -128,12 +163,14 @@ const Report = () => {
     try {
       const report = await callN8nWebhook("action");
       setActionContent(report);
+      const ts = await upsertCache("action", report);
+      setActionGeneratedAt(ts);
     } catch (e: any) {
       toast.error(e.message || "アクション提案の生成に失敗しました");
     } finally {
       setActionLoading(false);
     }
-  }, [analysisContent, callN8nWebhook]);
+  }, [analysisContent, callN8nWebhook, upsertCache]);
 
   const handleExportPdf = useCallback(async (content: string, title: string) => {
     if (!content) {
