@@ -267,18 +267,28 @@ const Report = () => {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled={!activeReportContent}>
                 <Download className="h-4 w-4 mr-1.5" />
                 レポート生成
                 <ChevronDown className="h-3.5 w-3.5 ml-1" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => toast.info("PDF生成機能は準備中です")}>
-                PDF生成
+              <DropdownMenuItem onClick={() => handleExportPdf(analysisContent, "数値評価・課題分析")} disabled={!analysisContent}>
+                <FileText className="h-4 w-4 mr-2" />
+                数値評価・課題分析をPDFで保存
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast.info("PPTX生成機能は準備中です")}>
-                PPTX生成
+              <DropdownMenuItem onClick={() => handleExportPdf(actionContent, "解決策・来月アクション")} disabled={!actionContent}>
+                <FileText className="h-4 w-4 mr-2" />
+                解決策・アクションをPDFで保存
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportPptx(analysisContent, "数値評価・課題分析")} disabled={!analysisContent}>
+                <Presentation className="h-4 w-4 mr-2" />
+                数値評価・課題分析をPPTXで保存
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportPptx(actionContent, "解決策・来月アクション")} disabled={!actionContent}>
+                <Presentation className="h-4 w-4 mr-2" />
+                解決策・アクションをPPTXで保存
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
