@@ -1004,7 +1004,9 @@ const Plan = () => {
         <TabsList>
           <TabsTrigger value="2026">当期（2026年4月期）</TabsTrigger>
           <TabsTrigger value="2027">来期（2027年4月期）</TabsTrigger>
-          <TabsTrigger value="2028">再来期（2028年4月期）</TabsTrigger>
+          <TabsTrigger value="2028">3期目（2028年4月期）</TabsTrigger>
+          <TabsTrigger value="2029">4期目（2029年4月期）</TabsTrigger>
+          <TabsTrigger value="2030">5期目（2030年4月期）</TabsTrigger>
         </TabsList>
 
         <TabsContent value={fyTab} className="space-y-6 mt-4">
