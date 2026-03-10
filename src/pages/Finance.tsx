@@ -119,6 +119,9 @@ const Finance = () => {
     { label: "借入金残高", key: "borrowings", summaryType: "last" },
     { label: "支払利息", key: "interest", summaryType: "sum" },
     { label: "運転資金月数", key: "workingCapitalMonths", summaryType: "avg" },
+    { label: "資産合計", key: "totalAssets", summaryType: "last" },
+    { label: "負債合計", key: "totalLiabilities", summaryType: "last" },
+    { label: "純資産", key: "netAssets", summaryType: "last" },
   ];
 
   const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
@@ -140,6 +143,7 @@ const Finance = () => {
     if (["arDays", "apDays"].includes(key)) return v > 0 ? v.toFixed(1) : "—";
     if (key === "workingCapitalMonths") return v > 0 ? v.toFixed(1) : "—";
     if (["income", "expense"].includes(key)) return v > 0 ? fmtYen(v) : "—";
+    if (["totalAssets", "totalLiabilities", "netAssets"].includes(key)) return v !== 0 ? fmtYen(v) : "—";
     return formatAmount(v);
   };
 
@@ -171,6 +175,7 @@ const Finance = () => {
       if (cf < 0) return "text-destructive";
       if (cf > 0) return "text-chart-green";
     }
+    if (key === "netAssets" && row.netAssets < 0) return "text-destructive";
     return "";
   };
 
@@ -303,6 +308,7 @@ const Finance = () => {
                         "text-right text-xs font-mono-num bg-muted/30 font-semibold",
                         def.key === "cashFlow" && totalCashFlow < 0 && "text-destructive",
                         def.key === "cashFlow" && totalCashFlow > 0 && "text-chart-green",
+                        def.key === "netAssets" && lastRow && lastRow.netAssets < 0 && "text-destructive",
                       )}>
                         {getSummaryValue(def)}
                       </TableCell>

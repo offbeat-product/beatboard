@@ -11,6 +11,9 @@ export interface FinanceMonthly {
   interest_expense: number;
   income_amount: number;
   expense_amount: number;
+  total_assets: number;
+  total_liabilities: number;
+  net_assets: number;
 }
 
 export interface FinanceRow {
@@ -27,6 +30,9 @@ export interface FinanceRow {
   borrowings: number;
   interest: number;
   workingCapitalMonths: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  netAssets: number;
 }
 
 export function useFinanceData() {
@@ -88,6 +94,9 @@ export function useFinanceData() {
       interest_expense: Number(r.interest_expense ?? 0),
       income_amount: Number(r.income_amount ?? 0),
       expense_amount: Number(r.expense_amount ?? 0),
+      total_assets: Number(r.total_assets ?? 0),
+      total_liabilities: Number(r.total_liabilities ?? 0),
+      net_assets: Number(r.net_assets ?? 0),
     });
   });
 
@@ -137,6 +146,9 @@ export function useFinanceData() {
       borrowings: f?.borrowings ?? 0,
       interest: f?.interest_expense ?? 0,
       workingCapitalMonths: avgSga > 0 ? cash / avgSga : 0,
+      totalAssets: f?.total_assets ?? 0,
+      totalLiabilities: f?.total_liabilities ?? 0,
+      netAssets: f?.net_assets ?? 0,
     };
   });
 
