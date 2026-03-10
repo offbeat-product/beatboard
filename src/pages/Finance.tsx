@@ -114,6 +114,7 @@ const Finance = () => {
     { label: "買掛回転日数", key: "apDays", summaryType: "avg" },
     { label: "入金額", key: "income", summaryType: "sum" },
     { label: "出金額", key: "expense", summaryType: "sum" },
+    { label: "収支差額", key: "cashFlow", summaryType: "sum" },
     { label: "借入金残高", key: "borrowings", summaryType: "last" },
     { label: "支払利息", key: "interest", summaryType: "sum" },
     { label: "運転資金月数", key: "workingCapitalMonths", summaryType: "avg" },
