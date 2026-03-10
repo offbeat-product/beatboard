@@ -24,6 +24,7 @@ import { ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
+import { MemberResourceTable } from "@/components/MemberResourceTable";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
