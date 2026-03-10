@@ -231,8 +231,8 @@ export function MemberResourceTable() {
     <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
       <h3 className="text-sm font-semibold mb-3">メンバー別 リソース内訳</h3>
       {/* Tabs */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
-        {members.map((m) => (
+      <div className="flex flex-wrap items-center gap-1.5 mb-4">
+        {sortedMembers.map((m) => (
           <button
             key={m}
             onClick={() => setSelectedMember(m)}
@@ -246,6 +246,19 @@ export function MemberResourceTable() {
             {m}
           </button>
         ))}
+        <button
+          onClick={cycleSortOrder}
+          className={cn(
+            "ml-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1",
+            sortOrder !== "default"
+              ? "bg-primary/10 text-primary"
+              : "bg-secondary text-muted-foreground hover:bg-accent"
+          )}
+          title="粗利工数単価で並べ替え"
+        >
+          {sortOrder === "desc" ? <ArrowDown className="h-3 w-3" /> : sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3" />}
+          GPH順
+        </button>
       </div>
       <Table>
         <TableHeader>
