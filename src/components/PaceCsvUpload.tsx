@@ -330,6 +330,7 @@ export function PaceCsvUpload() {
       summaryByMonth,
       memberSummaryByMonth,
       resourceSummaryByMonth,
+      memberClientByMonth,
     });
 
     if (fileInputRef.current) fileInputRef.current.value = "";
