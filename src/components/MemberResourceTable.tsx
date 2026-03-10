@@ -182,6 +182,7 @@ export function MemberResourceTable() {
                 {getMonthLabel(ym)}
               </TableHead>
             ))}
+            <TableHead className="text-center whitespace-nowrap min-w-[90px] bg-muted/50 font-semibold">通期平均</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
