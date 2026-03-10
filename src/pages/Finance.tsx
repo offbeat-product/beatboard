@@ -299,7 +299,11 @@ const Finance = () => {
                           {getCellValue(r, def.key)}
                         </TableCell>
                       ))}
-                      <TableCell className="text-right text-xs font-mono-num bg-muted/30 font-semibold">
+                      <TableCell className={cn(
+                        "text-right text-xs font-mono-num bg-muted/30 font-semibold",
+                        def.key === "cashFlow" && totalCashFlow < 0 && "text-destructive",
+                        def.key === "cashFlow" && totalCashFlow > 0 && "text-chart-green",
+                      )}>
                         {getSummaryValue(def)}
                       </TableCell>
                     </TableRow>
