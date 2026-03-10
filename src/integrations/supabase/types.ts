@@ -236,7 +236,10 @@ export type Database = {
           id: string
           income_amount: number | null
           interest_expense: number | null
+          net_assets: number | null
           org_id: string
+          total_assets: number | null
+          total_liabilities: number | null
           updated_at: string | null
           year_month: string
         }
@@ -250,7 +253,10 @@ export type Database = {
           id?: string
           income_amount?: number | null
           interest_expense?: number | null
+          net_assets?: number | null
           org_id: string
+          total_assets?: number | null
+          total_liabilities?: number | null
           updated_at?: string | null
           year_month: string
         }
@@ -264,7 +270,10 @@ export type Database = {
           id?: string
           income_amount?: number | null
           interest_expense?: number | null
+          net_assets?: number | null
           org_id?: string
+          total_assets?: number | null
+          total_liabilities?: number | null
           updated_at?: string | null
           year_month?: string
         }
