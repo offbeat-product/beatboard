@@ -145,7 +145,7 @@ export function MemberResourceTable() {
 
     if (key === "utilization" && total > 0) {
       const rate = (project / total) * 100;
-      if (rate < 50) return "text-destructive font-semibold";
+      if (rate < 70) return "text-destructive font-semibold";
     }
     return "";
   };
