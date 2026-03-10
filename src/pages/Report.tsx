@@ -758,8 +758,8 @@ const Report = () => {
               </p>
             )}
             {actionContent ? (
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown>{actionContent}</ReactMarkdown>
+              <div className="report-markdown max-w-4xl">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{actionContent}</ReactMarkdown>
               </div>
             ) : analysisContent && !actionLoading ? (
               <p className="text-sm text-muted-foreground">
