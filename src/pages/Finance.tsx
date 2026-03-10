@@ -375,7 +375,7 @@ const Finance = () => {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="px-5 pb-5 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
-              <p>・<strong>運転資金月数</strong> = 現預金残高 ÷ 月間販管費（安全水準: 3ヶ月以上）</p>
+              <p>・<strong>運転資金月数</strong> = 現預金残高 ÷ 月平均販管費（sga_total &gt; 1万円の月の平均、安全水準: 3ヶ月以上）</p>
               <p>・<strong>売掛回転日数</strong> = 売掛金残高 ÷ 月間売上 × 30</p>
               <p>・<strong>買掛回転日数</strong> = 買掛金残高 ÷ 月間原価 × 30</p>
               <p>・手動入力データは将来freee B/S API自動取得に切り替え予定</p>

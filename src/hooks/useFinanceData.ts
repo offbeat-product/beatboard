@@ -162,8 +162,8 @@ export function useFinanceData() {
     }
   }
 
-  // Current month SGA for safety line
-  const currentSga = sgaMap.get(currentMonth) ?? 0;
+  // Use average SGA for safety line
+  const currentSga = avgSga;
 
   return {
     isLoading,
