@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 const SELF_PATTERNS = ["Off Beat株式会社（自社）", "Off Beat株式会社(自社)"];
 const MEMBER_ORDER = ["中村", "岩谷", "久恒", "石川", "林"];
 const isSelfWork = (name: string) => !name || SELF_PATTERNS.includes(name);
-const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
 
 interface MemberClassRow {
   member_name: string;
@@ -44,23 +43,9 @@ export function MemberResourceTable() {
     },
   });
 
-  const salesQuery = useQuery({
-    queryKey: ["monthly_sales", "member_resource"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("monthly_sales")
-        .select("year_month, gross_profit")
-        .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const isLoading = hoursQuery.isLoading || classQuery.isLoading || salesQuery.isLoading;
+  const isLoading = hoursQuery.isLoading || classQuery.isLoading;
   const hours = hoursQuery.data ?? [];
   const classifications = classQuery.data ?? [];
-  const sales = salesQuery.data ?? [];
 
   // Exclude CEO members
   const ceoNames = useMemo(() =>
@@ -70,20 +55,11 @@ export function MemberResourceTable() {
 
   const isMemberActive = (memberName: string, ym: string): boolean => {
     const mc = classifications.find((c) => memberName.includes(c.member_name));
-    if (!mc) return true; // unknown → show
+    if (!mc) return true;
     if (mc.start_month && ym < mc.start_month) return false;
     if (mc.end_month && ym > mc.end_month) return false;
     return true;
   };
-
-  // Gross profit per month
-  const gpByMonth = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const s of sales) {
-      map[s.year_month] = (map[s.year_month] ?? 0) + s.gross_profit;
-    }
-    return map;
-  }, [sales]);
 
   // Filter out CEO, group by member
   const memberData = useMemo(() => {
@@ -91,18 +67,13 @@ export function MemberResourceTable() {
       (h) => !ceoNames.some((n) => h.member_name.includes(n))
     );
 
-    // Get unique members
     const memberSet = new Set(filtered.map((h) => h.member_name));
-    // Sort by predefined order
     const members = Array.from(memberSet).sort((a, b) => {
       const idxA = MEMBER_ORDER.findIndex((n) => a.includes(n));
       const idxB = MEMBER_ORDER.findIndex((n) => b.includes(n));
-      const oA = idxA >= 0 ? idxA : 999;
-      const oB = idxB >= 0 ? idxB : 999;
-      return oA - oB;
+      return (idxA >= 0 ? idxA : 999) - (idxB >= 0 ? idxB : 999);
     });
 
-    // Per member, per month: totalHours, projectHours
     const result: Record<string, Record<string, { total: number; project: number }>> = {};
     for (const m of members) {
       result[m] = {};
@@ -131,8 +102,6 @@ export function MemberResourceTable() {
     { label: "総労働時間", key: "total" },
     { label: "案件工数", key: "project" },
     { label: "案件稼働率", key: "utilization" },
-    { label: "粗利工数単価", key: "gph" },
-    { label: "案件粗利工数単価", key: "projectGph" },
   ];
 
   const getCellValue = (member: string, ym: string, key: string): string => {
@@ -146,17 +115,6 @@ export function MemberResourceTable() {
     if (key === "utilization") {
       if (total === 0) return "—";
       return `${((project / total) * 100).toFixed(1)}%`;
-    }
-
-    const monthGp = gpByMonth[ym] ?? 0;
-
-    if (key === "gph") {
-      if (total === 0) return "—";
-      return fmtYen(monthGp / total);
-    }
-    if (key === "projectGph") {
-      if (project === 0) return "—";
-      return fmtYen(monthGp / project);
     }
     return "—";
   };
