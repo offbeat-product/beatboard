@@ -118,16 +118,7 @@ export function MemberResourceTable() {
       }
     }
 
-    // All members' project hours per month (for GP allocation)
-    const totalProjectByMonth: Record<string, number> = {};
-    for (const m of members) {
-      for (const ym of fiscalMonths) {
-        const proj = result[m]?.[ym]?.project ?? 0;
-        totalProjectByMonth[ym] = (totalProjectByMonth[ym] ?? 0) + proj;
-      }
-    }
-
-    return { members, data: result, totalProjectByMonth };
+    return { members, data: result };
   }, [hours, ceoNames, fiscalMonths]);
 
   const { members, data, totalProjectByMonth } = memberData;
