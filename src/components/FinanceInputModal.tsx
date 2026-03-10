@@ -49,7 +49,7 @@ export function FinanceInputModal({ open, onOpenChange, fiscalMonths, onSaved }:
 
       const { error } = await supabase
         .from("finance_monthly")
-        .upsert(row, { onConflict: "org_id,year_month" });
+        .upsert(row as any, { onConflict: "org_id,year_month" });
 
       if (error) throw error;
       toast.success("保存しました");
