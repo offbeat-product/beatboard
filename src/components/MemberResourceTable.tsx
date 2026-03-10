@@ -132,42 +132,8 @@ export function MemberResourceTable() {
 
   const { members, data, totalProjectByMonth } = memberData;
 
-  // Compute full-year GPH per member for sorting (must be before early returns)
-  const memberGphMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const m of members) {
-      let totalAllocGp = 0;
-      let totalHrs = 0;
-      for (const ym of fiscalMonths) {
-        const d2 = data[m]?.[ym];
-        const total = d2?.total ?? 0;
-        const project = d2?.project ?? 0;
-        const monthGp2 = gpByMonth[ym] ?? 0;
-        const totalProj2 = totalProjectByMonth[ym] ?? 0;
-        const allocGp = totalProj2 > 0 ? monthGp2 * (project / totalProj2) : 0;
-        totalAllocGp += allocGp;
-        totalHrs += total;
-      }
-      map[m] = totalHrs > 0 ? totalAllocGp / totalHrs : 0;
-    }
-    return map;
-  }, [members, data, fiscalMonths, gpByMonth, totalProjectByMonth]);
-
-  const sortedMembers = useMemo(() => {
-    if (sortOrder === "default") return members;
-    return [...members].sort((a, b) =>
-      sortOrder === "desc"
-        ? (memberGphMap[b] ?? 0) - (memberGphMap[a] ?? 0)
-        : (memberGphMap[a] ?? 0) - (memberGphMap[b] ?? 0)
-    );
-  }, [members, sortOrder, memberGphMap]);
-
   if (isLoading) return null;
   if (members.length === 0) return null;
-
-  const cycleSortOrder = () => {
-    setSortOrder((prev) => prev === "default" ? "desc" : prev === "desc" ? "asc" : "default");
-  };
 
   type RowDef = { label: string; key: string };
   const rowDefs: RowDef[] = [
