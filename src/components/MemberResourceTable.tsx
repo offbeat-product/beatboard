@@ -23,6 +23,7 @@ interface MemberClassRow {
 export function MemberResourceTable() {
   const fiscalMonths = getFiscalYearMonths(2026);
   const [selectedMember, setSelectedMember] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
 
   const hoursQuery = useQuery({
     queryKey: ["member_client_monthly_hours"],
