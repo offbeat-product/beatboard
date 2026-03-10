@@ -104,10 +104,15 @@ export function useFinanceData() {
     sgaMap.set(r.year_month, Number(r.sga_total ?? 0));
   });
 
+  // Calculate average SGA from months with meaningful data (> 10,000)
+  const sgaValues = Array.from(sgaMap.values()).filter((v) => v > 10000);
+  const avgSga = sgaValues.length > 0
+    ? sgaValues.reduce((sum, v) => sum + v, 0) / sgaValues.length
+    : 0;
+
   const rows: FinanceRow[] = fiscalMonths.map((ym, idx) => {
     const f = financeMap.get(ym);
     const s = salesMap.get(ym);
-    const sga = sgaMap.get(ym) ?? 0;
     const prevYm = idx > 0 ? fiscalMonths[idx - 1] : null;
     const prevF = prevYm ? financeMap.get(prevYm) : undefined;
 
@@ -131,7 +136,7 @@ export function useFinanceData() {
       expense: f?.expense_amount ?? 0,
       borrowings: f?.borrowings ?? 0,
       interest: f?.interest_expense ?? 0,
-      workingCapitalMonths: sga > 0 ? cash / sga : 0,
+      workingCapitalMonths: avgSga > 0 ? cash / avgSga : 0,
     };
   });
 
