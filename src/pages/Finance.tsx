@@ -166,6 +166,11 @@ const Finance = () => {
       if (row.workingCapitalMonths < 3) return "bg-chart-yellow/10";
     }
     if (key === "arDays" && row.arDays >= 60) return "text-destructive";
+    if (key === "cashFlow") {
+      const cf = row.income - row.expense;
+      if (cf < 0) return "text-destructive";
+      if (cf > 0) return "text-chart-green";
+    }
     return "";
   };
 
