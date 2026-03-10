@@ -152,11 +152,11 @@ export function MemberResourceTable() {
 
     if (key === "gph") {
       if (total === 0) return "—";
-      return fmtYen(allocatedGp / total);
+      return fmtYen(monthGp / total);
     }
     if (key === "projectGph") {
       if (project === 0) return "—";
-      return fmtYen(allocatedGp / project);
+      return fmtYen(monthGp / project);
     }
     return "—";
   };
