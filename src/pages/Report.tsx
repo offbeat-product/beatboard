@@ -767,7 +767,7 @@ const Report = () => {
         {/* ── Tab 6: Analysis ── */}
         <TabsContent value="analysis" className="space-y-4">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold">■ 数値評価・課題分析</h3>
               <Button onClick={handleGenerateAnalysis} disabled={analysisLoading} size="sm">
                 {analysisLoading ? (
@@ -778,6 +778,7 @@ const Report = () => {
                 分析レポートを生成
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mb-4">最終生成: {fmtGeneratedAt(analysisGeneratedAt)}</p>
             {analysisContent ? (
               <div className="report-markdown max-w-4xl">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisContent}</ReactMarkdown>
@@ -793,7 +794,7 @@ const Report = () => {
         {/* ── Tab 7: Action ── */}
         <TabsContent value="action" className="space-y-4">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold">■ 解決策・来月アクション</h3>
               <Button onClick={handleGenerateAction} disabled={actionLoading || !analysisContent} size="sm">
                 {actionLoading ? (
@@ -804,6 +805,7 @@ const Report = () => {
                 アクション提案を生成
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mb-4">最終生成: {fmtGeneratedAt(actionGeneratedAt)}</p>
             {!analysisContent && !actionContent && (
               <p className="text-sm text-muted-foreground">
                 先に「数値評価・課題分析」タブで分析レポートを生成してください。
