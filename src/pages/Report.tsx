@@ -218,40 +218,244 @@ const Report = () => {
       .catch(() => toast.error("PDF生成に失敗しました"));
   }, [ymLabel, selectedYm]);
 
-  const handleExportPptx = useCallback(async (content: string, title: string) => {
-    if (!content) {
-      toast.error("先にレポートを生成してください");
-      return;
-    }
+  const handleExportPptx = useCallback(async () => {
     toast.info("PPTX生成中...");
-    const PptxGenJS = (await import("pptxgenjs")).default;
-    const pptx = new PptxGenJS();
-    pptx.layout = "LAYOUT_16x9";
+    try {
+      // 1. Fetch both reports from report_cache
+      const { data } = await supabase
+        .from("report_cache")
+        .select("report_type, report_content")
+        .eq("org_id", ORG_ID)
+        .eq("year_month", selectedYm)
+        .in("report_type", ["analysis", "action"]);
 
-    // Split by ## headings into sections
-    const sections = content.split(/(?=^## )/gm).filter((s) => s.trim());
-    for (const section of sections) {
-      const slide = pptx.addSlide();
-      const lines = section.split("\n");
-      const heading = lines[0].replace(/^#+\s*/, "").trim();
-      const body = lines.slice(1).join("\n").trim()
-        .replace(/\*\*/g, "")
-        .replace(/^[-*]\s/gm, "• ");
+      const analysisReport = data?.find((r) => r.report_type === "analysis")?.report_content;
+      const actionReport = data?.find((r) => r.report_type === "action")?.report_content;
 
-      slide.addText(heading, {
-        x: 0.5, y: 0.3, w: 9, h: 0.8,
-        fontSize: 22, bold: true, color: "333333",
-      });
-      slide.addText(body, {
-        x: 0.5, y: 1.2, w: 9, h: 5.5,
-        fontSize: 12, color: "555555", valign: "top",
-        lineSpacing: 18,
-      });
+      if (!analysisReport || !actionReport) {
+        toast.error("PPTXを生成するには「数値評価・課題分析」と「解決策・来月アクション」の両方のレポートが必要です。先にAI分析タブから生成してください。");
+        return;
+      }
+
+      const PptxGenJS = (await import("pptxgenjs")).default;
+      const pptx = new PptxGenJS();
+      pptx.layout = "LAYOUT_16x9";
+
+      // ── Color palette ──
+      const C = {
+        black: "000000", dark: "1A1A1A", accent: "FF4500", orange: "FF6B00",
+        white: "FFFFFF", offWhite: "F8F8F8", lightGray: "E8E8E8",
+        midGray: "999999", darkText: "1A1A1A", bodyText: "4A4A4A",
+        green: "16A34A", red: "DC2626", yellow: "D97706", teal: "0D9488",
+      };
+      const FONT = "Arial";
+
+      const [yNum, mNum] = selectedYm.split("-").map(Number);
+      const ymDisplayLabel = `${yNum}年${mNum}月度`;
+
+      // ── Markdown parser ──
+      type PptxSlide = { title: string; blocks: SlideBlock[] };
+      type SlideBlock =
+        | { type: "text"; text: string; bold?: boolean }
+        | { type: "h3"; text: string }
+        | { type: "bullet"; items: { text: string; bold?: boolean }[] }
+        | { type: "table"; headers: string[]; rows: string[][] }
+        | { type: "quote"; text: string };
+
+      function parseMarkdownToSlides(md: string): PptxSlide[] {
+        const sections = md.split(/(?=^## )/gm).filter((s) => s.trim());
+        const slides: PptxSlide[] = [];
+
+        for (const section of sections) {
+          const lines = section.split("\n");
+          const title = lines[0].replace(/^#+\s*/, "").trim();
+          const blocks: SlideBlock[] = [];
+          let i = 1;
+
+          while (i < lines.length) {
+            const line = lines[i];
+
+            // Table detection
+            if (line.includes("|") && i + 1 < lines.length && lines[i + 1]?.match(/^\|[\s-:|]+\|/)) {
+              const headerLine = line;
+              i++; // skip separator
+              i++;
+              const headers = headerLine.split("|").map((c) => c.trim()).filter(Boolean);
+              const rows: string[][] = [];
+              while (i < lines.length && lines[i].includes("|") && !lines[i].match(/^#{1,3}\s/)) {
+                const cells = lines[i].split("|").map((c) => c.trim()).filter(Boolean);
+                rows.push(cells);
+                i++;
+              }
+              blocks.push({ type: "table", headers, rows });
+              continue;
+            }
+
+            // H3
+            if (line.match(/^### /)) {
+              blocks.push({ type: "h3", text: line.replace(/^###\s*/, "").replace(/\*\*/g, "") });
+              i++;
+              continue;
+            }
+
+            // Blockquote
+            if (line.match(/^>\s/)) {
+              const quoteLines: string[] = [];
+              while (i < lines.length && lines[i].match(/^>\s?/)) {
+                quoteLines.push(lines[i].replace(/^>\s?/, ""));
+                i++;
+              }
+              blocks.push({ type: "quote", text: quoteLines.join("\n").replace(/\*\*/g, "") });
+              continue;
+            }
+
+            // Bullet
+            if (line.match(/^[-*•]\s/)) {
+              const items: { text: string; bold?: boolean }[] = [];
+              while (i < lines.length && lines[i].match(/^[-*•]\s/)) {
+                const raw = lines[i].replace(/^[-*•]\s*/, "");
+                const hasBold = raw.includes("**");
+                items.push({ text: raw.replace(/\*\*/g, ""), bold: hasBold });
+                i++;
+              }
+              blocks.push({ type: "bullet", items });
+              continue;
+            }
+
+            // Regular text
+            if (line.trim()) {
+              const hasBold = line.includes("**");
+              blocks.push({ type: "text", text: line.replace(/\*\*/g, ""), bold: hasBold });
+            }
+            i++;
+          }
+
+          slides.push({ title, blocks });
+        }
+        return slides;
+      }
+
+      // ── Slide helpers ──
+      function addDarkSlide(pptx: InstanceType<typeof PptxGenJS>): ReturnType<typeof pptx.addSlide> {
+        const s = pptx.addSlide();
+        s.background = { color: C.dark };
+        return s;
+      }
+
+      function addContentSlide(pptx: InstanceType<typeof PptxGenJS>, title: string, blocks: SlideBlock[]) {
+        const s = pptx.addSlide();
+        // Header: orange bar + title
+        s.addShape(pptx.ShapeType.rect, { x: 0.4, y: 0.35, w: 0.08, h: 0.5, fill: { color: C.accent } });
+        s.addText(title, { x: 0.6, y: 0.3, w: 7, h: 0.6, fontSize: 18, bold: true, italic: true, color: C.darkText, fontFace: FONT });
+        // Right top: company name
+        s.addText("Off Beat Inc.", { x: 7.5, y: 0.3, w: 2, h: 0.4, fontSize: 9, color: C.midGray, align: "right", fontFace: FONT });
+        // Footer
+        s.addShape(pptx.ShapeType.rect, { x: 0.4, y: 6.85, w: 9.2, h: 0.01, fill: { color: C.lightGray } });
+        s.addText("©Off Beat Inc. All Rights Reserved.", { x: 0.4, y: 6.9, w: 9.2, h: 0.3, fontSize: 7, color: C.midGray, fontFace: FONT });
+
+        let curY = 1.1;
+        const maxY = 6.7;
+        const leftX = 0.5;
+        const contentW = 9;
+
+        for (const block of blocks) {
+          if (curY >= maxY) break;
+
+          if (block.type === "h3") {
+            s.addText(block.text, { x: leftX, y: curY, w: contentW, h: 0.35, fontSize: 14, bold: true, color: C.darkText, fontFace: FONT });
+            curY += 0.4;
+          } else if (block.type === "text") {
+            s.addText(block.text, { x: leftX, y: curY, w: contentW, h: 0.28, fontSize: 11, color: C.bodyText, fontFace: FONT, bold: block.bold });
+            curY += 0.3;
+          } else if (block.type === "bullet") {
+            const bulletTexts = block.items.map((item) => ({
+              text: item.text,
+              options: { fontSize: 11, color: C.bodyText, fontFace: FONT, bold: item.bold || false, bullet: true as const, lineSpacing: 18 },
+            }));
+            const bH = Math.min(block.items.length * 0.28, maxY - curY);
+            s.addText(bulletTexts, { x: leftX, y: curY, w: contentW, h: bH, valign: "top" });
+            curY += bH + 0.1;
+          } else if (block.type === "table") {
+            const headerRow = block.headers.map((h) => ({
+              text: h, options: { fontSize: 9, bold: true, color: C.white, fill: { color: C.black }, fontFace: FONT, align: "left" as const },
+            }));
+            const dataRows = block.rows.map((row) =>
+              row.map((cell) => ({
+                text: cell,
+                options: { fontSize: 9, color: C.darkText, fontFace: FONT, align: "left" as const },
+              }))
+            );
+            const colW = contentW / block.headers.length;
+            const tH = Math.min((block.rows.length + 1) * 0.3, maxY - curY);
+            s.addTable([headerRow, ...dataRows], {
+              x: leftX, y: curY, w: contentW, h: tH,
+              colW: Array(block.headers.length).fill(colW),
+              border: { pt: 0.5, color: C.lightGray },
+              rowH: 0.28,
+              autoPage: false,
+            });
+            curY += tH + 0.15;
+          } else if (block.type === "quote") {
+            const qH = Math.min(0.6, maxY - curY);
+            s.addShape(pptx.ShapeType.rect, { x: leftX, y: curY, w: contentW, h: qH, fill: { color: C.offWhite } });
+            s.addShape(pptx.ShapeType.rect, { x: leftX, y: curY, w: 0.06, h: qH, fill: { color: C.accent } });
+            s.addText(block.text, { x: leftX + 0.2, y: curY + 0.05, w: contentW - 0.3, h: qH - 0.1, fontSize: 10, italic: true, color: C.bodyText, fontFace: FONT, valign: "top" });
+            curY += qH + 0.15;
+          }
+        }
+      }
+
+      function addSectionDivider(pptx: InstanceType<typeof PptxGenJS>, num: string, title: string) {
+        const s = addDarkSlide(pptx);
+        s.addShape(pptx.ShapeType.rect, { x: 1.2, y: 2.8, w: 0.08, h: 1.2, fill: { color: C.accent } });
+        s.addText(`${num} | ${title}`, { x: 1.5, y: 2.8, w: 7, h: 1.2, fontSize: 28, bold: true, color: C.white, fontFace: FONT, valign: "middle" });
+      }
+
+      // ══════════════════════════════════════
+      // SLIDE 1 – Cover (dark)
+      // ══════════════════════════════════════
+      const cover = addDarkSlide(pptx);
+      cover.addShape(pptx.ShapeType.rect, { x: 0, y: 0.6, w: 10, h: 0.05, fill: { color: C.accent } });
+      cover.addText("Off Beat Inc.", { x: 0.5, y: 2.0, w: 9, h: 0.6, fontSize: 16, color: C.midGray, fontFace: FONT, align: "center" });
+      cover.addText("月次経営分析レポート", { x: 0.5, y: 2.7, w: 9, h: 1.0, fontSize: 32, bold: true, color: C.white, fontFace: FONT, align: "center" });
+      cover.addText(ymDisplayLabel, { x: 0.5, y: 3.8, w: 9, h: 0.6, fontSize: 18, color: C.midGray, fontFace: FONT, align: "center" });
+      cover.addText("• • • • •", { x: 7, y: 6.2, w: 2.5, h: 0.4, fontSize: 14, color: C.midGray, fontFace: FONT, align: "right" });
+
+      // ══════════════════════════════════════
+      // PART 2 – Analysis
+      // ══════════════════════════════════════
+      addSectionDivider(pptx, "01", "数値評価・課題分析");
+      const analysisSlides = parseMarkdownToSlides(analysisReport);
+      for (const sl of analysisSlides) {
+        addContentSlide(pptx, sl.title, sl.blocks);
+      }
+
+      // ══════════════════════════════════════
+      // PART 3 – Action
+      // ══════════════════════════════════════
+      addSectionDivider(pptx, "02", "解決策・来月アクション");
+      const actionSlides = parseMarkdownToSlides(actionReport);
+      for (const sl of actionSlides) {
+        addContentSlide(pptx, sl.title, sl.blocks);
+      }
+
+      // ══════════════════════════════════════
+      // CLOSING SLIDE
+      // ══════════════════════════════════════
+      const closing = addDarkSlide(pptx);
+      closing.addShape(pptx.ShapeType.rect, { x: 0, y: 0.6, w: 10, h: 0.05, fill: { color: C.accent } });
+      closing.addText("Off Beat Inc.", { x: 0.5, y: 2.8, w: 9, h: 0.6, fontSize: 20, color: C.white, fontFace: FONT, align: "center", bold: true });
+      const today = new Date();
+      const reportDate = `報告日: ${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+      closing.addText(reportDate, { x: 0.5, y: 3.6, w: 9, h: 0.4, fontSize: 12, color: C.midGray, fontFace: FONT, align: "center" });
+      closing.addText("• • • • •", { x: 7, y: 6.2, w: 2.5, h: 0.4, fontSize: 14, color: C.midGray, fontFace: FONT, align: "right" });
+
+      await pptx.writeFile({ fileName: `Off Beat_月次レポート_${selectedYm}.pptx` });
+      toast.success("PPTXを保存しました");
+    } catch (e: any) {
+      console.error("PPTX generation error:", e);
+      toast.error("PPTX生成に失敗しました");
     }
-
-    pptx.writeFile({ fileName: `${title}_${selectedYm}.pptx` })
-      .then(() => toast.success("PPTXを保存しました"))
-      .catch(() => toast.error("PPTX生成に失敗しました"));
   }, [selectedYm]);
 
   const activeReportContent = analysisContent || actionContent;
@@ -335,13 +539,9 @@ const Report = () => {
                 <FileText className="h-4 w-4 mr-2" />
                 解決策・アクションをPDFで保存
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPptx(analysisContent, "数値評価・課題分析")} disabled={!analysisContent}>
+              <DropdownMenuItem onClick={() => handleExportPptx()}>
                 <Presentation className="h-4 w-4 mr-2" />
-                数値評価・課題分析をPPTXで保存
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPptx(actionContent, "解決策・来月アクション")} disabled={!actionContent}>
-                <Presentation className="h-4 w-4 mr-2" />
-                解決策・アクションをPPTXで保存
+                PPTXで保存
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
