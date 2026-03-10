@@ -554,17 +554,13 @@ const Report = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExportPdf(analysisContent, "数値評価・課題分析")} disabled={!analysisContent}>
+              <DropdownMenuItem onClick={() => handleExportPdf()}>
                 <FileText className="h-4 w-4 mr-2" />
-                数値評価・課題分析をPDFで保存
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPdf(actionContent, "解決策・来月アクション")} disabled={!actionContent}>
-                <FileText className="h-4 w-4 mr-2" />
-                解決策・アクションをPDFで保存
+                PDFで保存（全レポート）
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExportPptx()}>
                 <Presentation className="h-4 w-4 mr-2" />
-                PPTXで保存
+                PPTXで保存（全レポート）
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
