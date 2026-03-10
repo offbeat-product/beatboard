@@ -148,8 +148,8 @@ const Report = () => {
     container.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">${title} - ${ymLabel}</h1>`;
     // Render markdown to HTML
     const tempDiv = document.createElement("div");
-    const { marked } = await import("react-markdown").then(() => import("marked"));
-    tempDiv.innerHTML = await marked(content);
+    const { marked } = await import("marked");
+    tempDiv.innerHTML = await marked(content) as string;
     container.appendChild(tempDiv);
 
     html2pdf()
