@@ -230,6 +230,8 @@ const Finance = () => {
                     <ReferenceLine yAxisId="left" y={safetyLine} stroke="hsl(var(--chart-red))" strokeDasharray="5 5" label={{ value: "安全水準(3ヶ月)", position: "right", fontSize: 10 }} />
                   )}
                   <Line yAxisId="right" type="monotone" dataKey="運転資金月数" stroke="hsl(var(--chart-green))" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line yAxisId="left" type="monotone" dataKey="入金額" stroke="hsl(var(--chart-blue))" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 3" />
+                  <Line yAxisId="left" type="monotone" dataKey="出金額" stroke="hsl(var(--chart-red))" strokeWidth={2} dot={{ r: 3 }} strokeDasharray="6 3" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
