@@ -25,6 +25,37 @@ import { toast } from "sonner";
 import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
 import { MemberResourceTable } from "@/components/MemberResourceTable";
+import { useQuery } from "@tanstack/react-query";
+
+function DebugMemberHours() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["debug_member_hours"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("member_client_monthly_hours" as any) as any)
+        .select("member_name, client_name, hours")
+        .eq("org_id", ORG_ID)
+        .eq("year_month", "2026-02")
+        .eq("member_name", "中村 健");
+      if (error) throw error;
+      return data as { member_name: string; client_name: string; hours: number }[];
+    },
+  });
+  if (isLoading) return <p className="text-xs text-muted-foreground">Loading debug data...</p>;
+  return (
+    <div className="bg-card rounded-lg shadow-sm p-4 border border-dashed border-destructive">
+      <h4 className="text-xs font-bold text-destructive mb-2">🐛 DEBUG: member_client_monthly_hours (2026-02, 中村 健)</h4>
+      <table className="text-xs w-full">
+        <thead><tr className="border-b"><th className="text-left p-1">member_name</th><th className="text-left p-1">client_name</th><th className="text-right p-1">hours</th></tr></thead>
+        <tbody>
+          {(data ?? []).map((r, i) => (
+            <tr key={i} className="border-b border-muted"><td className="p-1">{r.member_name}</td><td className="p-1">{r.client_name}</td><td className="text-right p-1">{r.hours}</td></tr>
+          ))}
+          {(!data || data.length === 0) && <tr><td colSpan={3} className="p-1 text-muted-foreground">No data found</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -504,6 +535,9 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
 
       {/* Member Resource Breakdown */}
       <MemberResourceTable />
+
+      {/* DEBUG: member_client_monthly_hours raw data */}
+      <DebugMemberHours />
 
       {/* Client GPH Table */}
       <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
