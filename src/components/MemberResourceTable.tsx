@@ -186,31 +186,22 @@ export function MemberResourceTable() {
     return "";
   };
 
-  const displayMembers = selectedMember ? [selectedMember] : members;
+  // Default to first member (中村)
+  const activeMember = selectedMember && members.includes(selectedMember) ? selectedMember : members[0];
+  const displayMembers = [activeMember];
 
   return (
     <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
       <h3 className="text-sm font-semibold mb-3">メンバー別 リソース内訳</h3>
       {/* Tabs */}
       <div className="flex flex-wrap gap-1.5 mb-4">
-        <button
-          onClick={() => setSelectedMember(null)}
-          className={cn(
-            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-            selectedMember === null
-              ? "bg-primary text-primary-foreground"
-              : "bg-secondary text-muted-foreground hover:bg-accent"
-          )}
-        >
-          全員
-        </button>
         {members.map((m) => (
           <button
             key={m}
             onClick={() => setSelectedMember(m)}
             className={cn(
               "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-              selectedMember === m
+              activeMember === m
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-muted-foreground hover:bg-accent"
             )}
