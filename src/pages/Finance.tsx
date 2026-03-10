@@ -172,7 +172,8 @@ const Finance = () => {
           delay={0}
         />
         <div className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow p-5 animate-fade-in" style={{ animationDelay: "50ms" }}>
-          <p className="text-xs text-muted-foreground mb-2">運転資金月数</p>
+          <p className="text-xs text-muted-foreground mb-1">運転資金月数</p>
+          <p className="text-[10px] text-muted-foreground mb-2">（月平均販管費ベース）</p>
           <div className="flex items-baseline gap-2">
             <span className={cn("text-2xl font-bold font-mono-num tracking-tight", wcmColor)}>
               {c.workingCapitalMonths > 0 ? `${c.workingCapitalMonths.toFixed(1)}ヶ月` : "—"}
@@ -374,7 +375,7 @@ const Finance = () => {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="px-5 pb-5 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
-              <p>・<strong>運転資金月数</strong> = 現預金残高 ÷ 月間販管費（安全水準: 3ヶ月以上）</p>
+              <p>・<strong>運転資金月数</strong> = 現預金残高 ÷ 月平均販管費（sga_total &gt; 1万円の月の平均、安全水準: 3ヶ月以上）</p>
               <p>・<strong>売掛回転日数</strong> = 売掛金残高 ÷ 月間売上 × 30</p>
               <p>・<strong>買掛回転日数</strong> = 買掛金残高 ÷ 月間原価 × 30</p>
               <p>・手動入力データは将来freee B/S API自動取得に切り替え予定</p>
