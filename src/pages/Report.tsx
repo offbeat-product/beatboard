@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Download, ChevronDown, Sparkles, Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -56,13 +57,20 @@ const colorClass = (actual: number, target: number, higherIsBetter = true) => {
 };
 
 const momColorClass = (v: number) => v > 0 ? "text-green-600" : v < 0 ? "text-destructive" : "";
+const negativeClass = (v: number) => v < 0 ? "text-destructive font-semibold" : "";
+const diffColorClass = (v: number) => v > 0 ? "text-green-600" : v < 0 ? "text-destructive" : "";
+
+const fmtDiff = (v: number, unit: string) => {
+  const prefix = v > 0 ? "+" : "";
+  return `${prefix}${fmtCurrency(v, unit)}`;
+};
 
 /* ── Main ── */
 const Report = () => {
   usePageTitle("月次レポート");
   const [selectedYm, setSelectedYm] = useState(getDefaultMonth);
   const { unit } = useCurrencyUnit();
-  const { isLoading, isError, managementData: mgmt, productivityData: prod, customersData: cust, qualityData: qual } = useReportData(selectedYm);
+  const { isLoading, isError, managementData: mgmt, financeData: fin, productivityData: prod, customersData: cust, qualityData: qual } = useReportData(selectedYm);
 
   const monthOptions = generateMonthOptions();
   const ymLabel = (() => {
@@ -141,6 +149,7 @@ const Report = () => {
         "analysis",
         {
           yearMonth: ymLabel,
+          // 経営指標
           revenue: mgmt.revenue,
           revenueTarget: mgmt.revenueTarget,
           revenueAchievementRate: mgmt.revenueAchievementRate,
@@ -149,14 +158,32 @@ const Report = () => {
           operatingProfit: mgmt.operatingProfit,
           operatingProfitRate: mgmt.opRate.toFixed(1),
           sgaTotal: mgmt.sgaTotal,
+          // 財務指標
+          incomeAmount: fin.incomeAmount,
+          expenseAmount: fin.expenseAmount,
+          cashFlowDiff: fin.cashFlowDiff,
+          cashAndDeposits: fin.cashAndDeposits,
+          cashMom: fin.cashMom,
+          accountsReceivable: fin.accountsReceivable,
+          accountsPayable: fin.accountsPayable,
+          arTurnoverDays: fin.arTurnoverDays.toFixed(1),
+          apTurnoverDays: fin.apTurnoverDays.toFixed(1),
+          totalAssets: fin.totalAssets,
+          totalLiabilities: fin.totalLiabilities,
+          netAssets: fin.netAssets,
+          equityRatio: fin.equityRatio.toFixed(1),
+          borrowings: fin.borrowings,
+          // 生産性指標
           totalLaborHours: prod.totalLaborHours,
           projectHours: prod.projectHours,
           grossProfitPerHour: Math.round(prod.gph),
           grossProfitPerProjectHour: Math.round(prod.projectGph),
+          // 顧客指標
           clientCount: cust.currClientCount,
           clientAvg: Math.round(cust.currClientAvg),
           projectCount: cust.currProjectCount,
           projectAvg: Math.round(cust.currProjectAvg),
+          // 品質指標
           qualityCount: qual.totalDeliveries,
           onTimeRate: qual.onTimeRate.toFixed(1),
           revisionRate: qual.revisionRate.toFixed(1),
@@ -168,7 +195,7 @@ const Report = () => {
       toast.error(e.message || "分析レポートの生成に失敗しました");
       setAnalysisLoading(false);
     }
-  }, [mgmt, prod, cust, qual, ymLabel, streamFromEdgeFunction]);
+  }, [mgmt, fin, prod, cust, qual, ymLabel, streamFromEdgeFunction]);
 
   const handleGenerateAction = useCallback(async () => {
     if (!analysisContent) {
@@ -226,13 +253,30 @@ const Report = () => {
       {/* Tabs */}
       <Tabs defaultValue="management" className="space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <TabsList className="flex-wrap h-auto">
+          <TabsList className="flex-wrap h-auto gap-0.5">
+            {/* データ閲覧タブ */}
             <TabsTrigger value="management">経営指標</TabsTrigger>
+            <TabsTrigger value="finance">財務指標</TabsTrigger>
             <TabsTrigger value="productivity">生産性指標</TabsTrigger>
             <TabsTrigger value="customers">顧客指標</TabsTrigger>
             <TabsTrigger value="quality">品質指標</TabsTrigger>
-            <TabsTrigger value="analysis">数値評価・課題分析</TabsTrigger>
-            <TabsTrigger value="action">解決策・来月アクション</TabsTrigger>
+            {/* 区切り */}
+            <Separator orientation="vertical" className="h-6 mx-1.5" />
+            {/* AI分析タブ */}
+            <TabsTrigger
+              value="analysis"
+              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 data-[state=active]:dark:bg-orange-600"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              数値評価・課題分析
+            </TabsTrigger>
+            <TabsTrigger
+              value="action"
+              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 data-[state=active]:dark:bg-orange-600"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              解決策・来月アクション
+            </TabsTrigger>
           </TabsList>
 
           <DropdownMenu>
@@ -340,7 +384,117 @@ const Report = () => {
           </div>
         </TabsContent>
 
-        {/* ── Tab 2: Productivity ── */}
+        {/* ── Tab 2: Finance ── */}
+        <TabsContent value="finance" className="space-y-6">
+          {!fin.hasData ? (
+            <div className="bg-card rounded-lg shadow-sm border border-border p-8 text-center">
+              <p className="text-muted-foreground">財務データ未登録</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+                <h3 className="text-sm font-semibold mb-4">■ キャッシュフロー</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>指標</TableHead>
+                      <TableHead className="text-right">金額</TableHead>
+                      <TableHead className="text-right">前月比増減</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">入金額</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.incomeAmount))}>{fmtCurrency(fin.incomeAmount, unit)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">出金額</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(-fin.expenseAmount))}>{fmtCurrency(fin.expenseAmount, unit)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">収支差額</TableCell>
+                      <TableCell className={cn("text-right font-semibold", diffColorClass(fin.cashFlowDiff))}>{fmtCurrency(fin.cashFlowDiff, unit)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">現預金残高</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.cashAndDeposits))}>{fmtCurrency(fin.cashAndDeposits, unit)}</TableCell>
+                      <TableCell className={cn("text-right", diffColorClass(fin.cashMom))}>{fmtDiff(fin.cashMom, unit)}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+                <h3 className="text-sm font-semibold mb-4">■ 債権・債務</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>指標</TableHead>
+                      <TableHead className="text-right">金額</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">売掛金残高</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.accountsReceivable))}>{fmtCurrency(fin.accountsReceivable, unit)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">買掛金残高</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.accountsPayable))}>{fmtCurrency(fin.accountsPayable, unit)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">売掛回転日数</TableCell>
+                      <TableCell className="text-right font-semibold">{fin.arTurnoverDays.toFixed(1)}日</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">買掛回転日数</TableCell>
+                      <TableCell className="text-right font-semibold">{fin.apTurnoverDays.toFixed(1)}日</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+                <h3 className="text-sm font-semibold mb-4">■ 貸借対照表サマリー</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>指標</TableHead>
+                      <TableHead className="text-right">金額</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">資産合計</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.totalAssets))}>{fmtCurrency(fin.totalAssets, unit)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">負債合計</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.totalLiabilities))}>{fmtCurrency(fin.totalLiabilities, unit)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">純資産</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.netAssets))}>{fmtCurrency(fin.netAssets, unit)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">自己資本比率</TableCell>
+                      <TableCell className={cn("text-right font-semibold", fin.equityRatio < 0 ? "text-destructive" : "")}>{fmtRate(fin.equityRatio)}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">借入金残高</TableCell>
+                      <TableCell className={cn("text-right font-semibold", negativeClass(fin.borrowings))}>{fmtCurrency(fin.borrowings, unit)}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        {/* ── Tab 3: Productivity ── */}
         <TabsContent value="productivity" className="space-y-6">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
             <h3 className="text-sm font-semibold mb-4">■ 労働時間・工数単価</h3>
@@ -395,7 +549,7 @@ const Report = () => {
           </div>
         </TabsContent>
 
-        {/* ── Tab 3: Customers ── */}
+        {/* ── Tab 4: Customers ── */}
         <TabsContent value="customers" className="space-y-6">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
             <h3 className="text-sm font-semibold mb-4">■ 顧客数・単価</h3>
@@ -468,7 +622,7 @@ const Report = () => {
           </div>
         </TabsContent>
 
-        {/* ── Tab 4: Quality ── */}
+        {/* ── Tab 5: Quality ── */}
         <TabsContent value="quality" className="space-y-6">
           {!qual.hasData ? (
             <div className="bg-card rounded-lg shadow-sm border border-border p-8 text-center">
@@ -561,7 +715,7 @@ const Report = () => {
           )}
         </TabsContent>
 
-        {/* ── Tab 5: Analysis ── */}
+        {/* ── Tab 6: Analysis ── */}
         <TabsContent value="analysis" className="space-y-4">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
             <div className="flex items-center justify-between mb-4">
@@ -587,7 +741,7 @@ const Report = () => {
           </div>
         </TabsContent>
 
-        {/* ── Tab 6: Action ── */}
+        {/* ── Tab 7: Action ── */}
         <TabsContent value="action" className="space-y-4">
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
             <div className="flex items-center justify-between mb-4">

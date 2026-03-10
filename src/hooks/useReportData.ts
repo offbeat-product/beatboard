@@ -135,8 +135,22 @@ export function useReportData(selectedYm: string) {
     },
   });
 
-  const isLoading = salesQuery.isLoading || targetsQuery.isLoading || freeeQuery.isLoading || kpiQuery.isLoading || projectPlQuery.isLoading || qualityQuery.isLoading || clientsQuery.isLoading;
-  const isError = salesQuery.isError || targetsQuery.isError || freeeQuery.isError || kpiQuery.isError || projectPlQuery.isError || qualityQuery.isError || clientsQuery.isError;
+  // Finance data query
+  const financeQuery = useQuery({
+    queryKey: ["report_finance", selectedYm],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("finance_monthly")
+        .select("*")
+        .eq("org_id", ORG_ID)
+        .in("year_month", [selectedYm, prev]);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isLoading = salesQuery.isLoading || targetsQuery.isLoading || freeeQuery.isLoading || kpiQuery.isLoading || projectPlQuery.isLoading || qualityQuery.isLoading || clientsQuery.isLoading || financeQuery.isLoading;
+  const isError = salesQuery.isError || targetsQuery.isError || freeeQuery.isError || kpiQuery.isError || projectPlQuery.isError || qualityQuery.isError || clientsQuery.isError || financeQuery.isError;
 
   const sales = salesQuery.data ?? [];
   const targets = targetsQuery.data ?? [];
@@ -145,6 +159,7 @@ export function useReportData(selectedYm: string) {
   const projectPl = projectPlQuery.data ?? [];
   const qualityRows = qualityQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
+  const financeRows = financeQuery.data ?? [];
 
   // === Tab 1: Management ===
   const sumSales = (ym: string) => {
@@ -206,7 +221,48 @@ export function useReportData(selectedYm: string) {
     sgaBudget,
   };
 
-  // === Tab 2: Productivity ===
+  // === Tab 2: Finance ===
+  const currFinance = financeRows.find((f) => f.year_month === selectedYm);
+  const prevFinance = financeRows.find((f) => f.year_month === prev);
+
+  const fin = (row: typeof currFinance, key: string) => Number((row as any)?.[key] ?? 0);
+
+  const currIncome = fin(currFinance, "income_amount");
+  const currExpense = fin(currFinance, "expense_amount");
+  const currCash = fin(currFinance, "cash_and_deposits");
+  const prevCash = fin(prevFinance, "cash_and_deposits");
+  const currAR = fin(currFinance, "accounts_receivable");
+  const currAP = fin(currFinance, "accounts_payable");
+  const currAssets = fin(currFinance, "total_assets");
+  const currLiabilities = fin(currFinance, "total_liabilities");
+  const currNetAssets = fin(currFinance, "net_assets");
+  const currBorrowings = fin(currFinance, "borrowings");
+
+  const arTurnoverDays = curr.revenue > 0 ? (currAR / curr.revenue) * 30 : 0;
+  const apTurnoverDays = curr.cost > 0 ? (currAP / curr.cost) * 30 : 0;
+  const equityRatio = currAssets > 0 ? (currNetAssets / currAssets) * 100 : 0;
+
+  const financeData = {
+    incomeAmount: currIncome,
+    expenseAmount: currExpense,
+    cashFlowDiff: currIncome - currExpense,
+    cashAndDeposits: currCash,
+    cashMom: currCash - prevCash,
+    accountsReceivable: currAR,
+    accountsPayable: currAP,
+    arTurnoverDays,
+    apTurnoverDays,
+    totalAssets: currAssets,
+    totalLiabilities: currLiabilities,
+    netAssets: currNetAssets,
+    equityRatio,
+    borrowings: currBorrowings,
+    hasData: !!currFinance,
+    // raw for AI
+    interestExpense: fin(currFinance, "interest_expense"),
+  };
+
+  // === Tab 3: Productivity ===
   const findKpi = (ym: string, metric: string) =>
     kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric)?.actual_value ?? 0;
 
@@ -239,7 +295,7 @@ export function useReportData(selectedYm: string) {
     projectGphMom: prevProjectGph > 0 ? ((currProjectGph - prevProjectGph) / prevProjectGph) * 100 : 0,
   };
 
-  // === Tab 3: Customers ===
+  // === Tab 4: Customers ===
   const plForMonth = (ym: string) => projectPl.filter((r) => r.year_month === ym && Number(r.revenue ?? 0) > 0);
   const currPl = plForMonth(selectedYm);
   const prevPl = plForMonth(prev);
@@ -292,7 +348,7 @@ export function useReportData(selectedYm: string) {
   customersData.projectAvgMom = customersData.prevProjectAvg > 0
     ? ((customersData.currProjectAvg - customersData.prevProjectAvg) / customersData.prevProjectAvg) * 100 : 0;
 
-  // === Tab 4: Quality ===
+  // === Tab 5: Quality ===
   const qualityForMonth = (ym: string) => {
     const totalRow = qualityRows.find((r) => r.year_month === ym && r.client_id === "__total__");
     if (totalRow) {
@@ -348,6 +404,7 @@ export function useReportData(selectedYm: string) {
     isLoading,
     isError,
     managementData,
+    financeData,
     productivityData,
     customersData,
     qualityData,

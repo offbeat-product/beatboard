@@ -14,11 +14,29 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = "あなたはOff Beat株式会社の経営コンサルタントです。クリエイティブ制作会社の月次データを分析し、経営改善の提案を行ってください。回答はMarkdown形式で、見出しや箇条書きを適切に使用してください。";
-
+    let systemPrompt: string;
     let userPrompt: string;
 
     if (type === "analysis") {
+      systemPrompt = `あなたはOff Beat株式会社の経営アドバイザーです。
+以下の月次データを分析し、数値評価・課題分析レポートを生成してください。
+
+【レポート構成】
+1. 総合評価（A/B/C/D の4段階 + 一言コメント）
+2. 経営指標の評価（売上・粗利の目標達成度、前月比の分析）
+3. 財務指標の評価（キャッシュフロー状況、運転資金の安全性、債務超過の状況）
+4. 生産性指標の評価（工数単価の推移、リソース効率）
+5. 顧客指標の評価（顧客集中リスク、顧客別収益性）
+6. 品質指標の評価（納期遵守率、修正率の傾向）
+7. 重要課題TOP3（優先度順）
+
+【注意事項】
+- 数値は具体的に引用すること
+- 前月比・目標比で改善/悪化を明示すること
+- Off Beatは社員6名の小規模クリエイティブ制作会社であることを考慮すること
+- 年間売上目標7,500万円（上半期3,000万、下半期4,500万）を基準に評価すること
+- 回答はMarkdown形式で、見出しや箇条書きを適切に使用してください。`;
+
       userPrompt = `以下は${data.yearMonth}の経営データです。数値評価と課題分析を行ってください。
 
 【経営指標】
@@ -26,6 +44,21 @@ serve(async (req) => {
 粗利: ${data.grossProfit}円（粗利率: ${data.grossProfitRate}%、目標: 70%）
 営業利益: ${data.operatingProfit}円（営業利益率: ${data.operatingProfitRate}%、目標: 20%）
 販管費: ${data.sgaTotal}円
+
+【財務指標】
+入金額: ${data.incomeAmount}円
+出金額: ${data.expenseAmount}円
+収支差額: ${data.cashFlowDiff}円
+現預金残高: ${data.cashAndDeposits}円（前月比増減: ${data.cashMom}円）
+売掛金残高: ${data.accountsReceivable}円
+買掛金残高: ${data.accountsPayable}円
+売掛回転日数: ${data.arTurnoverDays}日
+買掛回転日数: ${data.apTurnoverDays}日
+資産合計: ${data.totalAssets}円
+負債合計: ${data.totalLiabilities}円
+純資産: ${data.netAssets}円
+自己資本比率: ${data.equityRatio}%
+借入金残高: ${data.borrowings}円
 
 【生産性指標】
 総労働時間: ${data.totalLaborHours}h
@@ -42,23 +75,31 @@ serve(async (req) => {
 【品質指標】
 案件数: ${data.qualityCount}件
 納期遵守率: ${data.onTimeRate}%（目標: 95%）
-修正発生率: ${data.revisionRate}%（目標: 20%以下）
+修正発生率: ${data.revisionRate}%（目標: 20%以下）`;
 
-以下の構成で分析してください:
-1. 数値評価（各指標の目標に対する達成状況を評価）
-2. 課題の特定（目標未達の指標とその重要度）
-3. 課題の原因分析（なぜ目標に届いていないのか、データから読み取れる仮説）`;
     } else if (type === "action") {
-      userPrompt = `先ほどの分析結果を踏まえ、以下を提案してください:
+      systemPrompt = `あなたはOff Beat株式会社の経営アドバイザーです。
+先ほどの数値評価・課題分析の結果を踏まえ、来月の具体的なアクションプランを生成してください。
+
+【レポート構成】
+1. 最優先アクション（1つ、具体的なタスクレベルで）
+2. 経営改善アクション（2-3個）
+3. 財務改善アクション（2-3個）
+4. 生産性改善アクション（2-3個）
+5. 顧客改善アクション（2-3個、顧客集中リスクの分散・新規開拓・既存深耕など）
+6. 品質改善アクション（2-3個、納期遵守率・修正率の改善施策など）
+7. 来月の重点KPI（3-5つ、具体的な数値目標付き）
+
+【注意事項】
+- 6名の小規模チームで実行可能な施策に限定すること
+- 抽象的な提案ではなく、誰が・何を・いつまでにやるか明示すること
+- AIツール（CheckGo AI、BeatBoard）の活用も含めること
+- 回答はMarkdown形式で、見出しや箇条書きを適切に使用してください。`;
+
+      userPrompt = `先ほどの分析結果を踏まえ、来月のアクションプランを提案してください。
 
 前回の分析内容:
-${data.analysisContent}
-
-1. 解決策（各課題に対する具体的な解決アプローチ）
-2. 来月の優先アクション（優先度の高い順に3〜5つ）
-3. KPI改善のシナリオ（このアクションを実行した場合の来月の想定改善幅）
-
-Off Beat株式会社は正社員2名+パート3名の小規模チームで、AI活用による効率化を推進しています。実行可能性を考慮した提案をしてください。`;
+${data.analysisContent}`;
     } else {
       return new Response(JSON.stringify({ error: "Invalid type" }), {
         status: 400,
