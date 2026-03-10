@@ -350,7 +350,23 @@ export function PaceCsvUpload() {
           );
         }
 
-        // 2. Save resource metrics to kpi_snapshots
+        // 2. Save member_client_monthly_hours
+        const memberClientData = preview.memberClientByMonth[ym] ?? [];
+        for (const mc of memberClientData) {
+          await (supabase.from("member_client_monthly_hours" as any) as any).upsert(
+            {
+              org_id: ORG_ID,
+              year_month: ym,
+              member_name: mc.memberName,
+              client_id: mc.clientId,
+              client_name: mc.clientName,
+              hours: mc.hours,
+            },
+            { onConflict: "org_id,year_month,member_name,client_name" }
+          );
+        }
+
+        // 3. Save resource metrics to kpi_snapshots
         const res = preview.resourceSummaryByMonth[ym];
         const snapshotDate = getLastDayOfMonth(ym);
 
