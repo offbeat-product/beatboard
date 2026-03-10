@@ -441,21 +441,25 @@ const Report = () => {
       cover.addText("• • • • •", { x: 7, y: 6.2, w: 2.5, h: 0.4, fontSize: 14, color: C.midGray, fontFace: FONT, align: "right" });
 
       // ══════════════════════════════════════
-      // PART 2 – Analysis
+      // PART 2 – Analysis (if available)
       // ══════════════════════════════════════
-      addSectionDivider(pptx, "01", "数値評価・課題分析");
-      const analysisSlides = parseMarkdownToSlides(analysisReport);
-      for (const sl of analysisSlides) {
-        addContentSlide(pptx, sl.title, sl.blocks);
+      if (analysisReport) {
+        addSectionDivider(pptx, "01", "数値評価・課題分析");
+        const analysisSlides = parseMarkdownToSlides(analysisReport);
+        for (const sl of analysisSlides) {
+          addContentSlide(pptx, sl.title, sl.blocks);
+        }
       }
 
       // ══════════════════════════════════════
-      // PART 3 – Action
+      // PART 3 – Action (if available)
       // ══════════════════════════════════════
-      addSectionDivider(pptx, "02", "解決策・来月アクション");
-      const actionSlides = parseMarkdownToSlides(actionReport);
-      for (const sl of actionSlides) {
-        addContentSlide(pptx, sl.title, sl.blocks);
+      if (actionReport) {
+        addSectionDivider(pptx, analysisReport ? "02" : "01", "解決策・来月アクション");
+        const actionSlides = parseMarkdownToSlides(actionReport);
+        for (const sl of actionSlides) {
+          addContentSlide(pptx, sl.title, sl.blocks);
+        }
       }
 
       // ══════════════════════════════════════
