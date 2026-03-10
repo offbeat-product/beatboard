@@ -119,6 +119,24 @@ export function MemberResourceTable() {
     return "—";
   };
 
+  const getAnnualValue = (member: string, key: string): string => {
+    let totalSum = 0;
+    let projectSum = 0;
+    for (const ym of fiscalMonths) {
+      if (!isMemberActive(member, ym)) continue;
+      const d = data[member]?.[ym];
+      totalSum += d?.total ?? 0;
+      projectSum += d?.project ?? 0;
+    }
+    if (key === "total") return totalSum > 0 ? `${totalSum.toFixed(1)}h` : "—";
+    if (key === "project") return projectSum > 0 ? `${projectSum.toFixed(1)}h` : "—";
+    if (key === "utilization") {
+      if (totalSum === 0) return "—";
+      return `${((projectSum / totalSum) * 100).toFixed(1)}%`;
+    }
+    return "—";
+  };
+
   const getCellClass = (member: string, ym: string, key: string): string => {
     if (!isMemberActive(member, ym)) return "";
     const d = data[member]?.[ym];
@@ -164,6 +182,7 @@ export function MemberResourceTable() {
                 {getMonthLabel(ym)}
               </TableHead>
             ))}
+            <TableHead className="text-center whitespace-nowrap min-w-[90px] bg-muted/50 font-semibold">通期平均</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -185,6 +204,9 @@ export function MemberResourceTable() {
                       {getCellValue(member, ym, rd.key)}
                     </TableCell>
                   ))}
+                  <TableCell className="text-center text-xs font-mono tabular-nums whitespace-nowrap bg-muted/50 font-semibold">
+                    {getAnnualValue(member, rd.key)}
+                  </TableCell>
                 </TableRow>
               ))}
             </>
