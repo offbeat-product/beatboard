@@ -22,8 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-const Finance = () => {
-  usePageTitle("財務指標");
+const Finance = ({ embedded }: { embedded?: boolean }) => {
+  usePageTitle(embedded ? undefined : "財務指標");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
   const d = useFinanceData();
@@ -52,7 +52,7 @@ const Finance = () => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />
+        {!embedded && <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />}
         <KpiCardSkeleton count={4} />
         <ChartSkeleton />
         <TableSkeleton cols={8} />
@@ -215,8 +215,8 @@ const Finance = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />
-        <FetchLatestButton targets="both" />
+        {!embedded && <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />}
+        {!embedded && <FetchLatestButton targets="both" />}
       </div>
 
       {/* KPI Cards */}

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { TrendingUp, BarChart3, Users, CheckCircle } from "lucide-react";
+import { TrendingUp, BarChart3, Users, CheckCircle, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import Management from "./Management";
+import Finance from "./Finance";
 import Productivity from "./Productivity";
 import Customers from "./Customers";
 import Quality from "./Quality";
@@ -22,6 +23,10 @@ const Index = () => {
             <TrendingUp className="h-3.5 w-3.5" />
             経営指標
           </TabsTrigger>
+          <TabsTrigger value="finance" className="gap-1.5 text-xs sm:text-sm">
+            <Wallet className="h-3.5 w-3.5" />
+            財務指標
+          </TabsTrigger>
           <TabsTrigger value="productivity" className="gap-1.5 text-xs sm:text-sm">
             <BarChart3 className="h-3.5 w-3.5" />
             生産性指標
@@ -38,6 +43,9 @@ const Index = () => {
 
         <TabsContent value="management" className="mt-4">
           <Management embedded />
+        </TabsContent>
+        <TabsContent value="finance" className="mt-4">
+          <Finance embedded />
         </TabsContent>
         <TabsContent value="productivity" className="mt-4">
           <Productivity embedded />
