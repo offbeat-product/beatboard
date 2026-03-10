@@ -46,6 +46,7 @@ const AppRoutes = () => {
       <Route path="/invite/:token" element={<InviteAccept />} />
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Index />} />
+        <Route path="/finance" element={<Finance />} />
         <Route path="/plan" element={<Plan />} />
         <Route path="/management" element={<Management />} />
         <Route path="/productivity" element={<Productivity />} />
