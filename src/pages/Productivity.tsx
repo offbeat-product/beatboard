@@ -502,6 +502,9 @@ const Productivity = ({ embedded }: { embedded?: boolean }) => {
         </Table>
       </div>
 
+      {/* Member Resource Breakdown */}
+      <MemberResourceTable />
+
       {/* Client GPH Table */}
       <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
       <ClientGphTable />
