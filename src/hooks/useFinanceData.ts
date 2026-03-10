@@ -146,6 +146,9 @@ export function useFinanceData() {
       borrowings: f?.borrowings ?? 0,
       interest: f?.interest_expense ?? 0,
       workingCapitalMonths: avgSga > 0 ? cash / avgSga : 0,
+      totalAssets: f?.total_assets ?? 0,
+      totalLiabilities: f?.total_liabilities ?? 0,
+      netAssets: f?.net_assets ?? 0,
     };
   });
 
