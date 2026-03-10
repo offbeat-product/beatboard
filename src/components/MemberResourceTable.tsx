@@ -93,7 +93,14 @@ export function MemberResourceTable() {
 
     // Get unique members
     const memberSet = new Set(filtered.map((h) => h.member_name));
-    const members = Array.from(memberSet).sort();
+    // Sort by predefined order
+    const members = Array.from(memberSet).sort((a, b) => {
+      const idxA = MEMBER_ORDER.findIndex((n) => a.includes(n));
+      const idxB = MEMBER_ORDER.findIndex((n) => b.includes(n));
+      const oA = idxA >= 0 ? idxA : 999;
+      const oB = idxB >= 0 ? idxB : 999;
+      return oA - oB;
+    });
 
     // Per member, per month: totalHours, projectHours
     const result: Record<string, Record<string, { total: number; project: number }>> = {};
