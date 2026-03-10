@@ -80,124 +80,41 @@ const Report = () => {
     return `${y}年${m}月`;
   })();
 
-  // AI streaming state
+  // AI report state
   const [analysisContent, setAnalysisContent] = useState("");
   const [actionContent, setActionContent] = useState("");
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const analysisRef = useRef<HTMLDivElement>(null);
+  const actionRef = useRef<HTMLDivElement>(null);
 
-  const streamFromEdgeFunction = useCallback(async (
-    type: "analysis" | "action",
-    payload: Record<string, unknown>,
-    onDelta: (text: string) => void,
-    onDone: () => void,
-  ) => {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-report-analysis`;
-    const resp = await fetch(url, {
+  const callN8nWebhook = useCallback(async (reportType: "analysis" | "action"): Promise<string> => {
+    const resp = await fetch(N8N_WEBHOOK_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ type, data: payload }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ year_month: selectedYm, report_type: reportType }),
     });
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error(err.error || `HTTP ${resp.status}`);
+      const text = await resp.text().catch(() => "Unknown error");
+      throw new Error(`Webhook error (${resp.status}): ${text}`);
     }
-    if (!resp.body) throw new Error("No response body");
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let accumulated = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      let nlIdx: number;
-      while ((nlIdx = buffer.indexOf("\n")) !== -1) {
-        let line = buffer.slice(0, nlIdx);
-        buffer = buffer.slice(nlIdx + 1);
-        if (line.endsWith("\r")) line = line.slice(0, -1);
-        if (line.startsWith(":") || line.trim() === "") continue;
-        if (!line.startsWith("data: ")) continue;
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") break;
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) {
-            accumulated += content;
-            onDelta(accumulated);
-          }
-        } catch {
-          buffer = line + "\n" + buffer;
-          break;
-        }
-      }
-    }
-    onDone();
-    return accumulated;
-  }, []);
+    const json = await resp.json();
+    if (!json.report) throw new Error("レスポンスにreportフィールドがありません");
+    return json.report as string;
+  }, [selectedYm]);
 
   const handleGenerateAnalysis = useCallback(async () => {
     setAnalysisContent("");
     setAnalysisLoading(true);
     try {
-      await streamFromEdgeFunction(
-        "analysis",
-        {
-          yearMonth: ymLabel,
-          // 経営指標
-          revenue: mgmt.revenue,
-          revenueTarget: mgmt.revenueTarget,
-          revenueAchievementRate: mgmt.revenueAchievementRate,
-          grossProfit: mgmt.grossProfit,
-          grossProfitRate: mgmt.grossProfitRate.toFixed(1),
-          operatingProfit: mgmt.operatingProfit,
-          operatingProfitRate: mgmt.opRate.toFixed(1),
-          sgaTotal: mgmt.sgaTotal,
-          // 財務指標
-          incomeAmount: fin.incomeAmount,
-          expenseAmount: fin.expenseAmount,
-          cashFlowDiff: fin.cashFlowDiff,
-          cashAndDeposits: fin.cashAndDeposits,
-          cashMom: fin.cashMom,
-          accountsReceivable: fin.accountsReceivable,
-          accountsPayable: fin.accountsPayable,
-          arTurnoverDays: fin.arTurnoverDays.toFixed(1),
-          apTurnoverDays: fin.apTurnoverDays.toFixed(1),
-          totalAssets: fin.totalAssets,
-          totalLiabilities: fin.totalLiabilities,
-          netAssets: fin.netAssets,
-          equityRatio: fin.equityRatio.toFixed(1),
-          borrowings: fin.borrowings,
-          // 生産性指標
-          totalLaborHours: prod.totalLaborHours,
-          projectHours: prod.projectHours,
-          grossProfitPerHour: Math.round(prod.gph),
-          grossProfitPerProjectHour: Math.round(prod.projectGph),
-          // 顧客指標
-          clientCount: cust.currClientCount,
-          clientAvg: Math.round(cust.currClientAvg),
-          projectCount: cust.currProjectCount,
-          projectAvg: Math.round(cust.currProjectAvg),
-          // 品質指標
-          qualityCount: qual.totalDeliveries,
-          onTimeRate: qual.onTimeRate.toFixed(1),
-          revisionRate: qual.revisionRate.toFixed(1),
-        },
-        (text) => setAnalysisContent(text),
-        () => setAnalysisLoading(false),
-      );
+      const report = await callN8nWebhook("analysis");
+      setAnalysisContent(report);
     } catch (e: any) {
       toast.error(e.message || "分析レポートの生成に失敗しました");
+    } finally {
       setAnalysisLoading(false);
     }
-  }, [mgmt, fin, prod, cust, qual, ymLabel, streamFromEdgeFunction]);
+  }, [callN8nWebhook]);
 
   const handleGenerateAction = useCallback(async () => {
     if (!analysisContent) {
@@ -207,17 +124,84 @@ const Report = () => {
     setActionContent("");
     setActionLoading(true);
     try {
-      await streamFromEdgeFunction(
-        "action",
-        { analysisContent },
-        (text) => setActionContent(text),
-        () => setActionLoading(false),
-      );
+      const report = await callN8nWebhook("action");
+      setActionContent(report);
     } catch (e: any) {
       toast.error(e.message || "アクション提案の生成に失敗しました");
+    } finally {
       setActionLoading(false);
     }
-  }, [analysisContent, streamFromEdgeFunction]);
+  }, [analysisContent, callN8nWebhook]);
+
+  const handleExportPdf = useCallback(async (content: string, title: string) => {
+    if (!content) {
+      toast.error("先にレポートを生成してください");
+      return;
+    }
+    toast.info("PDF生成中...");
+    const html2pdf = (await import("html2pdf.js")).default;
+    const container = document.createElement("div");
+    container.style.padding = "24px";
+    container.style.fontFamily = "sans-serif";
+    container.style.fontSize = "12px";
+    container.style.lineHeight = "1.6";
+    container.innerHTML = `<h1 style="font-size:18px;margin-bottom:16px">${title} - ${ymLabel}</h1>`;
+    // Render markdown to HTML
+    const tempDiv = document.createElement("div");
+    const { marked } = await import("react-markdown").then(() => import("marked"));
+    tempDiv.innerHTML = await marked(content);
+    container.appendChild(tempDiv);
+
+    html2pdf()
+      .set({
+        margin: 10,
+        filename: `${title}_${selectedYm}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(container)
+      .save()
+      .then(() => toast.success("PDFを保存しました"))
+      .catch(() => toast.error("PDF生成に失敗しました"));
+  }, [ymLabel, selectedYm]);
+
+  const handleExportPptx = useCallback(async (content: string, title: string) => {
+    if (!content) {
+      toast.error("先にレポートを生成してください");
+      return;
+    }
+    toast.info("PPTX生成中...");
+    const PptxGenJS = (await import("pptxgenjs")).default;
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_16x9";
+
+    // Split by ## headings into sections
+    const sections = content.split(/(?=^## )/gm).filter((s) => s.trim());
+    for (const section of sections) {
+      const slide = pptx.addSlide();
+      const lines = section.split("\n");
+      const heading = lines[0].replace(/^#+\s*/, "").trim();
+      const body = lines.slice(1).join("\n").trim()
+        .replace(/\*\*/g, "")
+        .replace(/^[-*]\s/gm, "• ");
+
+      slide.addText(heading, {
+        x: 0.5, y: 0.3, w: 9, h: 0.8,
+        fontSize: 22, bold: true, color: "333333",
+      });
+      slide.addText(body, {
+        x: 0.5, y: 1.2, w: 9, h: 5.5,
+        fontSize: 12, color: "555555", valign: "top",
+        lineSpacing: 18,
+      });
+    }
+
+    pptx.writeFile({ fileName: `${title}_${selectedYm}.pptx` })
+      .then(() => toast.success("PPTXを保存しました"))
+      .catch(() => toast.error("PPTX生成に失敗しました"));
+  }, [selectedYm]);
+
+  const activeReportContent = analysisContent || actionContent;
 
   if (isLoading) {
     return (
