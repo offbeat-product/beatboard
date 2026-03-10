@@ -52,7 +52,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
   if (d.isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />
+        {!embedded && <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />}
         <KpiCardSkeleton count={4} />
         <ChartSkeleton />
         <TableSkeleton cols={8} />
