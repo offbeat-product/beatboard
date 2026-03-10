@@ -539,13 +539,9 @@ const Report = () => {
                 <FileText className="h-4 w-4 mr-2" />
                 解決策・アクションをPDFで保存
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPptx(analysisContent, "数値評価・課題分析")} disabled={!analysisContent}>
+              <DropdownMenuItem onClick={() => handleExportPptx()}>
                 <Presentation className="h-4 w-4 mr-2" />
-                数値評価・課題分析をPPTXで保存
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPptx(actionContent, "解決策・来月アクション")} disabled={!actionContent}>
-                <Presentation className="h-4 w-4 mr-2" />
-                解決策・アクションをPPTXで保存
+                PPTXで保存
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
