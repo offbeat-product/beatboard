@@ -30,6 +30,9 @@ export interface FinanceRow {
   borrowings: number;
   interest: number;
   workingCapitalMonths: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  netAssets: number;
 }
 
 export function useFinanceData() {
