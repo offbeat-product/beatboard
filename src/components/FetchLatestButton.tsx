@@ -53,29 +53,36 @@ export function FetchLatestButton({ targets = "both" }: FetchLatestButtonProps) 
       const boardUrl = (settings.webhook_board_url as string) || DEFAULT_BOARD_URL;
       const freeeUrl = (settings.webhook_freee_url as string) || DEFAULT_FREEE_URL;
 
+      // Build 3 months: previous, current, next
       const syncNow = new Date();
-      const year = syncNow.getFullYear();
-      const month = String(syncNow.getMonth() + 1).padStart(2, "0");
-      const currentYearMonth = `${year}-${month}`;
-
-      const calls: Promise<Response>[] = [];
-      if (targets === "board" || targets === "both") {
-        calls.push(fetch(boardUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: currentYearMonth }),
-        }));
-      }
-      if (targets === "freee" || targets === "both") {
-        calls.push(fetch(freeeUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year_month: currentYearMonth }),
-        }));
+      const y = syncNow.getFullYear();
+      const m = syncNow.getMonth(); // 0-indexed
+      const months: string[] = [];
+      for (const offset of [-1, 0, 1]) {
+        const d = new Date(y, m + offset, 1);
+        months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
       }
 
-      await Promise.all(calls);
-      await new Promise((r) => setTimeout(r, 30000));
+      // Send requests sequentially for each month
+      for (const ym of months) {
+        const calls: Promise<Response>[] = [];
+        if (targets === "board" || targets === "both") {
+          calls.push(fetch(boardUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ year_month: ym }),
+          }));
+        }
+        if (targets === "freee" || targets === "both") {
+          calls.push(fetch(freeeUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ year_month: ym }),
+          }));
+        }
+        await Promise.all(calls);
+        await new Promise((r) => setTimeout(r, 30000));
+      }
       await queryClient.invalidateQueries();
 
       const now = new Date().toISOString();
