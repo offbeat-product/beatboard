@@ -102,7 +102,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
   const avgApDays = dataRows.length > 0 ? dataRows.reduce((s, r) => s + r.apDays, 0) / dataRows.length : 0;
   const totalIncome = d.rows.reduce((s, r) => s + r.income, 0);
   const totalExpense = d.rows.reduce((s, r) => s + r.expense, 0);
-  const totalInterest = d.rows.reduce((s, r) => s + r.interest, 0);
+  
   const totalCashFlow = totalIncome - totalExpense;
 
   type RowDef = { label: string; key: string; summaryType: "last" | "avg" | "sum" | "none" };
