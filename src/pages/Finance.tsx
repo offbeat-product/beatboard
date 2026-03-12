@@ -185,7 +185,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
       if (def.key === "income") return fmtYen(totalIncome);
       if (def.key === "expense") return fmtYen(totalExpense);
       if (def.key === "cashFlow") return fmtYen(totalCashFlow);
-      if (def.key === "interest") return formatAmount(totalInterest);
+      
     }
     if (def.summaryType === "avg") {
       if (def.key === "arDays") return avgArDays > 0 ? avgArDays.toFixed(1) : "—";
