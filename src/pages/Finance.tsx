@@ -102,7 +102,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
   const avgApDays = dataRows.length > 0 ? dataRows.reduce((s, r) => s + r.apDays, 0) / dataRows.length : 0;
   const totalIncome = d.rows.reduce((s, r) => s + r.income, 0);
   const totalExpense = d.rows.reduce((s, r) => s + r.expense, 0);
-  const totalInterest = d.rows.reduce((s, r) => s + r.interest, 0);
+  
   const totalCashFlow = totalIncome - totalExpense;
 
   type RowDef = { label: string; key: string; summaryType: "last" | "avg" | "sum" | "none" };
@@ -116,8 +116,6 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
     { label: "入金額", key: "income", summaryType: "sum" },
     { label: "出金額", key: "expense", summaryType: "sum" },
     { label: "収支差額", key: "cashFlow", summaryType: "sum" },
-    { label: "借入金残高", key: "borrowings", summaryType: "last" },
-    { label: "支払利息", key: "interest", summaryType: "sum" },
     { label: "運転資金月数", key: "workingCapitalMonths", summaryType: "avg" },
   ];
 
@@ -187,7 +185,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
       if (def.key === "income") return fmtYen(totalIncome);
       if (def.key === "expense") return fmtYen(totalExpense);
       if (def.key === "cashFlow") return fmtYen(totalCashFlow);
-      if (def.key === "interest") return formatAmount(totalInterest);
+      
     }
     if (def.summaryType === "avg") {
       if (def.key === "arDays") return avgArDays > 0 ? avgArDays.toFixed(1) : "—";
