@@ -42,7 +42,7 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
   const [hoursMap, setHoursMap] = useState<Record<string, MonthlyHoursInput>>({});
 
   useEffect(() => {
-    if (d.monthlyData.length > 0 && Object.keys(hoursMap).length === 0) {
+    if (d.monthlyData.length > 0) {
       const map: Record<string, MonthlyHoursInput> = {};
       for (const m of d.monthlyData) {
         map[m.ym] = {
