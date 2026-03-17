@@ -436,6 +436,8 @@ export function PaceCsvUpload() {
 
       queryClient.invalidateQueries({ queryKey: ["client_monthly_hours"] });
       queryClient.invalidateQueries({ queryKey: ["kpi_snapshots"] });
+      queryClient.invalidateQueries({ queryKey: ["member_client_monthly_hours"] });
+      queryClient.invalidateQueries({ queryKey: ["member_classifications"] });
       toast.success("Pace工数データを保存しました");
       setPreview(null);
       setOpen(false);
