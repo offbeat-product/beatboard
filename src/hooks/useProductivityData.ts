@@ -117,8 +117,10 @@ export function useProductivityData() {
   // Staffing rules per month (defaults)
   const getStaffing = (ym: string) => {
     // Check kpi_snapshots for Pace-derived counts first
-    const findSnap = (metric: string) =>
-      kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric);
+    const findSnap = (metric: string) => {
+      const matches = kpiSnapshots.filter((k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric);
+      return matches.length > 0 ? matches[matches.length - 1] : undefined;
+    };
     const ftCount = findSnap("fulltime_count");
     const ptCount = findSnap("parttime_count");
     if (ftCount || ptCount) {
