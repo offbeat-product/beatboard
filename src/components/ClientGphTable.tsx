@@ -45,6 +45,7 @@ export function ClientGphTable() {
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
+  const [sortColumn, setSortColumn] = useState<string>("avg"); // "avg" or a year_month like "2026-03"
 
   // Fetch project_pl for Nov-Apr
   const projectPlQuery = useQuery({
@@ -129,11 +130,17 @@ export function ClientGphTable() {
       const hasAnyGph = DISPLAY_MONTHS.some((ym) => (row.monthlyHours[ym] ?? 0) > 0);
       return hasAnyGph;
     }).sort((a, b) => {
-      if (sortOrder === "desc") return b.avgGph - a.avgGph;
-      if (sortOrder === "asc") return a.avgGph - b.avgGph;
-      return b.avgGph - a.avgGph; // default: high to low
+      if (sortOrder === "default") return b.avgGph - a.avgGph;
+      const getVal = (r: ClientRow) => {
+        if (sortColumn === "avg") return r.avgGph;
+        const gp = r.monthlyGrossProfit[sortColumn] ?? 0;
+        const h = r.monthlyHours[sortColumn] ?? 0;
+        return h > 0 ? gp / h : 0;
+      };
+      const diff = getVal(a) - getVal(b);
+      return sortOrder === "desc" ? -diff : diff;
     });
-  }, [clients, hoursEdits, savedHoursMap, sortOrder]);
+  }, [clients, hoursEdits, savedHoursMap, sortOrder, sortColumn]);
 
   // Totals
   const totals = useMemo(() => {
@@ -226,15 +233,14 @@ export function ClientGphTable() {
               <TabsTrigger value="hours" className="text-xs px-3 h-7">工数</TabsTrigger>
             </TabsList>
           </Tabs>
-          {activeTab === "gph" && (
+          {activeTab === "gph" && sortOrder !== "default" && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSortOrder((prev) => prev === "default" ? "desc" : prev === "desc" ? "asc" : "default")}
-              className={cn("text-xs gap-1 h-8", sortOrder !== "default" && "border-primary text-primary")}
+              onClick={() => { setSortOrder("default"); setSortColumn("avg"); }}
+              className="text-xs gap-1 h-8 border-primary text-primary"
             >
-              {sortOrder === "desc" ? <ArrowDown className="h-3 w-3" /> : sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3" />}
-              {sortOrder === "desc" ? "高い順" : sortOrder === "asc" ? "低い順" : "並べ替え"}
+              <RotateCcw className="h-3 w-3" /> ソート解除
             </Button>
           )}
           {activeTab === "hours" && (
@@ -255,9 +261,53 @@ export function ClientGphTable() {
           <TableRow>
             <TableHead className="sticky left-0 bg-card z-10 min-w-[160px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">顧客名</TableHead>
             {DISPLAY_MONTHS.map((ym) => (
-              <TableHead key={ym} className="text-right whitespace-nowrap min-w-[100px]">{MONTH_LABELS[ym]}</TableHead>
+              <TableHead
+                key={ym}
+                className={cn(
+                  "text-right whitespace-nowrap min-w-[100px]",
+                  activeTab === "gph" && "cursor-pointer select-none hover:bg-muted/50 transition-colors",
+                  sortColumn === ym && sortOrder !== "default" && "text-primary"
+                )}
+                onClick={() => {
+                  if (activeTab !== "gph") return;
+                  if (sortColumn === ym) {
+                    setSortOrder((prev) => prev === "desc" ? "asc" : prev === "asc" ? "default" : "desc");
+                    if (sortOrder === "asc") setSortColumn("avg");
+                  } else {
+                    setSortColumn(ym);
+                    setSortOrder("desc");
+                  }
+                }}
+              >
+                <span className="inline-flex items-center gap-1 justify-end">
+                  {MONTH_LABELS[ym]}
+                  {activeTab === "gph" && sortColumn === ym && sortOrder === "desc" && <ArrowDown className="h-3 w-3" />}
+                  {activeTab === "gph" && sortColumn === ym && sortOrder === "asc" && <ArrowUp className="h-3 w-3" />}
+                </span>
+              </TableHead>
             ))}
-            <TableHead className="text-right font-bold whitespace-nowrap min-w-[100px]">通期平均</TableHead>
+            <TableHead
+              className={cn(
+                "text-right font-bold whitespace-nowrap min-w-[100px]",
+                activeTab === "gph" && "cursor-pointer select-none hover:bg-muted/50 transition-colors",
+                sortColumn === "avg" && sortOrder !== "default" && "text-primary"
+              )}
+              onClick={() => {
+                if (activeTab !== "gph") return;
+                if (sortColumn === "avg") {
+                  setSortOrder((prev) => prev === "desc" ? "asc" : prev === "asc" ? "default" : "desc");
+                } else {
+                  setSortColumn("avg");
+                  setSortOrder("desc");
+                }
+              }}
+            >
+              <span className="inline-flex items-center gap-1 justify-end">
+                通期平均
+                {activeTab === "gph" && sortColumn === "avg" && sortOrder === "desc" && <ArrowDown className="h-3 w-3" />}
+                {activeTab === "gph" && sortColumn === "avg" && sortOrder === "asc" && <ArrowUp className="h-3 w-3" />}
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
