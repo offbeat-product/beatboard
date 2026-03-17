@@ -45,6 +45,7 @@ export function ClientGphTable() {
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
+  const [sortColumn, setSortColumn] = useState<string>("avg"); // "avg" or a year_month like "2026-03"
 
   // Fetch project_pl for Nov-Apr
   const projectPlQuery = useQuery({
