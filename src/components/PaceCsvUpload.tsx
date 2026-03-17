@@ -114,6 +114,51 @@ function isMemberActiveInMonth(mc: MemberClassRow, ym: string): boolean {
   return true;
 }
 
+/** Parse CSV text handling multi-line quoted fields */
+function parseCSVWithQuotes(text: string): string[][] {
+  const records: string[][] = [];
+  let current: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        current.push(field.trim());
+        field = "";
+      } else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+        current.push(field.trim());
+        if (current.length > 1 || current[0] !== "") records.push(current);
+        current = [];
+        field = "";
+      } else {
+        field += ch;
+      }
+    }
+  }
+  if (field || current.length > 0) {
+    current.push(field.trim());
+    if (current.length > 1 || current[0] !== "") records.push(current);
+  }
+  return records;
+}
+
+
 export function PaceCsvUpload() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -191,17 +236,17 @@ export function PaceCsvUpload() {
       text = new TextDecoder("utf-8").decode(bytes);
     }
 
-    const lines = text.trim().split("\n");
-    if (lines.length < 2) {
+    // Parse CSV handling multi-line quoted fields
+    const records = parseCSVWithQuotes(text);
+    if (records.length < 2) {
       toast.error("CSVにデータがありません");
       return;
     }
 
-    const dataLines = lines.slice(1);
+    const dataRecords = records.slice(1);
     const parsed: ParsedRow[] = [];
 
-    for (const line of dataLines) {
-      const cols = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
+    for (const cols of dataRecords) {
       if (cols.length < 8) continue;
       const [date, member, clientName, projectNo, projectName, projectType, workType, timeStr, ...detailParts] = cols;
       const hours = parseHHMM(timeStr);
