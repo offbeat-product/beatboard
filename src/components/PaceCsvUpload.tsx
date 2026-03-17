@@ -191,17 +191,17 @@ export function PaceCsvUpload() {
       text = new TextDecoder("utf-8").decode(bytes);
     }
 
-    const lines = text.trim().split("\n");
-    if (lines.length < 2) {
+    // Parse CSV handling multi-line quoted fields
+    const records = parseCSVWithQuotes(text);
+    if (records.length < 2) {
       toast.error("CSVにデータがありません");
       return;
     }
 
-    const dataLines = lines.slice(1);
+    const dataRecords = records.slice(1);
     const parsed: ParsedRow[] = [];
 
-    for (const line of dataLines) {
-      const cols = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
+    for (const cols of dataRecords) {
       if (cols.length < 8) continue;
       const [date, member, clientName, projectNo, projectName, projectType, workType, timeStr, ...detailParts] = cols;
       const hours = parseHHMM(timeStr);

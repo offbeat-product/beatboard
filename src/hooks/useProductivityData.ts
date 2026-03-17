@@ -145,8 +145,10 @@ export function useProductivityData() {
   // Build base monthly data with default hours from kpi_snapshots or staffing rules
   const getDefaultHoursForMonth = (ym: string): MonthlyHoursInput => {
     const staffing = getStaffing(ym);
-    const findSnap = (metric: string) =>
-      kpiSnapshots.find((k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric);
+    const findSnap = (metric: string) => {
+      const matches = kpiSnapshots.filter((k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric);
+      return matches.length > 0 ? matches[matches.length - 1] : undefined;
+    };
 
     const empTotalSnap = findSnap("employee_total_hours");
     const empProjSnap = findSnap("employee_project_hours");
