@@ -233,15 +233,14 @@ export function ClientGphTable() {
               <TabsTrigger value="hours" className="text-xs px-3 h-7">工数</TabsTrigger>
             </TabsList>
           </Tabs>
-          {activeTab === "gph" && (
+          {activeTab === "gph" && sortOrder !== "default" && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSortOrder((prev) => prev === "default" ? "desc" : prev === "desc" ? "asc" : "default")}
-              className={cn("text-xs gap-1 h-8", sortOrder !== "default" && "border-primary text-primary")}
+              onClick={() => { setSortOrder("default"); setSortColumn("avg"); }}
+              className="text-xs gap-1 h-8 border-primary text-primary"
             >
-              {sortOrder === "desc" ? <ArrowDown className="h-3 w-3" /> : sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3" />}
-              {sortOrder === "desc" ? "高い順" : sortOrder === "asc" ? "低い順" : "並べ替え"}
+              <RotateCcw className="h-3 w-3" /> ソート解除
             </Button>
           )}
           {activeTab === "hours" && (
