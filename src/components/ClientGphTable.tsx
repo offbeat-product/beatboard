@@ -130,11 +130,17 @@ export function ClientGphTable() {
       const hasAnyGph = DISPLAY_MONTHS.some((ym) => (row.monthlyHours[ym] ?? 0) > 0);
       return hasAnyGph;
     }).sort((a, b) => {
-      if (sortOrder === "desc") return b.avgGph - a.avgGph;
-      if (sortOrder === "asc") return a.avgGph - b.avgGph;
-      return b.avgGph - a.avgGph; // default: high to low
+      if (sortOrder === "default") return b.avgGph - a.avgGph;
+      const getVal = (r: ClientRow) => {
+        if (sortColumn === "avg") return r.avgGph;
+        const gp = r.monthlyGrossProfit[sortColumn] ?? 0;
+        const h = r.monthlyHours[sortColumn] ?? 0;
+        return h > 0 ? gp / h : 0;
+      };
+      const diff = getVal(a) - getVal(b);
+      return sortOrder === "desc" ? -diff : diff;
     });
-  }, [clients, hoursEdits, savedHoursMap, sortOrder]);
+  }, [clients, hoursEdits, savedHoursMap, sortOrder, sortColumn]);
 
   // Totals
   const totals = useMemo(() => {
