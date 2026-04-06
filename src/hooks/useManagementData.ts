@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel } from "@/lib/fiscalYear";
+import { getFiscalYearMonths, getCurrentMonth, getPreviousMonth, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel, getFiscalEndYear } from "@/lib/fiscalYear";
 
 export const SGA_CATEGORIES: Record<string, string[]> = {
   '人件費': ['役員報酬', '給料手当', '法定福利費', '福利厚生費', '外注費'],
@@ -39,9 +39,10 @@ function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
 }
 
 export function useManagementData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
-  const currentMonth = CURRENT_MONTH;
-  const previousMonth = "2026-02";
+  const currentMonth = getCurrentMonth();
+  const fyEndYear = getFiscalEndYear(currentMonth);
+  const fiscalMonths = getFiscalYearMonths(fyEndYear);
+  const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const monthsElapsed = getFiscalMonthNumber(currentMonth);
   const fyLabel = getFiscalYearLabel(currentMonth);
@@ -127,13 +128,16 @@ export function useManagementData() {
   const currentData = monthlyData.find((m) => m.ym === currentMonth);
   const prevData = monthlyData.find((m) => m.ym === previousMonth);
 
-  // Current month KPIs
-  const currentRevenue = currentData?.revenue ?? 0;
+  // Whether current month actually has data (revenue > 0 from monthly_sales)
+  const currentMonthHasData = (currentData?.revenue ?? 0) > 0;
+
+  // Current month KPIs — only show if data exists for the JST current month
+  const currentRevenue = currentMonthHasData ? currentData!.revenue : 0;
   const currentTarget = currentData?.target ?? 0;
-  const currentGrossProfit = currentData?.grossProfit ?? 0;
-  const currentGrossMarginRate = currentData?.grossMarginRate ?? 0;
-  const currentOperatingProfit = currentData?.operatingProfit;
-  const currentOperatingMarginRate = currentData?.operatingMarginRate;
+  const currentGrossProfit = currentMonthHasData ? currentData!.grossProfit : 0;
+  const currentGrossMarginRate = currentMonthHasData ? currentData!.grossMarginRate : 0;
+  const currentOperatingProfit = currentMonthHasData ? (currentData?.operatingProfit ?? null) : null;
+  const currentOperatingMarginRate = currentMonthHasData ? (currentData?.operatingMarginRate ?? null) : null;
 
   // Cumulative
   const cumulativeRevenue = monthlyData.slice(0, currentIdx + 1).reduce((s, m) => s + m.revenue, 0);
@@ -173,6 +177,8 @@ export function useManagementData() {
     isError,
     fyLabel,
     monthsElapsed,
+    currentMonth,
+    currentMonthHasData,
     // Current month
     currentRevenue,
     currentTarget,

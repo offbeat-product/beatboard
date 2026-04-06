@@ -4,7 +4,25 @@
  * Example: 2026年4月期 = 2025-05 to 2026-04
  */
 
-export const CURRENT_MONTH = "2026-03";
+/** Get current month in YYYY-MM based on JST (Asia/Tokyo) */
+export function getCurrentMonth(): string {
+  const now = new Date();
+  const jst = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const y = jst.getFullYear();
+  const m = jst.getMonth() + 1;
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+/** Get previous month in YYYY-MM from a given YYYY-MM */
+export function getPreviousMonth(yearMonth: string): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const pm = m === 1 ? 12 : m - 1;
+  const py = m === 1 ? y - 1 : y;
+  return `${py}-${String(pm).padStart(2, "0")}`;
+}
+
+/** @deprecated Use getCurrentMonth() instead */
+export const CURRENT_MONTH = getCurrentMonth();
 
 /** Get fiscal year label like "2026年4月期" for a given month string (YYYY-MM) */
 export function getFiscalYearLabel(yearMonth: string): string {
