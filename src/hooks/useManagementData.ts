@@ -128,13 +128,16 @@ export function useManagementData() {
   const currentData = monthlyData.find((m) => m.ym === currentMonth);
   const prevData = monthlyData.find((m) => m.ym === previousMonth);
 
-  // Current month KPIs
-  const currentRevenue = currentData?.revenue ?? 0;
+  // Whether current month actually has data (revenue > 0 from monthly_sales)
+  const currentMonthHasData = (currentData?.revenue ?? 0) > 0;
+
+  // Current month KPIs — only show if data exists for the JST current month
+  const currentRevenue = currentMonthHasData ? currentData!.revenue : 0;
   const currentTarget = currentData?.target ?? 0;
-  const currentGrossProfit = currentData?.grossProfit ?? 0;
-  const currentGrossMarginRate = currentData?.grossMarginRate ?? 0;
-  const currentOperatingProfit = currentData?.operatingProfit;
-  const currentOperatingMarginRate = currentData?.operatingMarginRate;
+  const currentGrossProfit = currentMonthHasData ? currentData!.grossProfit : 0;
+  const currentGrossMarginRate = currentMonthHasData ? currentData!.grossMarginRate : 0;
+  const currentOperatingProfit = currentMonthHasData ? (currentData?.operatingProfit ?? null) : null;
+  const currentOperatingMarginRate = currentMonthHasData ? (currentData?.operatingMarginRate ?? null) : null;
 
   // Cumulative
   const cumulativeRevenue = monthlyData.slice(0, currentIdx + 1).reduce((s, m) => s + m.revenue, 0);
