@@ -39,9 +39,10 @@ function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
 }
 
 export function useManagementData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
-  const currentMonth = CURRENT_MONTH;
-  const previousMonth = "2026-02";
+  const currentMonth = getCurrentMonth();
+  const fyEndYear = getFiscalEndYear(currentMonth);
+  const fiscalMonths = getFiscalYearMonths(fyEndYear);
+  const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const monthsElapsed = getFiscalMonthNumber(currentMonth);
   const fyLabel = getFiscalYearLabel(currentMonth);
