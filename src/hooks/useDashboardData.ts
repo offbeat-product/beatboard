@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber } from "@/lib/fiscalYear";
+import { getFiscalYearMonths, getCurrentMonth, getPreviousMonth, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getFiscalEndYear } from "@/lib/fiscalYear";
 
 export function useDashboardData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
-  const currentMonth = CURRENT_MONTH;
-  const previousMonth = "2026-02";
+  const currentMonth = getCurrentMonth();
+  const fyEndYear = getFiscalEndYear(currentMonth);
+  const fiscalMonths = getFiscalYearMonths(fyEndYear);
+  const previousMonth = getPreviousMonth(currentMonth);
 
   const monthlySalesQuery = useQuery({
     queryKey: ["monthly_sales", "dashboard"],
