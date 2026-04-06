@@ -177,6 +177,8 @@ export function useManagementData() {
     isError,
     fyLabel,
     monthsElapsed,
+    currentMonth,
+    currentMonthHasData,
     // Current month
     currentRevenue,
     currentTarget,
