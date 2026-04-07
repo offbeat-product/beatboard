@@ -7,6 +7,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { CurrencyUnitProvider } from "@/hooks/useCurrencyUnit";
+import { RefreshProvider } from "@/hooks/useRefresh";
+import { RefreshStatusCard } from "@/components/RefreshStatusCard";
 import { AccessBlockedScreen } from "@/components/AccessBlockedScreen";
 import Index from "./pages/Index";
 import Finance from "./pages/Finance";
