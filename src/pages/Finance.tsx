@@ -8,7 +8,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { FinanceInputModal } from "@/components/FinanceInputModal";
-import { FetchLatestButton } from "@/components/FetchLatestButton";
+import { RefreshButton } from "@/components/RefreshButton";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
@@ -214,7 +214,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         {!embedded && <PageHeader title="財務指標" description="資金繰り・キャッシュフロー管理" />}
-        {!embedded && <FetchLatestButton targets="both" />}
+        {!embedded && <RefreshButton />}
       </div>
 
       {/* KPI Cards */}

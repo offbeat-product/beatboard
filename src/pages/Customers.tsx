@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getMonthLabel } from "@/lib/fiscalYear";
 import { PageHeader } from "@/components/PageHeader";
-import { FetchLatestButton } from "@/components/FetchLatestButton";
+import { RefreshButton } from "@/components/RefreshButton";
 
 const Customers = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "顧客分析");
@@ -102,7 +102,7 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <Users className="h-4 w-4" /> 顧客数 / 単価
           </div>
-          {!embedded && <FetchLatestButton targets="board" />}
+          {!embedded && <RefreshButton />}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiMiniCard label="前月 顧客数" value={`${d.prevCustomerCount}社`} />

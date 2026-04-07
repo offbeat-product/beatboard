@@ -7,6 +7,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { CurrencyUnitProvider } from "@/hooks/useCurrencyUnit";
+import { RefreshProvider } from "@/hooks/useRefresh";
+import { RefreshStatusCard } from "@/components/RefreshStatusCard";
 import { AccessBlockedScreen } from "@/components/AccessBlockedScreen";
 import Index from "./pages/Index";
 import Finance from "./pages/Finance";
@@ -66,13 +68,16 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <CurrencyUnitProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+      <RefreshProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+            <RefreshStatusCard />
+          </BrowserRouter>
+        </TooltipProvider>
+      </RefreshProvider>
     </CurrencyUnitProvider>
   </QueryClientProvider>
 );
