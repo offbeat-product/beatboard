@@ -363,27 +363,63 @@ export type Database = {
       kpi_snapshots: {
         Row: {
           actual_value: number
+          cost_of_sales: number | null
           created_at: string
+          first_pass_rate: number | null
+          gross_profit: number | null
+          gross_profit_per_hour: number | null
+          gross_profit_rate: number | null
           id: string
           metric_name: string
+          operating_profit: number | null
+          operating_profit_rate: number | null
           org_id: string
+          revenue: number | null
+          sga_total: number | null
           snapshot_date: string
+          top_client_ratio: number | null
+          total_hours: number | null
+          ym: string | null
         }
         Insert: {
           actual_value: number
+          cost_of_sales?: number | null
           created_at?: string
+          first_pass_rate?: number | null
+          gross_profit?: number | null
+          gross_profit_per_hour?: number | null
+          gross_profit_rate?: number | null
           id?: string
           metric_name: string
+          operating_profit?: number | null
+          operating_profit_rate?: number | null
           org_id: string
+          revenue?: number | null
+          sga_total?: number | null
           snapshot_date: string
+          top_client_ratio?: number | null
+          total_hours?: number | null
+          ym?: string | null
         }
         Update: {
           actual_value?: number
+          cost_of_sales?: number | null
           created_at?: string
+          first_pass_rate?: number | null
+          gross_profit?: number | null
+          gross_profit_per_hour?: number | null
+          gross_profit_rate?: number | null
           id?: string
           metric_name?: string
+          operating_profit?: number | null
+          operating_profit_rate?: number | null
           org_id?: string
+          revenue?: number | null
+          sga_total?: number | null
           snapshot_date?: string
+          top_client_ratio?: number | null
+          total_hours?: number | null
+          ym?: string | null
         }
         Relationships: [
           {
