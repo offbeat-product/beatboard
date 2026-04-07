@@ -362,7 +362,7 @@ export type Database = {
       }
       kpi_snapshots: {
         Row: {
-          actual_value: number
+          actual_value: number | null
           cost_of_sales: number | null
           created_at: string
           first_pass_rate: number | null
@@ -370,7 +370,7 @@ export type Database = {
           gross_profit_per_hour: number | null
           gross_profit_rate: number | null
           id: string
-          metric_name: string
+          metric_name: string | null
           operating_profit: number | null
           operating_profit_rate: number | null
           org_id: string
@@ -382,7 +382,7 @@ export type Database = {
           ym: string | null
         }
         Insert: {
-          actual_value: number
+          actual_value?: number | null
           cost_of_sales?: number | null
           created_at?: string
           first_pass_rate?: number | null
@@ -390,7 +390,7 @@ export type Database = {
           gross_profit_per_hour?: number | null
           gross_profit_rate?: number | null
           id?: string
-          metric_name: string
+          metric_name?: string | null
           operating_profit?: number | null
           operating_profit_rate?: number | null
           org_id: string
@@ -402,7 +402,7 @@ export type Database = {
           ym?: string | null
         }
         Update: {
-          actual_value?: number
+          actual_value?: number | null
           cost_of_sales?: number | null
           created_at?: string
           first_pass_rate?: number | null
@@ -410,7 +410,7 @@ export type Database = {
           gross_profit_per_hour?: number | null
           gross_profit_rate?: number | null
           id?: string
-          metric_name?: string
+          metric_name?: string | null
           operating_profit?: number | null
           operating_profit_rate?: number | null
           org_id?: string
