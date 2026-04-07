@@ -117,7 +117,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-muted-foreground">当月実績（{d.currentMonth}）</span>
-          {!embedded && <FetchLatestButton targets="both" />}
+          {!embedded && <RefreshButton />}
         </div>
         {d.currentMonthHasData ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
