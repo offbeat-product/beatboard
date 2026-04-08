@@ -55,6 +55,8 @@ export interface PlanSettings {
   monthly_sga_overrides: Record<string, Record<string, number>>;
   annual_sga_total: number;
   client_revenue_plan: ClientRevenuePlanRow[];
+  revenue_distribution_pattern: string;
+  revenue_growth_factor: number;
 }
 
 export const DEFAULT_SGA_CATEGORIES: SgaCategory[] = [

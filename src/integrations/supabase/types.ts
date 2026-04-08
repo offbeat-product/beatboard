@@ -667,6 +667,8 @@ export type Database = {
           personnel_cost_rate: number | null
           professional_rate: number | null
           recruitment_rate: number | null
+          revenue_distribution_pattern: string | null
+          revenue_growth_factor: number | null
           revision_rate_target: number | null
           sga_allocation_rates: Json | null
           sga_categories: Json | null
@@ -701,6 +703,8 @@ export type Database = {
           personnel_cost_rate?: number | null
           professional_rate?: number | null
           recruitment_rate?: number | null
+          revenue_distribution_pattern?: string | null
+          revenue_growth_factor?: number | null
           revision_rate_target?: number | null
           sga_allocation_rates?: Json | null
           sga_categories?: Json | null
@@ -735,6 +739,8 @@ export type Database = {
           personnel_cost_rate?: number | null
           professional_rate?: number | null
           recruitment_rate?: number | null
+          revenue_distribution_pattern?: string | null
+          revenue_growth_factor?: number | null
           revision_rate_target?: number | null
           sga_allocation_rates?: Json | null
           sga_categories?: Json | null
