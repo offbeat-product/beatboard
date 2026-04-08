@@ -13,7 +13,7 @@ import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, Copy, ChevronsUpDown, Check } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronsUpDown, Check, ArrowUp, ArrowDown } from "lucide-react";
 
 interface Props {
   months: string[];
@@ -96,6 +96,14 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     updateRows(newRows);
   };
 
+  const moveClient = (idx: number, direction: "up" | "down") => {
+    const newIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= rows.length) return;
+    const newRows = [...rows];
+    [newRows[idx], newRows[newIdx]] = [newRows[newIdx], newRows[idx]];
+    updateRows(newRows.map((r, i) => ({ ...r, order: i + 1 })));
+  };
+
   const setCellValue = (idx: number, ym: string, value: number) => {
     const newRows = [...rows];
     newRows[idx] = {
@@ -162,7 +170,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableHead>
               ))}
               <TableHead className="text-center text-xs min-w-[110px] bg-muted/50">年間合計</TableHead>
-              <TableHead className="text-xs min-w-[40px]"></TableHead>
+              <TableHead className="text-xs min-w-[80px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -218,9 +226,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 })}
                 <TableCell className="text-right bg-muted/30 font-medium">{fmtC(getRowAnnual(row))}</TableCell>
                 <TableCell className="p-1">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)}>
-                    <Trash2 className="h-3 w-3 text-muted-foreground" />
-                  </Button>
+                  <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "up")} disabled={idx === 0} title="上に移動">
+                      <ArrowUp className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "down")} disabled={idx === rows.length - 1} title="下に移動">
+                      <ArrowDown className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
+                      <Trash2 className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
