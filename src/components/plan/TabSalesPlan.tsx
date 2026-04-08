@@ -488,31 +488,18 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
                   const rowCount = hasActualRow ? 3 : 1;
 
                   const planRow = (
-                    <TableRow key={`${crow.label}-plan`} className={cn("hover:bg-muted/30", !isEditable && "bg-muted/20", isEditable && "bg-blue-50/50 dark:bg-blue-950/20")}>
+                    <TableRow key={`${crow.label}-plan`} className={cn("hover:bg-muted/30", "bg-muted/20")}>
                       <TableCell rowSpan={rowCount} className="sticky left-0 bg-card z-10 font-medium border-r">
                         {crow.label}
-                        {!isEditable && <Badge variant="secondary" className="ml-1 text-[8px] px-1 py-0 h-3.5">自動計算</Badge>}
+                        <Badge variant="secondary" className="ml-1 text-[8px] px-1 py-0 h-3.5">自動計算</Badge>
                       </TableCell>
-                      <TableCell className={cn("sticky left-[140px] bg-card z-10 text-muted-foreground border-r", isEditable && "bg-blue-50/50 dark:bg-blue-950/20")}>計画</TableCell>
+                      <TableCell className={cn("sticky left-[140px] bg-card z-10 text-muted-foreground border-r")}>計画</TableCell>
                       {months.map((ym, mi) => {
                         const mp = monthlyPlans[mi];
-                        if (isEditable && crow.field) {
-                          return (
-                            <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
-                              <Input
-                                type="number"
-                                value={mp.clientData[crow.field] || ""}
-                                onChange={(e) => updateClientData(ym, crow.field!, parseInt(e.target.value) || 0)}
-                                className="h-7 text-xs text-center w-16 mx-auto focus-visible:ring-[hsl(217,91%,60%)]"
-                                tabIndex={0}
-                              />
-                            </TableCell>
-                          );
-                        }
                         const val = crow.calcFn ? crow.calcFn(mp) : 0;
                         return (
                           <TableCell key={ym} className={cn("text-right text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
-                            {crow.isCurrency ? (val > 0 ? fmtC(val) : "—") : (mp.clientData.active > 0 ? String(val) : "—")}
+                            {crow.isCurrency ? (val > 0 ? fmtC(val) : "—") : (val > 0 ? String(val) : "—")}
                           </TableCell>
                         );
                       })}
