@@ -135,7 +135,9 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const getRowAnnual = (row: ClientRevenuePlanRow): number =>
     months.reduce((s, ym) => s + (row.monthly_revenue[ym] || 0), 0);
 
-  const grandTotal = months.reduce((s, ym) => s + getMonthTotal(ym), 0);
+  const annualTarget = settings.distribution_mode === "equal"
+    ? settings.annual_revenue_target
+    : settings.monthly_revenue_distribution.reduce((s, v) => s + v, 0);
 
   const fmtC = (v: number) => fmtNum(v, unit);
   const parseInput = (v: string): number => parseInt(v.replace(/,/g, "")) || 0;
@@ -149,11 +151,21 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   return (
     <section className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
       <div className="px-5 py-4">
-        <SectionHeading title="顧客別売上計画" description="顧客ごとの月別売上計画を入力します。月合計が月次売上計画に自動反映されます（Single Source of Truth）。" />
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm font-medium">年間合計:</span>
-          <span className="text-base font-bold text-primary">{fmtC(grandTotal)}</span>
-          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">顧客別合計 → 月次売上計画に自動反映</Badge>
+        <SectionHeading title="顧客別売上計画" description="配分パターンで設定された月次売上目標の内訳を顧客別に入力します。" />
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
+          <span className="text-sm font-medium">年間目標:</span>
+          <span className="text-base font-bold text-primary">{fmtC(annualTarget)}</span>
+          <span className="text-sm text-muted-foreground">|</span>
+          <span className="text-sm font-medium">顧客別合計:</span>
+          <span className={cn("text-base font-bold", Math.abs(grandTotal - annualTarget) < 1 ? "text-green-600" : "text-destructive")}>{fmtC(grandTotal)}</span>
+          {Math.abs(grandTotal - annualTarget) >= 1 && (
+            <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
+              差額: {fmtC(grandTotal - annualTarget)}
+            </Badge>
+          )}
+          {Math.abs(grandTotal - annualTarget) < 1 && (
+            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">一致</Badge>
+          )}
         </div>
       </div>
 
