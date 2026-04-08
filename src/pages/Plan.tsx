@@ -9,8 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { Save, Download, Copy } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { PlanSettings, DEFAULT_SETTINGS, DEFAULT_STAFFING, DEFAULT_HALF_YEAR_DIST, DEFAULT_SGA_CATEGORIES } from "@/components/plan/PlanTypes";
+import { PlanSettings, DEFAULT_SETTINGS, DEFAULT_STAFFING, DEFAULT_HALF_YEAR_DIST, DEFAULT_SGA_CATEGORIES, DEFAULT_SGA_ALLOCATION_RATES } from "@/components/plan/PlanTypes";
 import { TabBusinessTargets } from "@/components/plan/TabBusinessTargets";
 import { TabSalesPlan } from "@/components/plan/TabSalesPlan";
 import { TabOrganizationPlan } from "@/components/plan/TabOrganizationPlan";
@@ -73,6 +72,10 @@ const Plan = () => {
           monthly_clients: (d.monthly_clients && typeof d.monthly_clients === "object" && !Array.isArray(d.monthly_clients)) ? d.monthly_clients : {},
           sga_categories: Array.isArray(d.sga_categories) && d.sga_categories.length > 0 ? d.sga_categories : DEFAULT_SGA_CATEGORIES,
           monthly_sga: (d.monthly_sga && typeof d.monthly_sga === "object" && !Array.isArray(d.monthly_sga)) ? d.monthly_sga : {},
+          sga_allocation_rates: (d.sga_allocation_rates && typeof d.sga_allocation_rates === "object" && !Array.isArray(d.sga_allocation_rates)) ? d.sga_allocation_rates : DEFAULT_SGA_ALLOCATION_RATES,
+          monthly_sga_overrides: (d.monthly_sga_overrides && typeof d.monthly_sga_overrides === "object" && !Array.isArray(d.monthly_sga_overrides)) ? d.monthly_sga_overrides : {},
+          annual_sga_total: Number(d.annual_sga_total) || 0,
+          client_revenue_plan: Array.isArray(d.client_revenue_plan) ? d.client_revenue_plan : [],
         };
         setSettings(loaded);
         setInitialSettings(JSON.stringify(loaded));
@@ -115,6 +118,10 @@ const Plan = () => {
         monthly_clients: settings.monthly_clients,
         sga_categories: settings.sga_categories,
         monthly_sga: settings.monthly_sga,
+        sga_allocation_rates: settings.sga_allocation_rates,
+        monthly_sga_overrides: settings.monthly_sga_overrides,
+        annual_sga_total: settings.annual_sga_total,
+        client_revenue_plan: settings.client_revenue_plan,
         updated_at: new Date().toISOString(),
       };
 
@@ -196,6 +203,8 @@ const Plan = () => {
       annual_client_target: Number(d.annual_client_target) || settings.annual_client_target,
       annual_project_target: Number(d.annual_project_target) || settings.annual_project_target,
       sga_categories: Array.isArray(d.sga_categories) && d.sga_categories.length > 0 ? d.sga_categories : settings.sga_categories,
+      sga_allocation_rates: (d.sga_allocation_rates && typeof d.sga_allocation_rates === "object") ? d.sga_allocation_rates : settings.sga_allocation_rates,
+      annual_sga_total: Number(d.annual_sga_total) || settings.annual_sga_total,
     });
     setDirty(true);
     toast.success("前年度の計画をコピーしました");
