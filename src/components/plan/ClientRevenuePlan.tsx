@@ -170,7 +170,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableHead>
               ))}
               <TableHead className="text-center text-xs min-w-[110px] bg-muted/50">年間合計</TableHead>
-              <TableHead className="text-xs min-w-[40px]"></TableHead>
+              <TableHead className="text-xs min-w-[80px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
