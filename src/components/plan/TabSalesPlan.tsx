@@ -157,11 +157,6 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
     });
   }, [months, settings, sales, freeeData, projectPl, currentMonth]);
 
-  const updateClientData = (ym: string, field: keyof MonthlyClientData, value: number) => {
-    const next = { ...settings.monthly_clients };
-    next[ym] = { ...(next[ym] || { active: 0, new: 0, churned: 0 }), [field]: value };
-    update("monthly_clients", next);
-  };
 
   const fmtC = (v: number, isGph = false) => fmtNum(v, unit, isGph);
   const fmtP = (v: number | null) => v !== null ? `${v.toFixed(1)}%` : "—";
