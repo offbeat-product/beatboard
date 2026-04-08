@@ -33,6 +33,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const currentMonth = getCurrentMonth();
   const [newClientName, setNewClientName] = useState("");
   const [showClientPicker, setShowClientPicker] = useState(false);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
 
   const rows = settings.client_revenue_plan || [];
 
