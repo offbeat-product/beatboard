@@ -235,10 +235,10 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
 
   // Client section rows rendered separately for input support
   const clientInputRows = [
-    { label: "月間アクティブ顧客数", field: "active" as const, editable: true },
+    { label: "月間アクティブ顧客数", field: "active" as const, editable: true, showActual: true, actualFn: (mp: typeof monthlyPlans[0]) => mp.clientCount },
     { label: "新規顧客数", field: "new" as const, editable: true },
     { label: "既存顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.existingClients },
-    { label: "顧客平均単価", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientUnitPricePlan, isCurrency: true },
+    { label: "顧客平均単価", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientUnitPricePlan, isCurrency: true, showActual: true, actualCalcFn: (mp: typeof monthlyPlans[0]) => mp.clientAvg, actualIsCurrency: true },
     { label: "解約顧客数", field: "churned" as const, editable: true },
   ];
 
@@ -478,16 +478,19 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
                   ));
                 })}
 
-                {/* Customer input rows */}
+                {/* Customer input rows with plan/actual/diff */}
                 {clientInputRows.map((crow) => {
                   const isEditable = crow.editable;
-                  return (
-                    <TableRow key={crow.label} className={cn("hover:bg-muted/30", !isEditable && "bg-muted/20")}>
-                      <TableCell className="sticky left-0 bg-card z-10 font-medium border-r">
+                  const hasActualRow = 'showActual' in crow && crow.showActual;
+                  const rowCount = hasActualRow ? 3 : 1;
+
+                  const planRow = (
+                    <TableRow key={`${crow.label}-plan`} className={cn("hover:bg-muted/30", !isEditable && "bg-muted/20", isEditable && "bg-blue-50/50 dark:bg-blue-950/20")}>
+                      <TableCell rowSpan={rowCount} className="sticky left-0 bg-card z-10 font-medium border-r">
                         {crow.label}
                         {!isEditable && <Badge variant="secondary" className="ml-1 text-[8px] px-1 py-0 h-3.5">自動計算</Badge>}
                       </TableCell>
-                      <TableCell className="sticky left-[140px] bg-card z-10 text-muted-foreground border-r">計画</TableCell>
+                      <TableCell className={cn("sticky left-[140px] bg-card z-10 text-muted-foreground border-r", isEditable && "bg-blue-50/50 dark:bg-blue-950/20")}>計画</TableCell>
                       {months.map((ym, mi) => {
                         const mp = monthlyPlans[mi];
                         if (isEditable && crow.field) {
@@ -503,7 +506,6 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
                             </TableCell>
                           );
                         }
-                        // Auto-calc fields
                         const val = crow.calcFn ? crow.calcFn(mp) : 0;
                         return (
                           <TableCell key={ym} className={cn("text-right text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
@@ -514,30 +516,59 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
                       <TableCell className="text-right bg-muted/30 font-medium">—</TableCell>
                     </TableRow>
                   );
-                })}
 
-                {/* Landing forecast */}
-                <TableRow className="bg-muted/50">
-                  <TableCell colSpan={months.length + 3} className="sticky left-0 bg-muted/50 z-10 font-semibold text-xs border-l-4 border-l-primary">着地予測</TableCell>
-                </TableRow>
-                {(() => {
-                  const me = monthlyPlans.filter(m => m.hasActual).length;
-                  const revSum = monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.revActual, 0);
-                  const gpSum = monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.gpActual, 0);
-                  const opSum = monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.opActual, 0);
-                  return [
-                    { label: "売上着地予測", value: me > 0 ? (revSum / me) * 12 : 0 },
-                    { label: "粗利着地予測", value: me > 0 ? (gpSum / me) * 12 : 0 },
-                    { label: "営業利益着地予測", value: me > 0 ? (opSum / me) * 12 : 0 },
-                  ].map(f => (
-                    <TableRow key={f.label} className="hover:bg-muted/30">
-                      <TableCell className="sticky left-0 bg-card z-10 font-medium border-r">{f.label}</TableCell>
-                      <TableCell className="sticky left-[140px] bg-card z-10 text-muted-foreground border-r">予測</TableCell>
-                      {months.map((_, i) => <TableCell key={i} className="text-center text-muted-foreground">—</TableCell>)}
-                      <TableCell className="text-right bg-muted/30 font-semibold">{me > 0 ? fmtC(f.value) : "—"}</TableCell>
+                  if (!hasActualRow) return planRow;
+
+                  const actualRow = (
+                    <TableRow key={`${crow.label}-actual`} className="hover:bg-muted/30">
+                      <TableCell className="sticky left-[140px] bg-card z-10 text-muted-foreground border-r">実績</TableCell>
+                      {months.map((ym, mi) => {
+                        const mp = monthlyPlans[mi];
+                        let val: number | null = null;
+                        if (mp.hasActual) {
+                          if ('actualFn' in crow && crow.actualFn) val = crow.actualFn(mp);
+                          else if ('actualCalcFn' in crow && crow.actualCalcFn) val = crow.actualCalcFn(mp);
+                        }
+                        const isCur = ('actualIsCurrency' in crow && crow.actualIsCurrency) || crow.isCurrency;
+                        return (
+                          <TableCell key={ym} className={cn("text-right", ym === currentMonth && "bg-primary/5")}>
+                            {val !== null && val > 0 ? (isCur ? fmtC(val) : String(val)) : "—"}
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-right bg-muted/30 font-medium">—</TableCell>
                     </TableRow>
-                  ));
-                })()}
+                  );
+
+                  const diffRow = (
+                    <TableRow key={`${crow.label}-diff`} className="hover:bg-muted/30">
+                      <TableCell className="sticky left-[140px] bg-card z-10 text-muted-foreground border-r">差異</TableCell>
+                      {months.map((ym, mi) => {
+                        const mp = monthlyPlans[mi];
+                        if (!mp.hasActual) return <TableCell key={ym} className={cn("text-right", ym === currentMonth && "bg-primary/5")}>—</TableCell>;
+                        let planVal = 0;
+                        let actualVal = 0;
+                        if (crow.field && crow.editable) {
+                          planVal = mp.clientData[crow.field] || 0;
+                          if ('actualFn' in crow && crow.actualFn) actualVal = crow.actualFn(mp);
+                        } else {
+                          if (crow.calcFn) planVal = crow.calcFn(mp);
+                          if ('actualCalcFn' in crow && crow.actualCalcFn) actualVal = crow.actualCalcFn(mp);
+                        }
+                        const diff = actualVal - planVal;
+                        const isCur = ('actualIsCurrency' in crow && crow.actualIsCurrency) || crow.isCurrency;
+                        return (
+                          <TableCell key={ym} className={cn("text-right", ym === currentMonth && "bg-primary/5", diff >= 0 ? "text-green-600" : "text-destructive")}>
+                            {planVal > 0 || actualVal > 0 ? (isCur ? fmtC(diff) : String(diff)) : "—"}
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-right bg-muted/30 font-medium">—</TableCell>
+                    </TableRow>
+                  );
+
+                  return [planRow, actualRow, diffRow];
+                })}
               </TableBody>
             </Table>
           </div>
