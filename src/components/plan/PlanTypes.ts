@@ -212,7 +212,7 @@ export const computeAnnualSgaTotal = (s: PlanSettings): number => {
   return gp - op;
 };
 
-/** Get SGA cell value: override first, then auto-calc from monthly gross profit */
+/** Get SGA cell value: override first, then auto-calc from monthly SGA budget (GP - OP) */
 export const getSgaCellValue = (
   s: PlanSettings,
   ym: string,
@@ -226,12 +226,18 @@ export const getSgaCellValue = (
   }
   const rate = s.sga_allocation_rates?.[catId] ?? 0;
 
-  // Use monthly gross profit as the base for allocation
+  // Monthly SGA budget = monthly GP - monthly OP (same as TabSalesPlan sgaPlan)
   const dist = s.monthly_revenue_distribution ?? [];
   const monthIndex = months ? months.indexOf(ym) : -1;
   const monthlyRevenue = monthIndex >= 0 && monthIndex < dist.length ? dist[monthIndex] : 0;
-  const monthlyGrossProfit = monthlyRevenue * ((s.gross_profit_rate ?? 70) / 100);
-  const autoValue = monthlyGrossProfit * (rate / 100);
+  const equalRevenue = s.distribution_mode === "equal"
+    ? s.annual_revenue_target / (months?.length || 12)
+    : monthlyRevenue;
+  const rev = s.distribution_mode === "equal" ? equalRevenue : monthlyRevenue;
+  const gpPlan = rev * ((s.gross_profit_rate ?? 70) / 100);
+  const opPlan = rev * ((s.operating_profit_rate ?? 20) / 100);
+  const sgaBudget = gpPlan - opPlan;
+  const autoValue = sgaBudget * (rate / 100);
 
   return { value: autoValue, isOverride: false };
 };
