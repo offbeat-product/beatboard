@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "./SectionHeading";
 import { FieldWithTooltip } from "./FieldWithTooltip";
 import { PlanSettings, MonthlyClientData, fmtNum, fmtInputVal, parseInputVal } from "./PlanTypes";
-import { SGA_CATEGORIES, SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { getMonthLabel, getCurrentMonth, ORG_ID } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { ClientRevenuePlan } from "./ClientRevenuePlan";
 
 function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
   const result: Record<string, number> = {};
