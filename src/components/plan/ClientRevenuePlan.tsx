@@ -96,6 +96,14 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     updateRows(newRows);
   };
 
+  const moveClient = (idx: number, direction: "up" | "down") => {
+    const newIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= rows.length) return;
+    const newRows = [...rows];
+    [newRows[idx], newRows[newIdx]] = [newRows[newIdx], newRows[idx]];
+    updateRows(newRows.map((r, i) => ({ ...r, order: i + 1 })));
+  };
+
   const setCellValue = (idx: number, ym: string, value: number) => {
     const newRows = [...rows];
     newRows[idx] = {
