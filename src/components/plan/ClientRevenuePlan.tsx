@@ -13,7 +13,7 @@ import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, Copy, ChevronsUpDown, Check } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronsUpDown, Check, ArrowUp, ArrowDown } from "lucide-react";
 
 interface Props {
   months: string[];
