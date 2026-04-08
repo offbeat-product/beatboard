@@ -30,9 +30,11 @@ const Plan = () => {
   const [initialSettings, setInitialSettings] = useState<string>("");
 
   const update = (field: keyof PlanSettings, value: any) => {
-    const next = { ...settings, [field]: value };
-    if (field === "cost_rate") next.gross_profit_rate = 100 - (value as number);
-    setSettings(next);
+    setSettings(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === "cost_rate") next.gross_profit_rate = 100 - (value as number);
+      return next;
+    });
     setDirty(true);
   };
 
