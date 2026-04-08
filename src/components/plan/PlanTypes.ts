@@ -212,18 +212,26 @@ export const computeAnnualSgaTotal = (s: PlanSettings): number => {
   return gp - op;
 };
 
-/** Get SGA cell value: override first, then auto-calc */
+/** Get SGA cell value: override first, then auto-calc from monthly gross profit */
 export const getSgaCellValue = (
   s: PlanSettings,
   ym: string,
   catId: string,
-  annualSga: number
+  _annualSga: number,
+  months?: string[]
 ): { value: number; isOverride: boolean } => {
   const override = s.monthly_sga_overrides?.[ym]?.[catId];
   if (override !== undefined && override !== null) {
     return { value: override, isOverride: true };
   }
   const rate = s.sga_allocation_rates?.[catId] ?? 0;
-  const autoValue = (annualSga / 12) * (rate / 100);
+
+  // Use monthly gross profit as the base for allocation
+  const dist = s.monthly_revenue_distribution ?? [];
+  const monthIndex = months ? months.indexOf(ym) : -1;
+  const monthlyRevenue = monthIndex >= 0 && monthIndex < dist.length ? dist[monthIndex] : 0;
+  const monthlyGrossProfit = monthlyRevenue * ((s.gross_profit_rate ?? 70) / 100);
+  const autoValue = monthlyGrossProfit * (rate / 100);
+
   return { value: autoValue, isOverride: false };
 };
