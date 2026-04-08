@@ -30,7 +30,7 @@ export function TabSgaPlan({ months, settings, update }: Props) {
   const ratesSum = categories.reduce((s, cat) => s + (settings.sga_allocation_rates?.[cat.id] ?? 0), 0);
   const ratesValid = Math.abs(ratesSum - 100) < 0.1;
 
-  const getCell = (ym: string, catId: string) => getSgaCellValue(settings, ym, catId, annualSga);
+  const getCell = (ym: string, catId: string) => getSgaCellValue(settings, ym, catId, annualSga, months);
 
   const setOverride = (ym: string, catId: string, value: number) => {
     const next = { ...settings.monthly_sga_overrides };
