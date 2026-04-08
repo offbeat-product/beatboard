@@ -70,12 +70,12 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
   const updateRows = (newRows: ClientRevenuePlanRow[]) => {
     update("client_revenue_plan", newRows);
-    // SSoT: update monthly_revenue_distribution from client plan totals
-    const newDist = months.map(ym =>
-      newRows.reduce((s, r) => s + (r.monthly_revenue[ym] || 0), 0)
-    );
-    update("monthly_revenue_distribution", newDist);
-    update("distribution_mode", "client_plan");
+  };
+
+  // Monthly target from distribution pattern (fixed, read-only)
+  const getMonthTarget = (ym: string, i: number): number => {
+    if (settings.distribution_mode === "equal") return settings.annual_revenue_target / 12;
+    return settings.monthly_revenue_distribution[i] || 0;
   };
 
   const addClient = (clientId: string | null, clientName: string) => {
