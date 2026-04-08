@@ -184,6 +184,18 @@ export function TabSgaPlan({ months, settings, update }: Props) {
                   <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
                     <div className="flex items-center gap-1">
                       <span className="truncate">{cat.name}</span>
+                      {SGA_CATEGORY_TOOLTIPS[cat.id] && (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-3 w-3 text-muted-foreground shrink-0 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-[240px] text-xs">
+                              {SGA_CATEGORY_TOOLTIPS[cat.id]}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0" onClick={() => removeCategory(cat.id)} title="カテゴリを削除">
                         <Trash2 className="h-3 w-3 text-muted-foreground" />
                       </Button>
