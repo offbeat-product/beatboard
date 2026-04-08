@@ -139,6 +139,8 @@ export const DEFAULT_SETTINGS = (months: string[]): PlanSettings => ({
   monthly_sga_overrides: {},
   annual_sga_total: 0,
   client_revenue_plan: [],
+  revenue_distribution_pattern: "standard",
+  revenue_growth_factor: 1.5,
 });
 
 /* ── Helpers ── */
