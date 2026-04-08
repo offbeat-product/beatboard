@@ -255,9 +255,23 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               </TableRow>
             ))}
 
+            {/* Month target row */}
+            <TableRow className="bg-muted/30">
+              <TableCell className="sticky left-0 bg-muted/30 z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
+              <TableCell className="sticky left-[150px] bg-muted/30 z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
+              <TableCell className="sticky left-[220px] bg-muted/30 z-10 border-r" />
+              {months.map((ym, i) => (
+                <TableCell key={ym} className={cn("text-right text-xs text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
+                  {fmtC(getMonthTarget(ym, i))}
+                </TableCell>
+              ))}
+              <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">{fmtC(annualTarget)}</TableCell>
+              <TableCell />
+            </TableRow>
+
             {/* Month totals */}
             <TableRow className="bg-muted/50 font-semibold">
-              <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">月合計</TableCell>
+              <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
               <TableCell className="sticky left-[150px] bg-muted/50 z-10 border-r">—</TableCell>
               <TableCell className="sticky left-[220px] bg-muted/50 z-10 border-r" />
               {months.map((ym) => (
@@ -266,6 +280,27 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableCell>
               ))}
               <TableCell className="text-right bg-muted/30 font-bold">{fmtC(grandTotal)}</TableCell>
+              <TableCell />
+            </TableRow>
+
+            {/* Remaining row */}
+            <TableRow>
+              <TableCell className="sticky left-0 bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
+              <TableCell className="sticky left-[150px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[220px] bg-card z-10 border-r" />
+              {months.map((ym, i) => {
+                const target = getMonthTarget(ym, i);
+                const total = getMonthTotal(ym);
+                const remaining = target - total;
+                return (
+                  <TableCell key={ym} className={cn("text-right text-xs", ym === currentMonth && "bg-primary/5", remaining > 0 ? "text-amber-600" : remaining < 0 ? "text-destructive" : "text-green-600")}>
+                    {fmtC(remaining)}
+                  </TableCell>
+                );
+              })}
+              <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualTarget - grandTotal > 0 ? "text-amber-600" : annualTarget - grandTotal < 0 ? "text-destructive" : "text-green-600")}>
+                {fmtC(annualTarget - grandTotal)}
+              </TableCell>
               <TableCell />
             </TableRow>
           </TableBody>
