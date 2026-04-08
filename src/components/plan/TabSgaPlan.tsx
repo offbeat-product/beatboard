@@ -128,7 +128,21 @@ export function TabSgaPlan({ months, settings, update }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {categories.map((cat) => (
             <div key={cat.id}>
-              <label className="text-xs font-medium truncate block">{cat.name} (%)</label>
+              <div className="flex items-center gap-1">
+                <label className="text-xs font-medium truncate">{cat.name} (%)</label>
+                {SGA_CATEGORY_TOOLTIPS[cat.id] && (
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3 w-3 text-muted-foreground shrink-0 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[240px] text-xs">
+                        {SGA_CATEGORY_TOOLTIPS[cat.id]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
               <Input
                 type="number"
                 value={settings.sga_allocation_rates?.[cat.id] ?? 0}
