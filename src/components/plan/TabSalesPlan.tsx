@@ -138,8 +138,12 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
 
       const hasActual = ym <= currentMonth && revActual > 0;
 
-      // Client plan data
-      const clientData = settings.monthly_clients[ym] || { active: 0, new: 0, churned: 0 };
+      // Client plan data — auto-calculated from client_revenue_plan
+      const crpRows = settings.client_revenue_plan || [];
+      const activeFromPlan = crpRows.filter(r => (r.monthly_revenue[ym] || 0) > 0).length;
+      const newFromPlan = crpRows.filter(r => r.category === "new" && (r.monthly_revenue[ym] || 0) > 0).length;
+      const churnedFromPlan = crpRows.filter(r => r.category === "risk" && (r.monthly_revenue[ym] || 0) > 0).length;
+      const clientData = { active: activeFromPlan, new: newFromPlan, churned: churnedFromPlan };
       const existingClients = clientData.active - clientData.new;
       const clientUnitPricePlan = clientData.active > 0 ? revPlan / clientData.active : 0;
 
