@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "./SectionHeading";
 import { FieldWithTooltip } from "./FieldWithTooltip";
-import { PlanSettings, MonthlyClientData, fmtNum, fmtInputVal, parseInputVal, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
+import { PlanSettings, fmtNum, fmtInputVal, parseInputVal, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth, ORG_ID } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
@@ -138,8 +138,12 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
 
       const hasActual = ym <= currentMonth && revActual > 0;
 
-      // Client plan data
-      const clientData = settings.monthly_clients[ym] || { active: 0, new: 0, churned: 0 };
+      // Client plan data — auto-calculated from client_revenue_plan
+      const crpRows = settings.client_revenue_plan || [];
+      const activeFromPlan = crpRows.filter(r => (r.monthly_revenue[ym] || 0) > 0).length;
+      const newFromPlan = crpRows.filter(r => r.category === "new" && (r.monthly_revenue[ym] || 0) > 0).length;
+      const churnedFromPlan = crpRows.filter(r => r.category === "risk" && (r.monthly_revenue[ym] || 0) > 0).length;
+      const clientData = { active: activeFromPlan, new: newFromPlan, churned: churnedFromPlan };
       const existingClients = clientData.active - clientData.new;
       const clientUnitPricePlan = clientData.active > 0 ? revPlan / clientData.active : 0;
 
@@ -153,11 +157,6 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
     });
   }, [months, settings, sales, freeeData, projectPl, currentMonth]);
 
-  const updateClientData = (ym: string, field: keyof MonthlyClientData, value: number) => {
-    const next = { ...settings.monthly_clients };
-    next[ym] = { ...(next[ym] || { active: 0, new: 0, churned: 0 }), [field]: value };
-    update("monthly_clients", next);
-  };
 
   const fmtC = (v: number, isGph = false) => fmtNum(v, unit, isGph);
   const fmtP = (v: number | null) => v !== null ? `${v.toFixed(1)}%` : "—";
@@ -230,16 +229,16 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
       totalPlanFn: () => fmtC(monthlyPlans.reduce((s, m) => s + m.opPlan, 0)),
       totalActualFn: () => fmtC(monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.opActual, 0)),
     },
-    { label: "顧客", section: true, sectionNote: "月ごとの顧客数を入力してください" },
+    { label: "顧客", section: true, sectionNote: "顧客別売上計画から自動算出されます" },
   ];
 
-  // Client section rows rendered separately for input support
+  // Client section rows rendered separately — now all auto-calculated from client_revenue_plan
   const clientInputRows = [
-    { label: "月間アクティブ顧客数", field: "active" as const, editable: true, showActual: true, actualFn: (mp: typeof monthlyPlans[0]) => mp.clientCount },
-    { label: "新規顧客数", field: "new" as const, editable: true },
+    { label: "月間アクティブ顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientData.active, showActual: true, actualFn: (mp: typeof monthlyPlans[0]) => mp.clientCount },
+    { label: "新規顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientData.new },
     { label: "既存顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.existingClients },
     { label: "顧客平均単価", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientUnitPricePlan, isCurrency: true, showActual: true, actualCalcFn: (mp: typeof monthlyPlans[0]) => mp.clientAvg, actualIsCurrency: true },
-    { label: "解約顧客数", field: "churned" as const, editable: true },
+    { label: "解約顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientData.churned },
   ];
 
   return (
@@ -484,31 +483,18 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
                   const rowCount = hasActualRow ? 3 : 1;
 
                   const planRow = (
-                    <TableRow key={`${crow.label}-plan`} className={cn("hover:bg-muted/30", !isEditable && "bg-muted/20", isEditable && "bg-blue-50/50 dark:bg-blue-950/20")}>
+                    <TableRow key={`${crow.label}-plan`} className={cn("hover:bg-muted/30", "bg-muted/20")}>
                       <TableCell rowSpan={rowCount} className="sticky left-0 bg-card z-10 font-medium border-r">
                         {crow.label}
-                        {!isEditable && <Badge variant="secondary" className="ml-1 text-[8px] px-1 py-0 h-3.5">自動計算</Badge>}
+                        <Badge variant="secondary" className="ml-1 text-[8px] px-1 py-0 h-3.5">自動計算</Badge>
                       </TableCell>
-                      <TableCell className={cn("sticky left-[140px] bg-card z-10 text-muted-foreground border-r", isEditable && "bg-blue-50/50 dark:bg-blue-950/20")}>計画</TableCell>
+                      <TableCell className={cn("sticky left-[140px] bg-card z-10 text-muted-foreground border-r")}>計画</TableCell>
                       {months.map((ym, mi) => {
                         const mp = monthlyPlans[mi];
-                        if (isEditable && crow.field) {
-                          return (
-                            <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
-                              <Input
-                                type="number"
-                                value={mp.clientData[crow.field] || ""}
-                                onChange={(e) => updateClientData(ym, crow.field!, parseInt(e.target.value) || 0)}
-                                className="h-7 text-xs text-center w-16 mx-auto focus-visible:ring-[hsl(217,91%,60%)]"
-                                tabIndex={0}
-                              />
-                            </TableCell>
-                          );
-                        }
                         const val = crow.calcFn ? crow.calcFn(mp) : 0;
                         return (
                           <TableCell key={ym} className={cn("text-right text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
-                            {crow.isCurrency ? (val > 0 ? fmtC(val) : "—") : (mp.clientData.active > 0 ? String(val) : "—")}
+                            {crow.isCurrency ? (val > 0 ? fmtC(val) : "—") : (val > 0 ? String(val) : "—")}
                           </TableCell>
                         );
                       })}
