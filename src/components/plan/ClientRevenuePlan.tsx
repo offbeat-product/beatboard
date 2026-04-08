@@ -246,19 +246,37 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
       <div className="px-5 py-3 border-t flex flex-wrap items-center gap-2">
         {showClientPicker ? (
           <>
-            <Select onValueChange={(v) => {
-              const c = clients.find(c => String(c.id) === v);
-              if (c) addClient(String(c.id), (c.name_disp || c.name) ?? "");
-            }}>
-              <SelectTrigger className="h-8 text-xs w-[200px]">
-                <SelectValue placeholder="既存顧客を選択..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableClients.map(c => (
-                  <SelectItem key={c.id} value={String(c.id)}>{c.name_disp || c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" aria-expanded={clientSearchOpen} className="h-8 text-xs w-[220px] justify-between font-normal">
+                  既存顧客を検索・選択...
+                  <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[260px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="顧客名で検索..." className="h-8 text-xs" />
+                  <CommandList>
+                    <CommandEmpty>該当する顧客がありません</CommandEmpty>
+                    <CommandGroup>
+                      {availableClients.map(c => (
+                        <CommandItem
+                          key={c.id}
+                          value={(c.name_disp || c.name) ?? ""}
+                          onSelect={() => {
+                            addClient(String(c.id), (c.name_disp || c.name) ?? "");
+                            setClientSearchOpen(false);
+                          }}
+                          className="text-xs"
+                        >
+                          {c.name_disp || c.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <span className="text-xs text-muted-foreground">または</span>
             <Input
               type="text"
