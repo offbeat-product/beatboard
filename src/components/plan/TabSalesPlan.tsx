@@ -257,13 +257,75 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
           )}
         </div>
         {settings.distribution_mode === "half_year" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <FieldWithTooltip label={`上半期目標（5月〜10月）(${unit === "thousand" ? "千円" : "円"})`} tooltip="上半期6ヶ月分の売上目標合計">
-              <Input type="text" value={fmtInputVal(firstHalfTarget, unit).toLocaleString()} onChange={(e) => { const v = parseInputVal(e.target.value, unit); setFirstHalfTarget(v); applyHalfYearDist(v, secondHalfTarget); }} className="focus-visible:ring-[hsl(217,91%,60%)]" />
-            </FieldWithTooltip>
-            <FieldWithTooltip label={`下半期目標（11月〜4月）(${unit === "thousand" ? "千円" : "円"})`} tooltip="下半期6ヶ月分の売上目標合計">
-              <Input type="text" value={fmtInputVal(secondHalfTarget, unit).toLocaleString()} onChange={(e) => { const v = parseInputVal(e.target.value, unit); setSecondHalfTarget(v); applyHalfYearDist(firstHalfTarget, v); }} className="focus-visible:ring-[hsl(217,91%,60%)]" />
-            </FieldWithTooltip>
+          <div className="space-y-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <FieldWithTooltip label={`上半期目標（5月〜10月）(${unit === "thousand" ? "千円" : "円"})`} tooltip="上半期6ヶ月分の売上目標合計">
+                <Input type="text" value={fmtInputVal(firstHalfTarget, unit).toLocaleString()} onChange={(e) => { const v = parseInputVal(e.target.value, unit); setFirstHalfTarget(v); applyHalfYearDist(v, secondHalfTarget); }} className="focus-visible:ring-[hsl(217,91%,60%)]" />
+              </FieldWithTooltip>
+              <FieldWithTooltip label={`下半期目標（11月〜4月）(${unit === "thousand" ? "千円" : "円"})`} tooltip="下半期6ヶ月分の売上目標合計">
+                <Input type="text" value={fmtInputVal(secondHalfTarget, unit).toLocaleString()} onChange={(e) => { const v = parseInputVal(e.target.value, unit); setSecondHalfTarget(v); applyHalfYearDist(firstHalfTarget, v); }} className="focus-visible:ring-[hsl(217,91%,60%)]" />
+              </FieldWithTooltip>
+              <div>
+                <Label className="text-xs font-medium">配分パターン</Label>
+                <Select value={settings.revenue_distribution_pattern || "standard"} onValueChange={(v) => {
+                  update("revenue_distribution_pattern", v);
+                  const g = v === "custom" ? (settings.revenue_growth_factor || 1.5) : (PATTERN_GROWTH_MAP[v] ?? 1.5);
+                  applyHalfYearDist(firstHalfTarget, secondHalfTarget, g);
+                }}>
+                  <SelectTrigger className="mt-1 h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="flat">均等配分 (g=1.0)</SelectItem>
+                    <SelectItem value="gentle">緩やかな右肩上がり (g=1.3)</SelectItem>
+                    <SelectItem value="standard">標準的な右肩上がり (g=1.5)</SelectItem>
+                    <SelectItem value="aggressive">急成長 (g=2.0)</SelectItem>
+                    <SelectItem value="custom">カスタム</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {settings.revenue_distribution_pattern === "custom" && (
+                <div>
+                  <Label className="text-xs font-medium">成長係数 (g)</Label>
+                  <Input type="number" step="0.1" min="1.0" max="3.0" value={settings.revenue_growth_factor || 1.5}
+                    onChange={(e) => {
+                      const g = Math.min(3, Math.max(1, parseFloat(e.target.value) || 1.5));
+                      update("revenue_growth_factor", g);
+                      applyHalfYearDist(firstHalfTarget, secondHalfTarget, g);
+                    }}
+                    className="mt-1 h-9 text-xs focus-visible:ring-[hsl(217,91%,60%)]" />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">最終月が初月の何倍か (1.0〜3.0)</p>
+                </div>
+              )}
+            </div>
+            {/* Half-year consistency check */}
+            {(() => {
+              const dist = settings.monthly_revenue_distribution;
+              if (dist.length < 12) return null;
+              const fhActual = dist.slice(0, 6).reduce((s, v) => s + v, 0);
+              const shActual = dist.slice(6, 12).reduce((s, v) => s + v, 0);
+              const fhDiff = fhActual - firstHalfTarget;
+              const shDiff = shActual - secondHalfTarget;
+              const hasOverrides = Object.keys(monthOverrides).length > 0;
+              if (!hasOverrides) return null;
+              return (
+                <div className="space-y-1">
+                  {Math.abs(fhDiff) > 1 && (
+                    <p className="text-xs text-destructive">
+                      上半期合計: {fmtNum(fhActual, unit)} / 目標 {fmtNum(firstHalfTarget, unit)}（差額 {fhDiff > 0 ? "+" : ""}{fmtNum(fhDiff, unit)}）
+                    </p>
+                  )}
+                  {Math.abs(shDiff) > 1 && (
+                    <p className="text-xs text-destructive">
+                      下半期合計: {fmtNum(shActual, unit)} / 目標 {fmtNum(secondHalfTarget, unit)}（差額 {shDiff > 0 ? "+" : ""}{fmtNum(shDiff, unit)}）
+                    </p>
+                  )}
+                  {(Math.abs(fhDiff) > 1 || Math.abs(shDiff) > 1) && (
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => applyHalfYearDist(firstHalfTarget, secondHalfTarget)}>
+                      <RotateCcw className="h-3 w-3 mr-1" />自動再配分
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
         {settings.distribution_mode === "manual" && (
@@ -280,10 +342,55 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
             {months.map((m, i) => {
               const val = settings.distribution_mode === "equal" ? settings.annual_revenue_target / 12 : (settings.monthly_revenue_distribution[i] || 0);
+              const isOverride = monthOverrides[i] !== undefined;
+              const isHalfYear = settings.distribution_mode === "half_year";
               return (
                 <div key={m}>
                   <Label className="text-xs text-muted-foreground">{getMonthLabel(m)}</Label>
-                  <div className="mt-1 h-7 flex items-center px-2 rounded-md bg-muted text-xs font-medium">{fmtNum(val, unit)}</div>
+                  {isHalfYear ? (
+                    <div className="mt-1 relative group">
+                      <div
+                        className={cn(
+                          "h-7 flex items-center justify-between px-2 rounded-md text-xs font-medium cursor-pointer hover:bg-muted/70",
+                          isOverride ? "bg-card border border-border" : "bg-muted text-muted-foreground"
+                        )}
+                        onClick={() => {
+                          const input = prompt(`${getMonthLabel(m)}の売上計画（円）`, String(Math.round(val)));
+                          if (input !== null) {
+                            const v = parseInt(input.replace(/,/g, "")) || 0;
+                            if (v > 0) {
+                              const newDist = [...settings.monthly_revenue_distribution];
+                              newDist[i] = v;
+                              update("monthly_revenue_distribution", newDist);
+                              setMonthOverrides(prev => ({ ...prev, [i]: v }));
+                            }
+                          }
+                        }}
+                      >
+                        <span>{fmtNum(val, unit)}</span>
+                        <Badge variant={isOverride ? "default" : "secondary"} className="text-[7px] px-1 py-0 h-3.5 shrink-0 ml-1">
+                          {isOverride ? "手動" : "自動"}
+                        </Badge>
+                      </div>
+                      {isOverride && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newOverrides = { ...monthOverrides };
+                            delete newOverrides[i];
+                            setMonthOverrides(newOverrides);
+                            applyHalfYearDist(firstHalfTarget, secondHalfTarget);
+                          }}
+                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-muted border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="自動値に戻す"
+                        >
+                          <RotateCcw className="h-2.5 w-2.5 text-muted-foreground" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-1 h-7 flex items-center px-2 rounded-md bg-muted text-xs font-medium">{fmtNum(val, unit)}</div>
+                  )}
                 </div>
               );
             })}
