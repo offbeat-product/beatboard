@@ -1,20 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "./SectionHeading";
 import { FieldWithTooltip } from "./FieldWithTooltip";
-import { PlanSettings, MonthlyClientData, fmtNum, fmtInputVal, parseInputVal } from "./PlanTypes";
+import { PlanSettings, MonthlyClientData, fmtNum, fmtInputVal, parseInputVal, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth, ORG_ID } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { ClientRevenuePlan } from "./ClientRevenuePlan";
-
-// SGA classification removed - now handled in TabSgaPlan
+import { RotateCcw } from "lucide-react";
 
 interface Props {
   months: string[];
@@ -28,6 +28,14 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
   const currentMonth = getCurrentMonth();
   const [firstHalfTarget, setFirstHalfTarget] = useState(30000000);
   const [secondHalfTarget, setSecondHalfTarget] = useState(45000000);
+  // Track manual overrides on individual month cells
+  const [monthOverrides, setMonthOverrides] = useState<Record<number, number>>({});
+
+  const getGrowthFactor = (): number => {
+    const pattern = settings.revenue_distribution_pattern || "standard";
+    if (pattern === "custom") return settings.revenue_growth_factor || 1.5;
+    return PATTERN_GROWTH_MAP[pattern] ?? 1.5;
+  };
 
   useEffect(() => {
     if (settings.distribution_mode === "half_year" && settings.monthly_revenue_distribution.length === 12) {
@@ -35,14 +43,16 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
       const sh = settings.monthly_revenue_distribution.slice(6, 12).reduce((s, v) => s + v, 0);
       if (fh > 0 || sh > 0) { setFirstHalfTarget(fh); setSecondHalfTarget(sh); }
     }
+    setMonthOverrides({});
   }, [settings.distribution_mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const applyHalfYearDist = (fh: number, sh: number) => {
-    const newDist = months.map((m) => {
-      const mm = parseInt(m.split("-")[1], 10);
-      return mm >= 5 && mm <= 10 ? fh / 6 : sh / 6;
-    });
+  const applyHalfYearDist = (fh: number, sh: number, g?: number) => {
+    const gf = g ?? getGrowthFactor();
+    const firstHalf = distributeRevenue(fh, 6, gf);
+    const secondHalf = distributeRevenue(sh, 6, gf);
+    const newDist = [...firstHalf, ...secondHalf];
     update("monthly_revenue_distribution", newDist);
+    setMonthOverrides({});
   };
 
   const distSum = settings.distribution_mode === "manual"
