@@ -18,6 +18,14 @@ export interface SgaCategory {
   order: number;
 }
 
+export interface ClientRevenuePlanRow {
+  client_id: string | null;
+  client_name: string;
+  category: "existing" | "new" | "risk";
+  monthly_revenue: Record<string, number>;
+  order: number;
+}
+
 export interface PlanSettings {
   annual_revenue_target: number;
   cost_rate: number;
@@ -42,18 +50,30 @@ export interface PlanSettings {
   monthly_clients: Record<string, MonthlyClientData>;
   sga_categories: SgaCategory[];
   monthly_sga: Record<string, Record<string, number>>;
+  // New fields
+  sga_allocation_rates: Record<string, number>;
+  monthly_sga_overrides: Record<string, Record<string, number>>;
+  annual_sga_total: number;
+  client_revenue_plan: ClientRevenuePlanRow[];
 }
 
 export const DEFAULT_SGA_CATEGORIES: SgaCategory[] = [
-  { id: "personnel", name: "人件費（給与・賞与）", order: 1 },
-  { id: "welfare", name: "法定福利費・福利厚生費", order: 2 },
-  { id: "rent", name: "地代家賃", order: 3 },
-  { id: "telecom", name: "通信費・サブスク", order: 4 },
-  { id: "outsource", name: "外注費（販管費側）", order: 5 },
-  { id: "advertising", name: "広告宣伝費", order: 6 },
-  { id: "travel", name: "旅費交通費", order: 7 },
-  { id: "other", name: "その他", order: 8 },
+  { id: "personnel", name: "人件費", order: 1 },
+  { id: "server", name: "サーバー費", order: 2 },
+  { id: "ad", name: "広告費", order: 3 },
+  { id: "action", name: "行動費", order: 4 },
+  { id: "department", name: "部門費", order: 5 },
+  { id: "support", name: "サポート費", order: 6 },
 ];
+
+export const DEFAULT_SGA_ALLOCATION_RATES: Record<string, number> = {
+  personnel: 70,
+  server: 5,
+  ad: 10,
+  action: 5,
+  department: 5,
+  support: 5,
+};
 
 export const DEFAULT_STAFFING = (months: string[]): StaffingRow[] =>
   months.map((m) => {
@@ -101,6 +121,10 @@ export const DEFAULT_SETTINGS = (months: string[]): PlanSettings => ({
   monthly_clients: {},
   sga_categories: DEFAULT_SGA_CATEGORIES,
   monthly_sga: {},
+  sga_allocation_rates: DEFAULT_SGA_ALLOCATION_RATES,
+  monthly_sga_overrides: {},
+  annual_sga_total: 0,
+  client_revenue_plan: [],
 });
 
 /* ── Helpers ── */
@@ -118,4 +142,29 @@ export const fmtInputVal = (v: number, unit: string) => {
 export const parseInputVal = (v: string, unit: string) => {
   const n = parseFloat(v.replace(/,/g, "")) || 0;
   return unit === "thousand" ? n * 1000 : n;
+};
+
+/** Compute annual SGA total: if manual value set, use it; otherwise derive from targets */
+export const computeAnnualSgaTotal = (s: PlanSettings): number => {
+  if (s.annual_sga_total > 0) return s.annual_sga_total;
+  // Derive: annual_revenue × gross_profit_rate% - annual_revenue × operating_profit_rate%
+  const gp = s.annual_revenue_target * (s.gross_profit_rate / 100);
+  const op = s.annual_revenue_target * (s.operating_profit_rate / 100);
+  return gp - op;
+};
+
+/** Get SGA cell value: override first, then auto-calc */
+export const getSgaCellValue = (
+  s: PlanSettings,
+  ym: string,
+  catId: string,
+  annualSga: number
+): { value: number; isOverride: boolean } => {
+  const override = s.monthly_sga_overrides?.[ym]?.[catId];
+  if (override !== undefined && override !== null) {
+    return { value: override, isOverride: true };
+  }
+  const rate = s.sga_allocation_rates?.[catId] ?? 0;
+  const autoValue = (annualSga / 12) * (rate / 100);
+  return { value: autoValue, isOverride: false };
 };
