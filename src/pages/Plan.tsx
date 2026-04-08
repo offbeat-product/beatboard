@@ -76,6 +76,8 @@ const Plan = () => {
           monthly_sga_overrides: (d.monthly_sga_overrides && typeof d.monthly_sga_overrides === "object" && !Array.isArray(d.monthly_sga_overrides)) ? d.monthly_sga_overrides : {},
           annual_sga_total: Number(d.annual_sga_total) || 0,
           client_revenue_plan: Array.isArray(d.client_revenue_plan) ? d.client_revenue_plan : [],
+          revenue_distribution_pattern: d.revenue_distribution_pattern || "standard",
+          revenue_growth_factor: Number(d.revenue_growth_factor) || 1.5,
         };
         setSettings(loaded);
         setInitialSettings(JSON.stringify(loaded));
@@ -122,6 +124,8 @@ const Plan = () => {
         monthly_sga_overrides: settings.monthly_sga_overrides,
         annual_sga_total: settings.annual_sga_total,
         client_revenue_plan: settings.client_revenue_plan,
+        revenue_distribution_pattern: settings.revenue_distribution_pattern,
+        revenue_growth_factor: settings.revenue_growth_factor,
         updated_at: new Date().toISOString(),
       };
 

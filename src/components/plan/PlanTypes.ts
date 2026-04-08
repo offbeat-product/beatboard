@@ -55,6 +55,8 @@ export interface PlanSettings {
   monthly_sga_overrides: Record<string, Record<string, number>>;
   annual_sga_total: number;
   client_revenue_plan: ClientRevenuePlanRow[];
+  revenue_distribution_pattern: string;
+  revenue_growth_factor: number;
 }
 
 export const DEFAULT_SGA_CATEGORIES: SgaCategory[] = [
@@ -137,9 +139,54 @@ export const DEFAULT_SETTINGS = (months: string[]): PlanSettings => ({
   monthly_sga_overrides: {},
   annual_sga_total: 0,
   client_revenue_plan: [],
+  revenue_distribution_pattern: "standard",
+  revenue_growth_factor: 1.5,
 });
 
 /* ── Helpers ── */
+
+/** Distribute a total amount across n months using arithmetic progression.
+ *  growthFactor g = last month / first month. g=1 → equal distribution. */
+export function distributeRevenue(
+  totalAmount: number,
+  monthCount: number,
+  growthFactor: number
+): number[] {
+  const n = monthCount;
+  const g = Math.max(growthFactor, 1);
+  if (n <= 0) return [];
+  if (n === 1) return [totalAmount];
+  if (Math.abs(g - 1.0) < 0.001) {
+    // Equal distribution
+    const base = Math.round(totalAmount / n);
+    const result = Array(n).fill(base);
+    result[n - 1] += totalAmount - base * n;
+    return result;
+  }
+  // Arithmetic progression: a, a+d, a+2d, ..., a+(n-1)d
+  // sum = n*a + n*(n-1)/2 * d = totalAmount
+  // a+(n-1)*d = g*a → d = (g-1)*a/(n-1)
+  // totalAmount = n*a + n*(n-1)/2 * (g-1)*a/(n-1) = n*a + n/2*(g-1)*a = a*(n + n*(g-1)/2) = a*n*(1+g)/2
+  const a = totalAmount / ((n / 2) * (1 + g));
+  const d = ((g - 1) * a) / (n - 1);
+  const result: number[] = [];
+  for (let i = 0; i < n; i++) {
+    result.push(Math.round(a + i * d));
+  }
+  // Rounding adjustment on last month
+  const sum = result.reduce((s, v) => s + v, 0);
+  result[n - 1] += totalAmount - sum;
+  return result;
+}
+
+/** Map pattern name to growth factor */
+export const PATTERN_GROWTH_MAP: Record<string, number> = {
+  flat: 1.0,
+  gentle: 1.3,
+  standard: 1.5,
+  aggressive: 2.0,
+};
+
 export const fmtNum = (v: number, unit: string, isGph = false) => {
   if (isGph) return `¥${Math.round(v).toLocaleString()}`;
   if (unit === "thousand") return `¥${Math.round(v / 1000).toLocaleString()}千`;
