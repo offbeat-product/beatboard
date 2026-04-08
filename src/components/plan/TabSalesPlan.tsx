@@ -234,16 +234,16 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
       totalPlanFn: () => fmtC(monthlyPlans.reduce((s, m) => s + m.opPlan, 0)),
       totalActualFn: () => fmtC(monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.opActual, 0)),
     },
-    { label: "顧客", section: true, sectionNote: "月ごとの顧客数を入力してください" },
+    { label: "顧客", section: true, sectionNote: "顧客別売上計画から自動算出されます" },
   ];
 
-  // Client section rows rendered separately for input support
+  // Client section rows rendered separately — now all auto-calculated from client_revenue_plan
   const clientInputRows = [
-    { label: "月間アクティブ顧客数", field: "active" as const, editable: true, showActual: true, actualFn: (mp: typeof monthlyPlans[0]) => mp.clientCount },
-    { label: "新規顧客数", field: "new" as const, editable: true },
+    { label: "月間アクティブ顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientData.active, showActual: true, actualFn: (mp: typeof monthlyPlans[0]) => mp.clientCount },
+    { label: "新規顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientData.new },
     { label: "既存顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.existingClients },
     { label: "顧客平均単価", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientUnitPricePlan, isCurrency: true, showActual: true, actualCalcFn: (mp: typeof monthlyPlans[0]) => mp.clientAvg, actualIsCurrency: true },
-    { label: "解約顧客数", field: "churned" as const, editable: true },
+    { label: "解約顧客数", field: null as null, editable: false, calcFn: (mp: typeof monthlyPlans[0]) => mp.clientData.churned },
   ];
 
   return (
