@@ -70,12 +70,12 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
   const updateRows = (newRows: ClientRevenuePlanRow[]) => {
     update("client_revenue_plan", newRows);
-    // SSoT: update monthly_revenue_distribution from client plan totals
-    const newDist = months.map(ym =>
-      newRows.reduce((s, r) => s + (r.monthly_revenue[ym] || 0), 0)
-    );
-    update("monthly_revenue_distribution", newDist);
-    update("distribution_mode", "client_plan");
+  };
+
+  // Monthly target from distribution pattern (fixed, read-only)
+  const getMonthTarget = (ym: string, i: number): number => {
+    if (settings.distribution_mode === "equal") return settings.annual_revenue_target / 12;
+    return settings.monthly_revenue_distribution[i] || 0;
   };
 
   const addClient = (clientId: string | null, clientName: string) => {
@@ -137,6 +137,10 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
   const grandTotal = months.reduce((s, ym) => s + getMonthTotal(ym), 0);
 
+  const annualTarget = settings.distribution_mode === "equal"
+    ? settings.annual_revenue_target
+    : settings.monthly_revenue_distribution.reduce((s, v) => s + v, 0);
+
   const fmtC = (v: number) => fmtNum(v, unit);
   const parseInput = (v: string): number => parseInt(v.replace(/,/g, "")) || 0;
 
@@ -149,11 +153,21 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   return (
     <section className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
       <div className="px-5 py-4">
-        <SectionHeading title="顧客別売上計画" description="顧客ごとの月別売上計画を入力します。月合計が月次売上計画に自動反映されます（Single Source of Truth）。" />
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm font-medium">年間合計:</span>
-          <span className="text-base font-bold text-primary">{fmtC(grandTotal)}</span>
-          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">顧客別合計 → 月次売上計画に自動反映</Badge>
+        <SectionHeading title="顧客別売上計画" description="配分パターンで設定された月次売上目標の内訳を顧客別に入力します。" />
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
+          <span className="text-sm font-medium">年間目標:</span>
+          <span className="text-base font-bold text-primary">{fmtC(annualTarget)}</span>
+          <span className="text-sm text-muted-foreground">|</span>
+          <span className="text-sm font-medium">顧客別合計:</span>
+          <span className={cn("text-base font-bold", Math.abs(grandTotal - annualTarget) < 1 ? "text-green-600" : "text-destructive")}>{fmtC(grandTotal)}</span>
+          {Math.abs(grandTotal - annualTarget) >= 1 && (
+            <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
+              差額: {fmtC(grandTotal - annualTarget)}
+            </Badge>
+          )}
+          {Math.abs(grandTotal - annualTarget) < 1 && (
+            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">一致</Badge>
+          )}
         </div>
       </div>
 
@@ -241,9 +255,23 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               </TableRow>
             ))}
 
+            {/* Month target row */}
+            <TableRow className="bg-muted/30">
+              <TableCell className="sticky left-0 bg-muted/30 z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
+              <TableCell className="sticky left-[150px] bg-muted/30 z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
+              <TableCell className="sticky left-[220px] bg-muted/30 z-10 border-r" />
+              {months.map((ym, i) => (
+                <TableCell key={ym} className={cn("text-right text-xs text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
+                  {fmtC(getMonthTarget(ym, i))}
+                </TableCell>
+              ))}
+              <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">{fmtC(annualTarget)}</TableCell>
+              <TableCell />
+            </TableRow>
+
             {/* Month totals */}
             <TableRow className="bg-muted/50 font-semibold">
-              <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">月合計</TableCell>
+              <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
               <TableCell className="sticky left-[150px] bg-muted/50 z-10 border-r">—</TableCell>
               <TableCell className="sticky left-[220px] bg-muted/50 z-10 border-r" />
               {months.map((ym) => (
@@ -252,6 +280,27 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableCell>
               ))}
               <TableCell className="text-right bg-muted/30 font-bold">{fmtC(grandTotal)}</TableCell>
+              <TableCell />
+            </TableRow>
+
+            {/* Remaining row */}
+            <TableRow>
+              <TableCell className="sticky left-0 bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
+              <TableCell className="sticky left-[150px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[220px] bg-card z-10 border-r" />
+              {months.map((ym, i) => {
+                const target = getMonthTarget(ym, i);
+                const total = getMonthTotal(ym);
+                const remaining = target - total;
+                return (
+                  <TableCell key={ym} className={cn("text-right text-xs", ym === currentMonth && "bg-primary/5", remaining > 0 ? "text-amber-600" : remaining < 0 ? "text-destructive" : "text-green-600")}>
+                    {fmtC(remaining)}
+                  </TableCell>
+                );
+              })}
+              <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualTarget - grandTotal > 0 ? "text-amber-600" : annualTarget - grandTotal < 0 ? "text-destructive" : "text-green-600")}>
+                {fmtC(annualTarget - grandTotal)}
+              </TableCell>
               <TableCell />
             </TableRow>
           </TableBody>
