@@ -653,7 +653,9 @@ export type Database = {
           id: string
           it_rate: number | null
           marketing_rate: number | null
+          monthly_clients: Json | null
           monthly_revenue_distribution: Json | null
+          monthly_sga: Json | null
           office_rate: number | null
           on_time_delivery_target: number | null
           operating_profit_rate: number | null
@@ -663,6 +665,7 @@ export type Database = {
           professional_rate: number | null
           recruitment_rate: number | null
           revision_rate_target: number | null
+          sga_categories: Json | null
           staffing_plan: Json | null
           updated_at: string | null
         }
@@ -680,7 +683,9 @@ export type Database = {
           id?: string
           it_rate?: number | null
           marketing_rate?: number | null
+          monthly_clients?: Json | null
           monthly_revenue_distribution?: Json | null
+          monthly_sga?: Json | null
           office_rate?: number | null
           on_time_delivery_target?: number | null
           operating_profit_rate?: number | null
@@ -690,6 +695,7 @@ export type Database = {
           professional_rate?: number | null
           recruitment_rate?: number | null
           revision_rate_target?: number | null
+          sga_categories?: Json | null
           staffing_plan?: Json | null
           updated_at?: string | null
         }
@@ -707,7 +713,9 @@ export type Database = {
           id?: string
           it_rate?: number | null
           marketing_rate?: number | null
+          monthly_clients?: Json | null
           monthly_revenue_distribution?: Json | null
+          monthly_sga?: Json | null
           office_rate?: number | null
           on_time_delivery_target?: number | null
           operating_profit_rate?: number | null
@@ -717,6 +725,7 @@ export type Database = {
           professional_rate?: number | null
           recruitment_rate?: number | null
           revision_rate_target?: number | null
+          sga_categories?: Json | null
           staffing_plan?: Json | null
           updated_at?: string | null
         }
