@@ -124,6 +124,8 @@ const Plan = () => {
         monthly_sga_overrides: settings.monthly_sga_overrides,
         annual_sga_total: settings.annual_sga_total,
         client_revenue_plan: settings.client_revenue_plan,
+        revenue_distribution_pattern: settings.revenue_distribution_pattern,
+        revenue_growth_factor: settings.revenue_growth_factor,
         updated_at: new Date().toISOString(),
       };
 
