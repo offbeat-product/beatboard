@@ -231,18 +231,14 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
         <SectionHeading title="売上目標構成" description="月別の売上配分方法を設定します" />
         <div className="flex items-center gap-3 mb-4">
           <Select value={settings.distribution_mode} onValueChange={(v) => {
-            const next = { ...settings, distribution_mode: v } as any;
-            if (v === "equal") next.monthly_revenue_distribution = months.map(() => settings.annual_revenue_target / 12);
-            else if (v === "half_year") {
-              next.monthly_revenue_distribution = months.map((m) => {
-                const mm = parseInt(m.split("-")[1], 10);
-                return mm >= 5 && mm <= 10 ? firstHalfTarget / 6 : secondHalfTarget / 6;
-              });
+            if (v === "equal") {
+              update("monthly_revenue_distribution", months.map(() => settings.annual_revenue_target / 12));
+            } else if (v === "half_year") {
+              applyHalfYearDist(firstHalfTarget, secondHalfTarget);
             }
-            update("distribution_mode", next.distribution_mode);
-            update("monthly_revenue_distribution", next.monthly_revenue_distribution);
+            update("distribution_mode", v);
           }}>
-            <SelectTrigger className="w-[160px] h-9 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="equal">均等割</SelectItem>
               <SelectItem value="half_year">半期別</SelectItem>
