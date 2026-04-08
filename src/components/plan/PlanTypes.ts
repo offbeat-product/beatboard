@@ -68,13 +68,13 @@ export const DEFAULT_SGA_CATEGORIES: SgaCategory[] = [
 ];
 
 export const DEFAULT_SGA_ALLOCATION_RATES: Record<string, number> = {
-  personnel: 65,
-  recruiting: 8,
-  office: 7,
-  marketing: 8,
-  it_system: 6,
-  professional: 3,
-  other: 3,
+  personnel: 50,
+  recruiting: 10,
+  office: 10,
+  marketing: 12,
+  it_system: 10,
+  professional: 4,
+  other: 4,
 };
 
 export const SGA_CATEGORY_TOOLTIPS: Record<string, string> = {
