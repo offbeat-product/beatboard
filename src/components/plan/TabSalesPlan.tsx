@@ -7,30 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "./SectionHeading";
 import { FieldWithTooltip } from "./FieldWithTooltip";
 import { PlanSettings, MonthlyClientData, fmtNum, fmtInputVal, parseInputVal } from "./PlanTypes";
-import { SGA_CATEGORIES, SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { getMonthLabel, getCurrentMonth, ORG_ID } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { ClientRevenuePlan } from "./ClientRevenuePlan";
 
-function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
-  const result: Record<string, number> = {};
-  SGA_CATEGORY_NAMES.forEach((cat) => (result[cat] = 0));
-  if (!Array.isArray(sgaDetails)) return result;
-  const accountToCategory: Record<string, string> = {};
-  for (const [cat, accounts] of Object.entries(SGA_CATEGORIES)) {
-    for (const acc of accounts) accountToCategory[acc] = cat;
-  }
-  for (const item of sgaDetails as Array<Record<string, unknown>>) {
-    const name = (item.name ?? item.account_item_name ?? "") as string;
-    const amount = Number(item.amount ?? item.closing_balance ?? item.total_line ?? 0);
-    if (amount === 0 || !name) continue;
-    const cat = accountToCategory[name] ?? "その他";
-    result[cat] = (result[cat] ?? 0) + amount;
-  }
-  return result;
-}
+// SGA classification removed - now handled in TabSgaPlan
 
 interface Props {
   months: string[];
@@ -253,6 +237,7 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
               <SelectItem value="equal">均等割</SelectItem>
               <SelectItem value="half_year">半期別</SelectItem>
               <SelectItem value="manual">手動入力</SelectItem>
+              <SelectItem value="client_plan">顧客別計画から算出</SelectItem>
             </SelectContent>
           </Select>
           {(settings.distribution_mode === "manual" || settings.distribution_mode === "half_year") && (
@@ -427,6 +412,9 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
           </div>
         )}
       </section>
+
+      {/* 顧客別売上計画 */}
+      <ClientRevenuePlan months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
     </div>
   );
 }
