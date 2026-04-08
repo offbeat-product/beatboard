@@ -135,6 +135,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const getRowAnnual = (row: ClientRevenuePlanRow): number =>
     months.reduce((s, ym) => s + (row.monthly_revenue[ym] || 0), 0);
 
+  const grandTotal = months.reduce((s, ym) => s + getMonthTotal(ym), 0);
+
   const annualTarget = settings.distribution_mode === "equal"
     ? settings.annual_revenue_target
     : settings.monthly_revenue_distribution.reduce((s, v) => s + v, 0);
