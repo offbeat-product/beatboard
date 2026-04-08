@@ -14,23 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { ClientRevenuePlan } from "./ClientRevenuePlan";
 
-function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
-  const result: Record<string, number> = {};
-  SGA_CATEGORY_NAMES.forEach((cat) => (result[cat] = 0));
-  if (!Array.isArray(sgaDetails)) return result;
-  const accountToCategory: Record<string, string> = {};
-  for (const [cat, accounts] of Object.entries(SGA_CATEGORIES)) {
-    for (const acc of accounts) accountToCategory[acc] = cat;
-  }
-  for (const item of sgaDetails as Array<Record<string, unknown>>) {
-    const name = (item.name ?? item.account_item_name ?? "") as string;
-    const amount = Number(item.amount ?? item.closing_balance ?? item.total_line ?? 0);
-    if (amount === 0 || !name) continue;
-    const cat = accountToCategory[name] ?? "その他";
-    result[cat] = (result[cat] ?? 0) + amount;
-  }
-  return result;
-}
+// SGA classification removed - now handled in TabSgaPlan
 
 interface Props {
   months: string[];
