@@ -37,39 +37,32 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
     return PATTERN_GROWTH_MAP[pattern] ?? 1.5;
   };
 
-  // Sync half-year targets from loaded distribution
+  // Sync half-year targets from loaded distribution & apply growth pattern
   useEffect(() => {
     if (settings.distribution_mode === "half_year" && settings.monthly_revenue_distribution.length === 12) {
       const fh = settings.monthly_revenue_distribution.slice(0, 6).reduce((s, v) => s + v, 0);
       const sh = settings.monthly_revenue_distribution.slice(6, 12).reduce((s, v) => s + v, 0);
-      if (fh > 0 || sh > 0) { setFirstHalfTarget(fh); setSecondHalfTarget(sh); }
+      if (fh > 0 || sh > 0) {
+        setFirstHalfTarget(fh);
+        setSecondHalfTarget(sh);
+        // Re-apply growth pattern to fix flat distributions loaded from DB
+        const g = (settings.revenue_distribution_pattern === "custom")
+          ? (settings.revenue_growth_factor || 1.5)
+          : (PATTERN_GROWTH_MAP[settings.revenue_distribution_pattern] ?? 1.5);
+        if (Math.abs(g - 1.0) > 0.01) {
+          // Check if current distribution is actually flat (all equal within half)
+          const fhSlice = settings.monthly_revenue_distribution.slice(0, 6);
+          const isFlat = fhSlice.every(v => Math.abs(v - fhSlice[0]) < 1);
+          if (isFlat) {
+            const fhDist = distributeRevenue(fh, 6, g);
+            const shDist = distributeRevenue(sh, 6, g);
+            update("monthly_revenue_distribution", [...fhDist, ...shDist]);
+          }
+        }
+      }
     }
     setMonthOverrides({});
   }, [settings.distribution_mode]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Re-apply distribution when pattern or growth factor changes
-  const patternRef = settings.revenue_distribution_pattern;
-  const gfRef = settings.revenue_growth_factor;
-  useEffect(() => {
-    if (settings.distribution_mode !== "half_year") return;
-    // Use a small timeout to ensure firstHalfTarget/secondHalfTarget are set
-    const timer = setTimeout(() => {
-      setFirstHalfTarget(prev => {
-        setSecondHalfTarget(prevSh => {
-          if (prev > 0 || prevSh > 0) {
-            const g = patternRef === "custom" ? (gfRef || 1.5) : (PATTERN_GROWTH_MAP[patternRef] ?? 1.5);
-            const fhDist = distributeRevenue(prev, 6, g);
-            const shDist = distributeRevenue(prevSh, 6, g);
-            update("monthly_revenue_distribution", [...fhDist, ...shDist]);
-          }
-          return prevSh;
-        });
-        return prev;
-      });
-      setMonthOverrides({});
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [patternRef, gfRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyHalfYearDist = (fh: number, sh: number, g?: number) => {
     const gf = g ?? getGrowthFactor();
