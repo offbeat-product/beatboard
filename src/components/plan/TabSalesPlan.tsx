@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "./SectionHeading";
 import { FieldWithTooltip } from "./FieldWithTooltip";
-import { PlanSettings, MonthlyClientData, fmtNum, fmtInputVal, parseInputVal, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
+import { PlanSettings, fmtNum, fmtInputVal, parseInputVal, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth, ORG_ID } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
