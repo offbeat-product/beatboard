@@ -411,6 +411,9 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
           </div>
         )}
       </section>
+
+      {/* 顧客別売上計画 */}
+      <ClientRevenuePlan months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
     </div>
   );
 }
