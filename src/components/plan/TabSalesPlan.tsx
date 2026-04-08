@@ -237,6 +237,7 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
               <SelectItem value="equal">均等割</SelectItem>
               <SelectItem value="half_year">半期別</SelectItem>
               <SelectItem value="manual">手動入力</SelectItem>
+              <SelectItem value="client_plan">顧客別計画から算出</SelectItem>
             </SelectContent>
           </Select>
           {(settings.distribution_mode === "manual" || settings.distribution_mode === "half_year") && (
