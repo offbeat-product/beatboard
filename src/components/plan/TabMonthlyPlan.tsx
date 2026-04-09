@@ -20,7 +20,6 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
   const { unit } = useCurrencyUnit();
   const currentMonth = getCurrentMonth();
 
-  // Fetch actuals
   const salesQuery = useQuery({
     queryKey: ["plan_actual_sales_monthly", fiscalYear],
     queryFn: async () => {
@@ -35,19 +34,10 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
       return data ?? [];
     },
   });
-  const projectPlQuery = useQuery({
-    queryKey: ["plan_actual_projectpl_monthly", fiscalYear],
-    queryFn: async () => {
-      const { data } = await supabase.from("project_pl").select("year_month, revenue, gross_profit, client_id, project_id").eq("org_id", ORG_ID).in("year_month", months).not("client_id", "is", null);
-      return data ?? [];
-    },
-  });
 
   const sales = salesQuery.data ?? [];
   const freeeData = freeeQuery.data ?? [];
-  const projectPl = projectPlQuery.data ?? [];
 
-  // Compute per-client GP rate weighted average for plan
   const getWeightedGpRate = (ym: string): number => {
     const crp = settings.client_revenue_plan || [];
     let totalRev = 0;
@@ -67,8 +57,6 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
   const monthlyPlans = useMemo(() => {
     return months.map((ym, i) => {
       const revPlan = settings.distribution_mode === "equal" ? settings.annual_revenue_target / 12 : (settings.monthly_revenue_distribution[i] || 0);
-
-      // Use weighted GP rate from client plan
       const weightedGpRate = getWeightedGpRate(ym);
       const gpPlan = revPlan * (weightedGpRate / 100);
       const costPlan = revPlan - gpPlan;
@@ -85,31 +73,19 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
       const sgaActual = freeeRow?.sga_total ? Number(freeeRow.sga_total) : 0;
       const opActual = gpActual - sgaActual;
 
-      const monthPl = projectPl.filter(r => r.year_month === ym && Number(r.revenue ?? 0) > 0);
-      const clientCount = new Set(monthPl.map(r => r.client_id)).size;
-      const projectCount = monthPl.length;
-
       const hasActual = ym <= currentMonth && revActual > 0;
-
-      // Client plan auto-calc
-      const crpRows = settings.client_revenue_plan || [];
-      const activeFromPlan = crpRows.filter(r => (r.monthly_revenue[ym] || 0) > 0).length;
-      const newFromPlan = crpRows.filter(r => r.category === "new" && (r.monthly_revenue[ym] || 0) > 0).length;
-      const churnedFromPlan = crpRows.filter(r => r.category === "risk" && (r.monthly_revenue[ym] || 0) > 0).length;
-      const clientData = { active: activeFromPlan, new: newFromPlan, churned: churnedFromPlan };
 
       return {
         ym, revPlan, costPlan, gpPlan, sgaPlan, opPlan,
         gpRatePlan: weightedGpRate,
         revActual, costActual, gpActual, gpRateActual, sgaActual, opActual,
-        clientCount, projectCount,
-        hasActual, clientData,
+        hasActual,
       };
     });
-  }, [months, settings, sales, freeeData, projectPl, currentMonth]);
+  }, [months, settings, sales, freeeData, currentMonth]);
 
   const fmtC = (v: number) => fmtNum(v, unit);
-  const isLoading = salesQuery.isLoading || freeeQuery.isLoading || projectPlQuery.isLoading;
+  const isLoading = salesQuery.isLoading || freeeQuery.isLoading;
 
   const mkDiff = (plan: number, actual: number, invert = false) => {
     const diff = actual - plan;
@@ -174,20 +150,6 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
       diffFn: (mp) => mp.hasActual ? mkDiff(mp.opPlan, mp.opActual) : null,
       totalPlanFn: () => fmtC(monthlyPlans.reduce((s, m) => s + m.opPlan, 0)),
       totalActualFn: () => fmtC(monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.opActual, 0)),
-    },
-    { label: "顧客指標", section: true },
-    {
-      label: "アクティブ顧客数",
-      planFn: (mp) => mp.clientData.active > 0 ? String(mp.clientData.active) : "—",
-      actualFn: (mp) => mp.hasActual && mp.clientCount > 0 ? String(mp.clientCount) : "—",
-    },
-    {
-      label: "新規顧客数",
-      planFn: (mp) => mp.clientData.new > 0 ? String(mp.clientData.new) : "—",
-    },
-    {
-      label: "解約予定数",
-      planFn: (mp) => mp.clientData.churned > 0 ? String(mp.clientData.churned) : "—",
     },
   ];
 

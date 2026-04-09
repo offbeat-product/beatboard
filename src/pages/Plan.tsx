@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { Save, Download, Copy } from "lucide-react";
 import { PlanSettings, DEFAULT_SETTINGS, DEFAULT_STAFFING, DEFAULT_HALF_YEAR_DIST, DEFAULT_SGA_CATEGORIES, DEFAULT_SGA_ALLOCATION_RATES } from "@/components/plan/PlanTypes";
 import { TabBusinessTargets } from "@/components/plan/TabBusinessTargets";
-import { TabSalesPlan } from "@/components/plan/TabSalesPlan";
 import { TabOrganizationPlan } from "@/components/plan/TabOrganizationPlan";
 import { TabSgaPlan } from "@/components/plan/TabSgaPlan";
 import { TabCustomerPlan } from "@/components/plan/TabCustomerPlan";
@@ -258,9 +257,8 @@ const Plan = () => {
             <TabsList className="bg-transparent border-b border-border rounded-none p-0 h-auto gap-0 w-full justify-start">
               {[
                 { value: "targets", label: "経営目標" },
-                { value: "customers", label: "顧客計画" },
-                { value: "sales", label: "売上計画" },
                 { value: "monthly", label: "月次事業計画" },
+                { value: "customers", label: "顧客計画" },
                 { value: "organization", label: "組織・人員計画" },
                 { value: "sga", label: "販管費計画" },
               ].map(tab => (
@@ -275,16 +273,13 @@ const Plan = () => {
             </TabsList>
 
             <TabsContent value="targets" className="mt-6">
-              <TabBusinessTargets settings={settings} update={update} fiscalYear={fiscalYear} />
-            </TabsContent>
-            <TabsContent value="customers" className="mt-6">
-              <TabCustomerPlan months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
-            </TabsContent>
-            <TabsContent value="sales" className="mt-6">
-              <TabSalesPlan months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
+              <TabBusinessTargets months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
             </TabsContent>
             <TabsContent value="monthly" className="mt-6">
               <TabMonthlyPlan months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
+            </TabsContent>
+            <TabsContent value="customers" className="mt-6">
+              <TabCustomerPlan months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
             </TabsContent>
             <TabsContent value="organization" className="mt-6">
               <TabOrganizationPlan months={months} settings={settings} update={update} />
