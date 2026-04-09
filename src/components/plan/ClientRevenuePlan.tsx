@@ -97,6 +97,13 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     return activeMonths > 0 ? total / activeMonths : 0;
   };
 
+  // Previous year annual total per client
+  const getPrevYearTotal = (clientName: string): number => {
+    return prevActuals
+      .filter(a => a.client_name === clientName)
+      .reduce((s, a) => s + Number(a.revenue ?? 0), 0);
+  };
+
   const getClientActual = (clientName: string, ym: string): number => {
     return actuals
       .filter(a => a.client_name === clientName && a.year_month === ym)
