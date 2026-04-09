@@ -56,7 +56,17 @@ export function TabCustomerPlan({ months, settings, update, fiscalYear }: Props)
       const crpRows = settings.client_revenue_plan || [];
       const activeFromPlan = crpRows.filter(r => (r.monthly_revenue[ym] || 0) > 0).length;
       const newFromPlan = crpRows.filter(r => r.category === "new" && (r.monthly_revenue[ym] || 0) > 0).length;
-      const churnedFromPlan = crpRows.filter(r => r.category === "risk" && (r.monthly_revenue[ym] || 0) > 0).length;
+      // Churned = risk clients who had revenue in previous month but 0 this month
+      const prevYm = i > 0 ? months[i - 1] : null;
+      const churnedFromPlan = crpRows.filter(r => {
+        if (r.category !== "risk") return false;
+        const thisRev = r.monthly_revenue[ym] || 0;
+        if (thisRev > 0) return false; // still active, not churned
+        if (prevYm) {
+          return (r.monthly_revenue[prevYm] || 0) > 0; // had revenue last month
+        }
+        return false;
+      }).length;
       const existingClients = activeFromPlan - newFromPlan;
       const clientUnitPricePlan = activeFromPlan > 0 ? revPlan / activeFromPlan : 0;
 
