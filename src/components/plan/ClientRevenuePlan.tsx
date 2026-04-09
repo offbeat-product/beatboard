@@ -92,9 +92,18 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const prevActuals = prevActualsQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
 
+  // Match prev year actuals by client_id first, then fallback to client_name
+  const getPrevClientRevenues = (clientName: string, clientId: string | null) => {
+    if (clientId) {
+      const byId = prevActuals.filter(a => String(a.client_id) === String(clientId));
+      if (byId.length > 0) return byId;
+    }
+    return prevActuals.filter(a => a.client_name === clientName);
+  };
+
   // Previous year monthly average per client
-  const getPrevYearMonthlyAvg = (clientName: string): number => {
-    const clientRevenues = prevActuals.filter(a => a.client_name === clientName);
+  const getPrevYearMonthlyAvg = (clientName: string, clientId: string | null = null): number => {
+    const clientRevenues = getPrevClientRevenues(clientName, clientId);
     if (clientRevenues.length === 0) return 0;
     const total = clientRevenues.reduce((s, a) => s + Number(a.revenue ?? 0), 0);
     const activeMonths = new Set(clientRevenues.map(a => a.year_month)).size;
