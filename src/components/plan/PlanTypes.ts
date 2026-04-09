@@ -24,6 +24,7 @@ export interface ClientRevenuePlanRow {
   category: "existing" | "new" | "risk";
   monthly_revenue: Record<string, number>;
   order: number;
+  revenue_cap?: number | null;
 }
 
 export interface PlanSettings {
