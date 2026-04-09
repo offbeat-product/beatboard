@@ -40,6 +40,9 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const [newClientName, setNewClientName] = useState("");
   const [showClientPicker, setShowClientPicker] = useState(false);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const rows = settings.client_revenue_plan || [];
 
