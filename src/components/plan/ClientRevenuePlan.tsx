@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,7 +13,7 @@ import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, Copy, ChevronsUpDown, ArrowUp, ArrowDown, Wand2 } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronsUpDown, Wand2, GripVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface Props {
   months: string[];
@@ -40,6 +40,9 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const [newClientName, setNewClientName] = useState("");
   const [showClientPicker, setShowClientPicker] = useState(false);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const rows = settings.client_revenue_plan || [];
 
@@ -187,6 +190,47 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     updateRows(newRows.map((r, i) => ({ ...r, order: i + 1 })));
   };
 
+  const setClientNameAt = (idx: number, name: string) => {
+    const newRows = [...rows];
+    newRows[idx] = { ...newRows[idx], client_name: name };
+    updateRows(newRows);
+  };
+
+  const handleDragStart = (idx: number) => {
+    setDragIdx(idx);
+    setSortDir(null);
+  };
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+  const handleDrop = (idx: number) => {
+    if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setDragOverIdx(null); return; }
+    const newRows = [...rows];
+    const [moved] = newRows.splice(dragIdx, 1);
+    newRows.splice(idx, 0, moved);
+    updateRows(newRows.map((r, i) => ({ ...r, order: i + 1 })));
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+  const handleDragEnd = () => { setDragIdx(null); setDragOverIdx(null); };
+
+  const toggleSort = () => {
+    if (sortDir === null) setSortDir("desc");
+    else if (sortDir === "desc") setSortDir("asc");
+    else setSortDir(null);
+  };
+
+  const displayRows = useMemo(() => {
+    const indexed = rows.map((row, idx) => ({ row, idx }));
+    if (!sortDir) return indexed;
+    return [...indexed].sort((a, b) => {
+      const aTotal = months.reduce((s, ym) => s + (a.row.monthly_revenue[ym] || 0), 0);
+      const bTotal = months.reduce((s, ym) => s + (b.row.monthly_revenue[ym] || 0), 0);
+      return sortDir === "desc" ? bTotal - aTotal : aTotal - bTotal;
+    });
+  }, [rows, sortDir, months]);
+
   const setCellValue = (idx: number, ym: string, value: number) => {
     const row = rows[idx];
     const cap = row.revenue_cap;
@@ -269,30 +313,58 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
         <Table className="text-xs">
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] text-xs">顧客名</TableHead>
-              <TableHead className="sticky left-[150px] bg-card z-10 min-w-[80px] text-xs">区分</TableHead>
-              <TableHead className="sticky left-[230px] bg-card z-10 min-w-[90px] text-xs">上限額</TableHead>
-              <TableHead className="sticky left-[320px] bg-card z-10 min-w-[30px] text-xs"></TableHead>
+              <TableHead className="sticky left-0 bg-card z-10 min-w-[30px] text-xs w-[30px]"></TableHead>
+              <TableHead className="sticky left-[30px] bg-card z-10 min-w-[150px] text-xs">顧客名</TableHead>
+              <TableHead className="sticky left-[180px] bg-card z-10 min-w-[80px] text-xs">区分</TableHead>
+              <TableHead className="sticky left-[260px] bg-card z-10 min-w-[90px] text-xs">上限額</TableHead>
+              <TableHead className="sticky left-[350px] bg-card z-10 min-w-[30px] text-xs"></TableHead>
               {months.map(m => (
                 <TableHead key={m} className={cn("text-center text-xs min-w-[120px]", m === currentMonth && "bg-primary/5")}>
                   {getMonthLabel(m)}
                 </TableHead>
               ))}
-              <TableHead className="text-center text-xs min-w-[110px] bg-muted/50">年間合計</TableHead>
+              <TableHead className="text-center text-xs min-w-[110px] bg-muted/50 cursor-pointer select-none" onClick={toggleSort}>
+                <div className="flex items-center justify-center gap-1">
+                  年間合計
+                  {sortDir === "desc" ? <ArrowDown className="h-3 w-3" /> : sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                </div>
+              </TableHead>
               <TableHead className="text-center text-xs min-w-[100px] bg-muted/50">前期合計</TableHead>
               <TableHead className="text-center text-xs min-w-[70px] bg-muted/50">成長率</TableHead>
-              <TableHead className="text-xs min-w-[110px]"></TableHead>
+              <TableHead className="text-xs min-w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row, idx) => {
+            {displayRows.map(({ row, idx }, displayIdx) => {
               const prevAvg = row.category === "existing" ? getPrevYearMonthlyAvg(row.client_name) : 0;
+              const isDragOver = dragOverIdx === displayIdx && dragIdx !== displayIdx;
               return (
-                <TableRow key={idx} className={cn("hover:bg-muted/30", row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10")}>
-                  <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
-                    <span className="truncate block max-w-[140px]">{row.client_name}</span>
+                <TableRow
+                  key={idx}
+                  draggable={!sortDir}
+                  onDragStart={() => handleDragStart(displayIdx)}
+                  onDragOver={(e) => handleDragOver(e, displayIdx)}
+                  onDrop={() => handleDrop(displayIdx)}
+                  onDragEnd={handleDragEnd}
+                  className={cn(
+                    "hover:bg-muted/30",
+                    row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10",
+                    dragIdx === displayIdx && "opacity-40",
+                    isDragOver && "border-t-2 border-t-primary"
+                  )}
+                >
+                  <TableCell className="sticky left-0 bg-card z-10 w-[30px] p-0 border-r cursor-grab active:cursor-grabbing">
+                    <GripVertical className="h-4 w-4 text-muted-foreground mx-auto" />
                   </TableCell>
-                  <TableCell className="sticky left-[150px] bg-card z-10 border-r p-1">
+                  <TableCell className="sticky left-[30px] bg-card z-10 border-r p-1">
+                    <Input
+                      type="text"
+                      value={row.client_name}
+                      onChange={(e) => setClientNameAt(idx, e.target.value)}
+                      className="h-6 text-xs w-[140px] border-transparent hover:border-input focus:border-input bg-transparent"
+                    />
+                  </TableCell>
+                  <TableCell className="sticky left-[180px] bg-card z-10 border-r p-1">
                     <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
                       <SelectTrigger className={cn("h-6 text-[10px] w-[70px] px-1 border", CATEGORY_BADGE_STYLES[row.category])}>
                         <SelectValue />
@@ -304,7 +376,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="sticky left-[230px] bg-card z-10 border-r p-1">
+                  <TableCell className="sticky left-[260px] bg-card z-10 border-r p-1">
                     <Input
                       type="text"
                       value={row.revenue_cap ? row.revenue_cap.toLocaleString() : ""}
@@ -316,7 +388,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       className="h-6 text-[10px] text-right w-[80px]"
                     />
                   </TableCell>
-                  <TableCell className="sticky left-[320px] bg-card z-10 border-r p-0">
+                  <TableCell className="sticky left-[350px] bg-card z-10 border-r p-0">
                     <div className="flex items-center">
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => applyToAllMonths(idx)} title="最初の月の値を全月にコピー">
                         <Copy className="h-3 w-3 text-muted-foreground" />
@@ -378,17 +450,9 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                     })()}
                   </TableCell>
                   <TableCell className="p-1">
-                    <div className="flex items-center gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "up")} disabled={idx === 0} title="上に移動">
-                        <ArrowUp className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "down")} disabled={idx === rows.length - 1} title="下に移動">
-                        <ArrowDown className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
-                        <Trash2 className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
+                      <Trash2 className="h-3 w-3 text-muted-foreground" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
@@ -396,10 +460,11 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
             {/* Month target row */}
             <TableRow className="bg-muted/30">
-              <TableCell className="sticky left-0 bg-muted/30 z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
-              <TableCell className="sticky left-[150px] bg-muted/30 z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
-              <TableCell className="sticky left-[230px] bg-muted/30 z-10 border-r" />
-              <TableCell className="sticky left-[320px] bg-muted/30 z-10 border-r" />
+              <TableCell className="sticky left-0 bg-muted/30 z-10 w-[30px] border-r" />
+              <TableCell className="sticky left-[30px] bg-muted/30 z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
+              <TableCell className="sticky left-[180px] bg-muted/30 z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
+              <TableCell className="sticky left-[260px] bg-muted/30 z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-muted/30 z-10 border-r" />
               {months.map((ym, i) => (
                 <TableCell key={ym} className={cn("text-right text-xs text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTarget(ym, i))}
@@ -413,10 +478,11 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
             {/* Month totals */}
             <TableRow className="bg-muted/50 font-semibold">
-              <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
-              <TableCell className="sticky left-[150px] bg-muted/50 z-10 border-r">—</TableCell>
-              <TableCell className="sticky left-[230px] bg-muted/50 z-10 border-r" />
-              <TableCell className="sticky left-[320px] bg-muted/50 z-10 border-r" />
+              <TableCell className="sticky left-0 bg-muted/50 z-10 w-[30px] border-r" />
+              <TableCell className="sticky left-[30px] bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
+              <TableCell className="sticky left-[180px] bg-muted/50 z-10 border-r">—</TableCell>
+              <TableCell className="sticky left-[260px] bg-muted/50 z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-muted/50 z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
@@ -439,10 +505,11 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
             {/* Remaining row */}
             <TableRow>
-              <TableCell className="sticky left-0 bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
-              <TableCell className="sticky left-[150px] bg-card z-10 border-r" />
-              <TableCell className="sticky left-[230px] bg-card z-10 border-r" />
-              <TableCell className="sticky left-[320px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-0 bg-card z-10 w-[30px] border-r" />
+              <TableCell className="sticky left-[30px] bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
+              <TableCell className="sticky left-[180px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[260px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-card z-10 border-r" />
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);
