@@ -6,6 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { SectionHeading } from "./SectionHeading";
 import { PlanSettings, ClientRevenuePlanRow, fmtNum, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth, getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
