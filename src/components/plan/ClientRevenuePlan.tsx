@@ -477,22 +477,22 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
             </TableRow>
 
             {/* Month totals */}
-            <TableRow className="bg-muted/50 font-semibold">
-              <TableCell className="sticky left-0 bg-muted/50 z-10 w-[30px] border-r" />
-              <TableCell className="sticky left-[30px] bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
-              <TableCell className="sticky left-[180px] bg-muted/50 z-10 border-r">—</TableCell>
-              <TableCell className="sticky left-[260px] bg-muted/50 z-10 border-r" />
-              <TableCell className="sticky left-[350px] bg-muted/50 z-10 border-r" />
+            <TableRow className="bg-muted font-semibold">
+              <TableCell className="sticky left-0 bg-muted z-10 w-[30px] border-r" />
+              <TableCell className="sticky left-[30px] bg-muted z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
+              <TableCell className="sticky left-[180px] bg-muted z-10 border-r">—</TableCell>
+              <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
                 </TableCell>
               ))}
-              <TableCell className="text-right bg-muted/30 font-bold">{fmtC(grandTotal)}</TableCell>
-              <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
+              <TableCell className="text-right bg-muted font-bold">{fmtC(grandTotal)}</TableCell>
+              <TableCell className="text-right bg-muted text-xs text-muted-foreground">
                 {fmtC(prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0))}
               </TableCell>
-              <TableCell className="text-right bg-muted/30 text-xs">
+              <TableCell className="text-right bg-muted text-xs">
                 {(() => {
                   const prevTotal = prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0);
                   if (prevTotal <= 0 || grandTotal <= 0) return <span className="text-muted-foreground">—</span>;
