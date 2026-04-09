@@ -313,7 +313,21 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
       </section>
       {/* 人件費計画 */}
       <section className="bg-card rounded-lg shadow-sm border border-border p-5">
-        <SectionHeading title="人件費計画" description="人件費予算は販管費予算の30%で設定（役員除外）" />
+        <div className="flex items-center justify-between mb-2">
+          <SectionHeading title="人件費計画" description={`人件費予算は販管費予算の${settings.labor_cost_sga_rate ?? 30}%で設定（役員除外）`} />
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground whitespace-nowrap">販管費比率</span>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={settings.labor_cost_sga_rate ?? 30}
+              onChange={(e) => update("labor_cost_sga_rate", parseFloat(e.target.value) || 0)}
+              className="h-7 w-[70px] text-xs text-center focus-visible:ring-[hsl(217,91%,60%)]"
+            />
+            <span className="text-muted-foreground">%</span>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <Table className="text-xs">
             <TableHeader>
