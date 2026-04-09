@@ -318,7 +318,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableHead className="sticky left-[30px] bg-card z-10 min-w-[150px] text-xs">顧客名</TableHead>
               <TableHead className="sticky left-[180px] bg-card z-10 min-w-[80px] text-xs">区分</TableHead>
               <TableHead className="sticky left-[260px] bg-card z-10 min-w-[90px] text-xs">上限額</TableHead>
-              <TableHead className="sticky left-[350px] bg-card z-10 min-w-[30px] text-xs"></TableHead>
               {months.map(m => (
                 <TableHead key={m} className={cn("text-center text-xs min-w-[120px]", m === currentMonth && "bg-primary/5")}>
                   {getMonthLabel(m)}
@@ -332,7 +331,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               </TableHead>
               <TableHead className="text-center text-xs min-w-[100px] bg-muted/50">前期合計</TableHead>
               <TableHead className="text-center text-xs min-w-[70px] bg-muted/50">成長率</TableHead>
-              <TableHead className="text-xs min-w-[40px]"></TableHead>
+              <TableHead className="text-xs min-w-[30px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
