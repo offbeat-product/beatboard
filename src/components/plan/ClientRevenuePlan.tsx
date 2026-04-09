@@ -281,22 +281,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               return (
                 <TableRow key={idx} className={cn("hover:bg-muted/30", row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10")}>
                   <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <Badge className={cn("text-[9px] px-1.5 py-0 h-4 font-normal border", CATEGORY_BADGE_STYLES[row.category])}>
-                        {CATEGORY_LABELS[row.category]}
-                      </Badge>
-                      <span className="truncate block max-w-[90px]">{row.client_name}</span>
-                    </div>
+                    <span className="truncate block max-w-[140px]">{row.client_name}</span>
                   </TableCell>
                   <TableCell className="sticky left-[150px] bg-card z-10 border-r p-1">
                     <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
-                      <SelectTrigger className="h-6 text-[10px] w-[70px] px-1">
+                      <SelectTrigger className={cn("h-6 text-[10px] w-[70px] px-1 border", CATEGORY_BADGE_STYLES[row.category])}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="existing">既存</SelectItem>
-                        <SelectItem value="new">新規</SelectItem>
-                        <SelectItem value="risk">失注リスク</SelectItem>
+                        <SelectItem value="existing"><span className="text-blue-700 dark:text-blue-400">既存</span></SelectItem>
+                        <SelectItem value="new"><span className="text-emerald-700 dark:text-emerald-400">新規</span></SelectItem>
+                        <SelectItem value="risk"><span className="text-red-700 dark:text-red-400">失注リスク</span></SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
