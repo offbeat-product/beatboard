@@ -25,6 +25,7 @@ export interface ClientRevenuePlanRow {
   monthly_revenue: Record<string, number>;
   order: number;
   revenue_cap?: number | null;
+  gross_profit_rate?: number | null;
 }
 
 export interface PlanSettings {
