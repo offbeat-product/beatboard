@@ -346,7 +346,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
               <TableRow className="hover:bg-muted/30">
                 <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">
                   人件費予算
-                  <span className="block text-[9px] text-muted-foreground">販管費予算の30%</span>
+                  <span className="block text-[9px] text-muted-foreground">販管費予算の{settings.labor_cost_sga_rate ?? 30}%</span>
                 </TableCell>
                 {months.map((m, i) => {
                   const rev = getMonthlyRevenue(i);
