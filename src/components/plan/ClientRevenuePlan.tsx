@@ -464,7 +464,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-muted z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
               <TableCell className="sticky left-[180px] bg-muted z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
               <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
-              <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym, i) => (
                 <TableCell key={ym} className={cn("text-right text-xs text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTarget(ym, i))}
@@ -473,7 +472,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="text-right bg-muted text-xs text-muted-foreground">{fmtC(annualTarget)}</TableCell>
               <TableCell className="bg-muted" />
               <TableCell className="bg-muted" />
-              <TableCell />
             </TableRow>
 
             {/* Month totals */}
@@ -482,7 +480,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-muted z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
               <TableCell className="sticky left-[180px] bg-muted z-10 border-r">—</TableCell>
               <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
-              <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
@@ -500,7 +497,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                   return <span className={cn(g >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>{g >= 0 ? "+" : ""}{g.toFixed(0)}%</span>;
                 })()}
               </TableCell>
-              <TableCell />
             </TableRow>
 
             {/* Remaining row */}
@@ -509,7 +505,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
               <TableCell className="sticky left-[180px] bg-card z-10 border-r" />
               <TableCell className="sticky left-[260px] bg-card z-10 border-r" />
-              <TableCell className="sticky left-[350px] bg-card z-10 border-r" />
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);
@@ -523,7 +518,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualTarget - grandTotal > 0 ? "text-amber-600" : annualTarget - grandTotal < 0 ? "text-destructive" : "text-green-600")}>
                 {fmtC(annualTarget - grandTotal)}
               </TableCell>
-              <TableCell />
               <TableCell />
               <TableCell />
             </TableRow>
