@@ -105,6 +105,8 @@ export const DEFAULT_STAFFING = (months: string[]): StaffingRow[] =>
       fullTimeHours: 160,
       partTimeTotalHours: isLaterPeriod ? 260 : 0,
       projectHours: isLaterPeriod ? 200 : 350,
+      fullTimeLaborCost: 0,
+      partTimeLaborCost: 0,
     };
   });
 
