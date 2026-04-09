@@ -220,10 +220,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
       monthly_revenue: {},
       order: rows.length + 1,
       revenue_cap: null,
+      gross_profit_rate: null,
     };
     updateRows([...rows, newRow]);
     setNewClientName("");
     setShowClientPicker(false);
+  };
+
+  const setClientGpRate = (idx: number, rate: number | null) => {
+    const newRows = [...rows];
+    newRows[idx] = { ...newRows[idx], gross_profit_rate: rate };
+    updateRows(newRows);
   };
 
   const removeClient = (idx: number) => {
@@ -366,6 +373,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableHead className="sticky left-[30px] bg-card z-10 min-w-[150px] text-xs">顧客名</TableHead>
               <TableHead className="sticky left-[180px] bg-card z-10 min-w-[80px] text-xs">区分</TableHead>
               <TableHead className="sticky left-[260px] bg-card z-10 min-w-[90px] text-xs">上限額</TableHead>
+              <TableHead className="sticky left-[350px] bg-card z-10 min-w-[70px] text-xs">粗利率</TableHead>
               {months.map(m => (
                 <TableHead key={m} className={cn("text-center text-xs min-w-[120px]", m === currentMonth && "bg-primary/5")}>
                   {getMonthLabel(m)}
@@ -435,6 +443,19 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                           }}
                           placeholder="上限なし"
                           className="h-6 text-[10px] text-right w-[80px]"
+                        />
+                      </TableCell>
+                      <TableCell className="sticky left-[350px] bg-card z-10 border-r p-1">
+                        <Input
+                          type="number"
+                          value={row.gross_profit_rate ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? null : parseFloat(e.target.value);
+                            setClientGpRate(idx, v);
+                          }}
+                          placeholder={`${settings.gross_profit_rate}%`}
+                          className="h-6 text-[10px] text-right w-[60px]"
+                          step="0.1"
                         />
                       </TableCell>
                       {months.map((ym) => {
@@ -518,6 +539,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-muted z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
               <TableCell className="sticky left-[180px] bg-muted z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
               <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym, i) => (
                 <TableCell key={ym} className={cn("text-right text-xs text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTarget(ym, i))}
@@ -534,6 +556,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-muted z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
               <TableCell className="sticky left-[180px] bg-muted z-10 border-r">—</TableCell>
               <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-muted z-10 border-r text-[10px] text-muted-foreground">加重平均</TableCell>
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
@@ -559,6 +582,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
               <TableCell className="sticky left-[180px] bg-card z-10 border-r" />
               <TableCell className="sticky left-[260px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-card z-10 border-r" />
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);

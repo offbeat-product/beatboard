@@ -13,7 +13,6 @@ import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { ClientRevenuePlan } from "./ClientRevenuePlan";
 import { RotateCcw } from "lucide-react";
 
 interface Props {
@@ -559,9 +558,6 @@ export function TabSalesPlan({ months, settings, update, fiscalYear }: Props) {
           </div>
         )}
       </section>
-
-      {/* 顧客別売上計画 */}
-      <ClientRevenuePlan months={months} settings={settings} update={update} fiscalYear={fiscalYear} />
     </div>
   );
 }

@@ -3,17 +3,38 @@ import { SectionHeading } from "./SectionHeading";
 import { FieldWithTooltip } from "./FieldWithTooltip";
 import { PlanSettings, fmtNum, fmtInputVal, parseInputVal } from "./PlanTypes";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { ORG_ID, getFiscalYearMonths } from "@/lib/fiscalYear";
+import { cn } from "@/lib/utils";
 
 interface Props {
   settings: PlanSettings;
   update: (field: keyof PlanSettings, value: any) => void;
+  fiscalYear: string;
 }
 
-export function TabBusinessTargets({ settings, update }: Props) {
+export function TabBusinessTargets({ settings, update, fiscalYear }: Props) {
   const { unit } = useCurrencyUnit();
+
+  const fyEndYear = parseInt(fiscalYear);
+  const months = getFiscalYearMonths(fyEndYear);
 
   const annualClientUnitPrice = settings.annual_client_target > 0 ? settings.annual_revenue_target / settings.annual_client_target : 0;
   const annualProjectUnitPrice = settings.annual_project_target > 0 ? settings.annual_revenue_target / settings.annual_project_target : 0;
+
+  // Fetch actuals for revenue achievement
+  const salesQuery = useQuery({
+    queryKey: ["plan_revenue_achievement", fiscalYear],
+    queryFn: async () => {
+      const { data } = await supabase.from("monthly_sales").select("year_month, revenue").eq("org_id", ORG_ID).in("year_month", months);
+      return data ?? [];
+    },
+  });
+  const sales = salesQuery.data ?? [];
+  const totalActualRevenue = sales.reduce((s, r) => s + (r.revenue || 0), 0);
+  const achievementRate = settings.annual_revenue_target > 0 ? (totalActualRevenue / settings.annual_revenue_target) * 100 : 0;
+  const monthsWithData = new Set(sales.filter(s => (s.revenue || 0) > 0).map(s => s.year_month)).size;
 
   return (
     <div className="space-y-8">
@@ -42,6 +63,47 @@ export function TabBusinessTargets({ settings, update }: Props) {
           <FieldWithTooltip label="販管費率" autoCalc tooltip="粗利率 - 営業利益率 で自動計算">
             <div className="h-10 flex items-center px-3 rounded-md bg-muted text-sm font-medium">{(settings.gross_profit_rate - settings.operating_profit_rate).toFixed(1)}%</div>
           </FieldWithTooltip>
+        </div>
+      </section>
+
+      {/* 売上目標達成 */}
+      <section className="bg-card rounded-lg shadow-sm border border-border p-5">
+        <SectionHeading title="売上目標達成" description="年間売上目標に対する累計進捗を表示します" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">年間売上目標</p>
+            <p className="text-lg font-bold">{fmtNum(settings.annual_revenue_target, unit)}</p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">累計実績（{monthsWithData}ヶ月）</p>
+            <p className="text-lg font-bold">{fmtNum(totalActualRevenue, unit)}</p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">達成率</p>
+            <p className={cn("text-lg font-bold", achievementRate >= 100 ? "text-green-600" : achievementRate >= 80 ? "text-amber-600" : "text-destructive")}>
+              {achievementRate.toFixed(1)}%
+            </p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">残り必要額</p>
+            <p className={cn("text-lg font-bold", totalActualRevenue >= settings.annual_revenue_target ? "text-green-600" : "")}>
+              {totalActualRevenue >= settings.annual_revenue_target ? "達成済" : fmtNum(settings.annual_revenue_target - totalActualRevenue, unit)}
+            </p>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="mt-4">
+          <div className="h-3 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn("h-full rounded-full transition-all", achievementRate >= 100 ? "bg-green-500" : achievementRate >= 80 ? "bg-amber-500" : "bg-primary")}
+              style={{ width: `${Math.min(achievementRate, 100)}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+            <span>0%</span>
+            <span>50%</span>
+            <span>100%</span>
+          </div>
         </div>
       </section>
 
