@@ -569,9 +569,14 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                   </TableCell>
                 );
               })}
-              <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualTarget - grandTotal > 0 ? "text-amber-600" : annualTarget - grandTotal < 0 ? "text-destructive" : "text-green-600")}>
-                {fmtC(annualTarget - grandTotal)}
-              </TableCell>
+              {(() => {
+                const annualRemaining = grandTotal - annualTarget;
+                return (
+                  <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualRemaining < 0 ? "text-amber-600" : annualRemaining > 0 ? "text-green-600" : "text-muted-foreground")}>
+                    {annualRemaining > 0 ? `+${fmtC(annualRemaining)}` : fmtC(annualRemaining)}
+                  </TableCell>
+                );
+              })()}
               <TableCell />
               <TableCell />
             </TableRow>
