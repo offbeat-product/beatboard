@@ -6,6 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { SectionHeading } from "./SectionHeading";
 import { PlanSettings, ClientRevenuePlanRow, fmtNum, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth, getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
@@ -317,7 +318,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableHead className="sticky left-[30px] bg-card z-10 min-w-[150px] text-xs">顧客名</TableHead>
               <TableHead className="sticky left-[180px] bg-card z-10 min-w-[80px] text-xs">区分</TableHead>
               <TableHead className="sticky left-[260px] bg-card z-10 min-w-[90px] text-xs">上限額</TableHead>
-              <TableHead className="sticky left-[350px] bg-card z-10 min-w-[30px] text-xs"></TableHead>
               {months.map(m => (
                 <TableHead key={m} className={cn("text-center text-xs min-w-[120px]", m === currentMonth && "bg-primary/5")}>
                   {getMonthLabel(m)}
@@ -331,7 +331,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               </TableHead>
               <TableHead className="text-center text-xs min-w-[100px] bg-muted/50">前期合計</TableHead>
               <TableHead className="text-center text-xs min-w-[70px] bg-muted/50">成長率</TableHead>
-              <TableHead className="text-xs min-w-[40px]"></TableHead>
+              <TableHead className="text-xs min-w-[30px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -339,122 +339,122 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               const prevAvg = row.category === "existing" ? getPrevYearMonthlyAvg(row.client_name) : 0;
               const isDragOver = dragOverIdx === displayIdx && dragIdx !== displayIdx;
               return (
-                <TableRow
-                  key={idx}
-                  draggable={!sortDir}
-                  onDragStart={() => handleDragStart(displayIdx)}
-                  onDragOver={(e) => handleDragOver(e, displayIdx)}
-                  onDrop={() => handleDrop(displayIdx)}
-                  onDragEnd={handleDragEnd}
-                  className={cn(
-                    "hover:bg-muted/30",
-                    row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10",
-                    dragIdx === displayIdx && "opacity-40",
-                    isDragOver && "border-t-2 border-t-primary"
-                  )}
-                >
-                  <TableCell className="sticky left-0 bg-card z-10 w-[30px] p-0 border-r cursor-grab active:cursor-grabbing">
-                    <GripVertical className="h-4 w-4 text-muted-foreground mx-auto" />
-                  </TableCell>
-                  <TableCell className="sticky left-[30px] bg-card z-10 border-r p-1">
-                    <Input
-                      type="text"
-                      value={row.client_name}
-                      onChange={(e) => setClientNameAt(idx, e.target.value)}
-                      className="h-6 text-xs w-[140px] border-transparent hover:border-input focus:border-input bg-transparent"
-                    />
-                  </TableCell>
-                  <TableCell className="sticky left-[180px] bg-card z-10 border-r p-1">
-                    <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
-                      <SelectTrigger className={cn("h-6 text-[10px] w-[70px] px-1 border", CATEGORY_BADGE_STYLES[row.category])}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="existing"><span className="text-blue-700 dark:text-blue-400">既存</span></SelectItem>
-                        <SelectItem value="new"><span className="text-emerald-700 dark:text-emerald-400">新規</span></SelectItem>
-                        <SelectItem value="risk"><span className="text-red-700 dark:text-red-400">失注リスク</span></SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="sticky left-[260px] bg-card z-10 border-r p-1">
-                    <Input
-                      type="text"
-                      value={row.revenue_cap ? row.revenue_cap.toLocaleString() : ""}
-                      onChange={(e) => {
-                        const v = parseInput(e.target.value);
-                        setRevenueCap(idx, v > 0 ? v : null);
-                      }}
-                      placeholder="上限なし"
-                      className="h-6 text-[10px] text-right w-[80px]"
-                    />
-                  </TableCell>
-                  <TableCell className="sticky left-[350px] bg-card z-10 border-r p-0">
-                    <div className="flex items-center">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => applyToAllMonths(idx)} title="最初の月の値を全月にコピー">
-                        <Copy className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                      {row.category === "existing" && prevAvg > 0 && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => autoCalcExistingClient(idx)} title="前期実績から自動計算">
-                          <Wand2 className="h-3 w-3 text-blue-500" />
-                        </Button>
+                <ContextMenu key={idx}>
+                  <ContextMenuTrigger asChild>
+                    <TableRow
+                      draggable={!sortDir}
+                      onDragStart={() => handleDragStart(displayIdx)}
+                      onDragOver={(e) => handleDragOver(e, displayIdx)}
+                      onDrop={() => handleDrop(displayIdx)}
+                      onDragEnd={handleDragEnd}
+                      className={cn(
+                        "hover:bg-muted/30",
+                        row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10",
+                        dragIdx === displayIdx && "opacity-40",
+                        isDragOver && "border-t-2 border-t-primary"
                       )}
-                    </div>
-                  </TableCell>
-                  {months.map((ym) => {
-                    const planVal = row.monthly_revenue[ym] || 0;
-                    const hasActual = isPastMonth(ym);
-                    const actual = hasActual ? getClientActual(row.client_name, ym) : 0;
-                    const achRate = hasActual && planVal > 0 ? (actual / planVal) * 100 : 0;
-                    const cap = row.revenue_cap;
-                    const isAtCap = cap && cap > 0 && planVal >= cap;
-
-                    return (
-                      <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
-                        <div className="flex flex-col items-end gap-0.5">
-                          <Input
-                            type="text"
-                            value={planVal > 0 ? planVal.toLocaleString() : ""}
-                            onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
-                            placeholder="0"
-                            className={cn("h-7 text-xs text-right w-[100px]", isAtCap && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                          />
-                          {hasActual && actual > 0 && (
-                            <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1">
-                              <span>{fmtC(actual)}</span>
-                              <span className={cn(achRate >= 100 ? "text-green-600" : "text-destructive")}>
-                                {achRate > 0 ? `${achRate.toFixed(0)}%` : ""}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                    >
+                      <TableCell className="sticky left-0 bg-card z-10 w-[30px] p-0 border-r cursor-grab active:cursor-grabbing">
+                        <GripVertical className="h-4 w-4 text-muted-foreground mx-auto" />
                       </TableCell>
-                    );
-                  })}
-                  <TableCell className="text-right bg-muted/30 font-medium">
-                    {fmtC(getRowAnnual(row))}
-                  </TableCell>
-                  <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
-                    {(() => { const pt = getPrevYearTotal(row.client_name); return pt > 0 ? fmtC(pt) : "—"; })()}
-                  </TableCell>
-                  <TableCell className="text-right bg-muted/30 text-xs">
-                    {(() => {
-                      const pt = getPrevYearTotal(row.client_name);
-                      const annual = getRowAnnual(row);
-                      if (pt <= 0 || annual <= 0) return <span className="text-muted-foreground">—</span>;
-                      const growth = ((annual - pt) / pt) * 100;
-                      return (
-                        <span className={cn(growth >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>
-                          {growth >= 0 ? "+" : ""}{growth.toFixed(0)}%
-                        </span>
-                      );
-                    })()}
-                  </TableCell>
-                  <TableCell className="p-1">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
-                      <Trash2 className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                      <TableCell className="sticky left-[30px] bg-card z-10 border-r p-1">
+                        <Input
+                          type="text"
+                          value={row.client_name}
+                          onChange={(e) => setClientNameAt(idx, e.target.value)}
+                          className="h-6 text-xs w-[140px] border-transparent hover:border-input focus:border-input bg-transparent"
+                        />
+                      </TableCell>
+                      <TableCell className="sticky left-[180px] bg-card z-10 border-r p-1">
+                        <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
+                          <SelectTrigger className={cn("h-6 text-[10px] w-[70px] px-1 border", CATEGORY_BADGE_STYLES[row.category])}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="existing"><span className="text-blue-700 dark:text-blue-400">既存</span></SelectItem>
+                            <SelectItem value="new"><span className="text-emerald-700 dark:text-emerald-400">新規</span></SelectItem>
+                            <SelectItem value="risk"><span className="text-red-700 dark:text-red-400">失注リスク</span></SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="sticky left-[260px] bg-card z-10 border-r p-1">
+                        <Input
+                          type="text"
+                          value={row.revenue_cap ? row.revenue_cap.toLocaleString() : ""}
+                          onChange={(e) => {
+                            const v = parseInput(e.target.value);
+                            setRevenueCap(idx, v > 0 ? v : null);
+                          }}
+                          placeholder="上限なし"
+                          className="h-6 text-[10px] text-right w-[80px]"
+                        />
+                      </TableCell>
+                      {months.map((ym) => {
+                        const planVal = row.monthly_revenue[ym] || 0;
+                        const hasActual = isPastMonth(ym);
+                        const actual = hasActual ? getClientActual(row.client_name, ym) : 0;
+                        const achRate = hasActual && planVal > 0 ? (actual / planVal) * 100 : 0;
+                        const cap = row.revenue_cap;
+                        const isAtCap = cap && cap > 0 && planVal >= cap;
+
+                        return (
+                          <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
+                            <div className="flex flex-col items-end gap-0.5">
+                              <Input
+                                type="text"
+                                value={planVal > 0 ? planVal.toLocaleString() : ""}
+                                onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
+                                placeholder="0"
+                                className={cn("h-7 text-xs text-right w-[100px]", isAtCap && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                              />
+                              {hasActual && actual > 0 && (
+                                <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1">
+                                  <span>{fmtC(actual)}</span>
+                                  <span className={cn(achRate >= 100 ? "text-green-600" : "text-destructive")}>
+                                    {achRate > 0 ? `${achRate.toFixed(0)}%` : ""}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-right bg-muted/30 font-medium">
+                        {fmtC(getRowAnnual(row))}
+                      </TableCell>
+                      <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
+                        {(() => { const pt = getPrevYearTotal(row.client_name); return pt > 0 ? fmtC(pt) : "—"; })()}
+                      </TableCell>
+                      <TableCell className="text-right bg-muted/30 text-xs">
+                        {(() => {
+                          const pt = getPrevYearTotal(row.client_name);
+                          const annual = getRowAnnual(row);
+                          if (pt <= 0 || annual <= 0) return <span className="text-muted-foreground">—</span>;
+                          const growth = ((annual - pt) / pt) * 100;
+                          return (
+                            <span className={cn(growth >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>
+                              {growth >= 0 ? "+" : ""}{growth.toFixed(0)}%
+                            </span>
+                          );
+                        })()}
+                      </TableCell>
+                    </TableRow>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-48">
+                    <ContextMenuItem onClick={() => applyToAllMonths(idx)}>
+                      <Copy className="h-3.5 w-3.5 mr-2" />初月の値を全月にコピー
+                    </ContextMenuItem>
+                    {row.category === "existing" && prevAvg > 0 && (
+                      <ContextMenuItem onClick={() => autoCalcExistingClient(idx)}>
+                        <Wand2 className="h-3.5 w-3.5 mr-2" />前期実績から自動計算
+                      </ContextMenuItem>
+                    )}
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onClick={() => removeClient(idx)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5 mr-2" />この顧客を削除
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
 
@@ -464,7 +464,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-muted z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
               <TableCell className="sticky left-[180px] bg-muted z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
               <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
-              <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym, i) => (
                 <TableCell key={ym} className={cn("text-right text-xs text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTarget(ym, i))}
@@ -473,7 +472,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="text-right bg-muted text-xs text-muted-foreground">{fmtC(annualTarget)}</TableCell>
               <TableCell className="bg-muted" />
               <TableCell className="bg-muted" />
-              <TableCell />
             </TableRow>
 
             {/* Month totals */}
@@ -482,7 +480,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-muted z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
               <TableCell className="sticky left-[180px] bg-muted z-10 border-r">—</TableCell>
               <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
-              <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
@@ -500,7 +497,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                   return <span className={cn(g >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>{g >= 0 ? "+" : ""}{g.toFixed(0)}%</span>;
                 })()}
               </TableCell>
-              <TableCell />
             </TableRow>
 
             {/* Remaining row */}
@@ -509,7 +505,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
               <TableCell className="sticky left-[180px] bg-card z-10 border-r" />
               <TableCell className="sticky left-[260px] bg-card z-10 border-r" />
-              <TableCell className="sticky left-[350px] bg-card z-10 border-r" />
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);
@@ -523,7 +518,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualTarget - grandTotal > 0 ? "text-amber-600" : annualTarget - grandTotal < 0 ? "text-destructive" : "text-green-600")}>
                 {fmtC(annualTarget - grandTotal)}
               </TableCell>
-              <TableCell />
               <TableCell />
               <TableCell />
             </TableRow>
