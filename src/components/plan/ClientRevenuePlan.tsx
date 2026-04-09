@@ -373,6 +373,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableHead className="sticky left-[30px] bg-card z-10 min-w-[150px] text-xs">顧客名</TableHead>
               <TableHead className="sticky left-[180px] bg-card z-10 min-w-[80px] text-xs">区分</TableHead>
               <TableHead className="sticky left-[260px] bg-card z-10 min-w-[90px] text-xs">上限額</TableHead>
+              <TableHead className="sticky left-[350px] bg-card z-10 min-w-[70px] text-xs">粗利率</TableHead>
               {months.map(m => (
                 <TableHead key={m} className={cn("text-center text-xs min-w-[120px]", m === currentMonth && "bg-primary/5")}>
                   {getMonthLabel(m)}
