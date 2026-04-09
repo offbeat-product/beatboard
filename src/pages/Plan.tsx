@@ -81,6 +81,7 @@ const Plan = () => {
           client_revenue_plan: Array.isArray(d.client_revenue_plan) ? d.client_revenue_plan : [],
           revenue_distribution_pattern: d.revenue_distribution_pattern || "standard",
           revenue_growth_factor: Number(d.revenue_growth_factor) || 1.5,
+          labor_cost_sga_rate: Number(d.labor_cost_sga_rate) || 30,
         };
         setSettings(loaded);
         setInitialSettings(JSON.stringify(loaded));
