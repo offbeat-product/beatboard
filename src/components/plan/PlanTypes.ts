@@ -4,6 +4,7 @@ export interface StaffingRow {
   partTimeCount: number;
   fullTimeHours: number;
   partTimeTotalHours: number;
+  projectHours: number;
 }
 
 export interface MonthlyClientData {
