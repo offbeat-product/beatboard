@@ -14,6 +14,8 @@ import { TabBusinessTargets } from "@/components/plan/TabBusinessTargets";
 import { TabSalesPlan } from "@/components/plan/TabSalesPlan";
 import { TabOrganizationPlan } from "@/components/plan/TabOrganizationPlan";
 import { TabSgaPlan } from "@/components/plan/TabSgaPlan";
+import { TabCustomerPlan } from "@/components/plan/TabCustomerPlan";
+import { TabMonthlyPlan } from "@/components/plan/TabMonthlyPlan";
 
 const Plan = () => {
   usePageTitle("事業計画");
