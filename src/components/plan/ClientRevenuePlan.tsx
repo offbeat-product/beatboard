@@ -335,14 +335,36 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row, idx) => {
+            {displayRows.map(({ row, idx }, displayIdx) => {
               const prevAvg = row.category === "existing" ? getPrevYearMonthlyAvg(row.client_name) : 0;
+              const isDragOver = dragOverIdx === displayIdx && dragIdx !== displayIdx;
               return (
-                <TableRow key={idx} className={cn("hover:bg-muted/30", row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10")}>
-                  <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
-                    <span className="truncate block max-w-[140px]">{row.client_name}</span>
+                <TableRow
+                  key={idx}
+                  draggable={!sortDir}
+                  onDragStart={() => handleDragStart(displayIdx)}
+                  onDragOver={(e) => handleDragOver(e, displayIdx)}
+                  onDrop={() => handleDrop(displayIdx)}
+                  onDragEnd={handleDragEnd}
+                  className={cn(
+                    "hover:bg-muted/30",
+                    row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10",
+                    dragIdx === displayIdx && "opacity-40",
+                    isDragOver && "border-t-2 border-t-primary"
+                  )}
+                >
+                  <TableCell className="sticky left-0 bg-card z-10 w-[30px] p-0 border-r cursor-grab active:cursor-grabbing">
+                    <GripVertical className="h-4 w-4 text-muted-foreground mx-auto" />
                   </TableCell>
-                  <TableCell className="sticky left-[150px] bg-card z-10 border-r p-1">
+                  <TableCell className="sticky left-[30px] bg-card z-10 border-r p-1">
+                    <Input
+                      type="text"
+                      value={row.client_name}
+                      onChange={(e) => setClientNameAt(idx, e.target.value)}
+                      className="h-6 text-xs w-[140px] border-transparent hover:border-input focus:border-input bg-transparent"
+                    />
+                  </TableCell>
+                  <TableCell className="sticky left-[180px] bg-card z-10 border-r p-1">
                     <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
                       <SelectTrigger className={cn("h-6 text-[10px] w-[70px] px-1 border", CATEGORY_BADGE_STYLES[row.category])}>
                         <SelectValue />
@@ -354,7 +376,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="sticky left-[230px] bg-card z-10 border-r p-1">
+                  <TableCell className="sticky left-[260px] bg-card z-10 border-r p-1">
                     <Input
                       type="text"
                       value={row.revenue_cap ? row.revenue_cap.toLocaleString() : ""}
@@ -366,7 +388,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       className="h-6 text-[10px] text-right w-[80px]"
                     />
                   </TableCell>
-                  <TableCell className="sticky left-[320px] bg-card z-10 border-r p-0">
+                  <TableCell className="sticky left-[350px] bg-card z-10 border-r p-0">
                     <div className="flex items-center">
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => applyToAllMonths(idx)} title="最初の月の値を全月にコピー">
                         <Copy className="h-3 w-3 text-muted-foreground" />
@@ -428,16 +450,9 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                     })()}
                   </TableCell>
                   <TableCell className="p-1">
-                    <div className="flex items-center gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "up")} disabled={idx === 0} title="上に移動">
-                        <ArrowUp className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "down")} disabled={idx === rows.length - 1} title="下に移動">
-                        <ArrowDown className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
-                        <Trash2 className="h-3 w-3 text-muted-foreground" />
-                      </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
+                      <Trash2 className="h-3 w-3 text-muted-foreground" />
+                    </Button>
                     </div>
                   </TableCell>
                 </TableRow>
