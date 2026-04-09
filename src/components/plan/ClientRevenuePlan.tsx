@@ -164,7 +164,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
       const h2 = distributeRevenue(h2Total, 6, growthFactor);
       monthlyValues = [...h1, ...h2];
     } else if (settings.distribution_mode === "equal") {
-      monthlyValues = months.map(() => Math.round(annualAmount / 12));
+      monthlyValues = months.map(() => ceilTo10k(annualAmount / 12));
     } else {
       monthlyValues = distributeRevenue(annualAmount, 12, growthFactor);
     }
