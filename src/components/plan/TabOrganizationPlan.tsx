@@ -64,7 +64,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
   };
 
   const getProjectHours = (i: number): number => {
-    return Math.round(getTotalHours(i) * 0.8);
+    return Math.round(getTotalHours(i) * 0.75);
   };
 
   return (
