@@ -406,6 +406,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableCell>
               ))}
               <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">{fmtC(annualTarget)}</TableCell>
+              <TableCell className="bg-muted/30" />
+              <TableCell className="bg-muted/30" />
               <TableCell />
             </TableRow>
 
