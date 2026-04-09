@@ -146,6 +146,9 @@ export const DEFAULT_SETTINGS = (months: string[]): PlanSettings => ({
 
 /* ── Helpers ── */
 
+/** Round up to nearest 10,000 (万単位切り上げ) */
+export const ceilTo10k = (v: number): number => Math.ceil(v / 10000) * 10000;
+
 /** Distribute a total amount across n months using arithmetic progression.
  *  growthFactor g = last month / first month. g=1 → equal distribution. */
 export function distributeRevenue(
@@ -159,7 +162,7 @@ export function distributeRevenue(
   if (n === 1) return [totalAmount];
   if (Math.abs(g - 1.0) < 0.001) {
     // Equal distribution
-    const base = Math.round(totalAmount / n);
+    const base = ceilTo10k(totalAmount / n);
     const result = Array(n).fill(base);
     result[n - 1] += totalAmount - base * n;
     return result;
@@ -172,7 +175,7 @@ export function distributeRevenue(
   const d = ((g - 1) * a) / (n - 1);
   const result: number[] = [];
   for (let i = 0; i < n; i++) {
-    result.push(Math.round(a + i * d));
+    result.push(ceilTo10k(a + i * d));
   }
   // Rounding adjustment on last month
   const sum = result.reduce((s, v) => s + v, 0);
