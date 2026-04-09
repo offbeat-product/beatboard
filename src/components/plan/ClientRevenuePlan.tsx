@@ -26,7 +26,7 @@ interface Props {
 const CATEGORY_LABELS: Record<string, string> = {
   existing: "既存",
   new: "新規",
-  risk: "失注リスク",
+  risk: "解約予定",
 };
 
 const CATEGORY_BADGE_STYLES: Record<string, string> = {
