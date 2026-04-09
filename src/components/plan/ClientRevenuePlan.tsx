@@ -220,10 +220,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
       monthly_revenue: {},
       order: rows.length + 1,
       revenue_cap: null,
+      gross_profit_rate: null,
     };
     updateRows([...rows, newRow]);
     setNewClientName("");
     setShowClientPicker(false);
+  };
+
+  const setClientGpRate = (idx: number, rate: number | null) => {
+    const newRows = [...rows];
+    newRows[idx] = { ...newRows[idx], gross_profit_rate: rate };
+    updateRows(newRows);
   };
 
   const removeClient = (idx: number) => {
