@@ -97,6 +97,13 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     return activeMonths > 0 ? total / activeMonths : 0;
   };
 
+  // Previous year annual total per client
+  const getPrevYearTotal = (clientName: string): number => {
+    return prevActuals
+      .filter(a => a.client_name === clientName)
+      .reduce((s, a) => s + Number(a.revenue ?? 0), 0);
+  };
+
   const getClientActual = (clientName: string, ym: string): number => {
     return actuals
       .filter(a => a.client_name === clientName && a.year_month === ym)
@@ -272,6 +279,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableHead>
               ))}
               <TableHead className="text-center text-xs min-w-[110px] bg-muted/50">年間合計</TableHead>
+              <TableHead className="text-center text-xs min-w-[100px] bg-muted/50">前期合計</TableHead>
+              <TableHead className="text-center text-xs min-w-[70px] bg-muted/50">成長率</TableHead>
               <TableHead className="text-xs min-w-[110px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -350,12 +359,23 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                     );
                   })}
                   <TableCell className="text-right bg-muted/30 font-medium">
-                    <div className="flex flex-col items-end">
-                      <span>{fmtC(getRowAnnual(row))}</span>
-                      {row.category === "existing" && prevAvg > 0 && (
-                        <span className="text-[9px] text-muted-foreground">前期平均: {fmtC(prevAvg)}/月</span>
-                      )}
-                    </div>
+                    {fmtC(getRowAnnual(row))}
+                  </TableCell>
+                  <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
+                    {(() => { const pt = getPrevYearTotal(row.client_name); return pt > 0 ? fmtC(pt) : "—"; })()}
+                  </TableCell>
+                  <TableCell className="text-right bg-muted/30 text-xs">
+                    {(() => {
+                      const pt = getPrevYearTotal(row.client_name);
+                      const annual = getRowAnnual(row);
+                      if (pt <= 0 || annual <= 0) return <span className="text-muted-foreground">—</span>;
+                      const growth = ((annual - pt) / pt) * 100;
+                      return (
+                        <span className={cn(growth >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>
+                          {growth >= 0 ? "+" : ""}{growth.toFixed(0)}%
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="p-1">
                     <div className="flex items-center gap-0.5">
@@ -386,6 +406,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableCell>
               ))}
               <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">{fmtC(annualTarget)}</TableCell>
+              <TableCell className="bg-muted/30" />
+              <TableCell className="bg-muted/30" />
               <TableCell />
             </TableRow>
 
@@ -401,6 +423,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableCell>
               ))}
               <TableCell className="text-right bg-muted/30 font-bold">{fmtC(grandTotal)}</TableCell>
+              <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
+                {fmtC(prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0))}
+              </TableCell>
+              <TableCell className="text-right bg-muted/30 text-xs">
+                {(() => {
+                  const prevTotal = prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0);
+                  if (prevTotal <= 0 || grandTotal <= 0) return <span className="text-muted-foreground">—</span>;
+                  const g = ((grandTotal - prevTotal) / prevTotal) * 100;
+                  return <span className={cn(g >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>{g >= 0 ? "+" : ""}{g.toFixed(0)}%</span>;
+                })()}
+              </TableCell>
               <TableCell />
             </TableRow>
 
@@ -423,6 +456,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualTarget - grandTotal > 0 ? "text-amber-600" : annualTarget - grandTotal < 0 ? "text-destructive" : "text-green-600")}>
                 {fmtC(annualTarget - grandTotal)}
               </TableCell>
+              <TableCell />
+              <TableCell />
               <TableCell />
             </TableRow>
           </TableBody>
