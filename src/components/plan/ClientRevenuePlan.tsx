@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,7 +13,7 @@ import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, Copy, ChevronsUpDown, ArrowUp, ArrowDown, Wand2 } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronsUpDown, Wand2, GripVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface Props {
   months: string[];
