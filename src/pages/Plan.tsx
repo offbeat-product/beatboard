@@ -75,7 +75,7 @@ const Plan = () => {
           monthly_clients: (d.monthly_clients && typeof d.monthly_clients === "object" && !Array.isArray(d.monthly_clients)) ? d.monthly_clients : {},
           sga_categories: Array.isArray(d.sga_categories) && d.sga_categories.length > 0 ? d.sga_categories : DEFAULT_SGA_CATEGORIES,
           monthly_sga: (d.monthly_sga && typeof d.monthly_sga === "object" && !Array.isArray(d.monthly_sga)) ? d.monthly_sga : {},
-          sga_allocation_rates: (d.sga_allocation_rates && typeof d.sga_allocation_rates === "object" && !Array.isArray(d.sga_allocation_rates)) ? d.sga_allocation_rates : DEFAULT_SGA_ALLOCATION_RATES,
+          sga_allocation_rates: (d.sga_allocation_rates && typeof d.sga_allocation_rates === "object" && !Array.isArray(d.sga_allocation_rates)) ? { ...DEFAULT_SGA_ALLOCATION_RATES, ...d.sga_allocation_rates } : DEFAULT_SGA_ALLOCATION_RATES,
           monthly_sga_overrides: (d.monthly_sga_overrides && typeof d.monthly_sga_overrides === "object" && !Array.isArray(d.monthly_sga_overrides)) ? d.monthly_sga_overrides : {},
           annual_sga_total: Number(d.annual_sga_total) || 0,
           client_revenue_plan: Array.isArray(d.client_revenue_plan) ? d.client_revenue_plan : [],
