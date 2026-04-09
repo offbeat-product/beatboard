@@ -88,7 +88,8 @@ export const DEFAULT_SGA_ALLOCATION_RATES: Record<string, number> = {
 };
 
 export const SGA_CATEGORY_TOOLTIPS: Record<string, string> = {
-  personnel: "給与・賞与・役員報酬・法定福利費・福利厚生費・退職金",
+  executive_comp: "役員報酬・役員賞与・役員退職慰労金",
+  personnel: "給与・賞与・法定福利費・福利厚生費・退職金",
   recruiting: "求人媒体・人材紹介料・採用イベント・リファラルボーナス",
   office: "地代家賃・水道光熱費・通信費(回線)・備品消耗品・清掃",
   marketing: "Web広告・展示会・販促物・営業交通費・接待交際費",
