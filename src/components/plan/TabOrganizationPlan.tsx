@@ -12,14 +12,13 @@ interface Props {
   update: (field: keyof PlanSettings, value: any) => void;
 }
 
-type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours" | "projectHours";
+type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours";
 
 const STAFF_ROWS: { label: string; field: StaffField; unit: string }[] = [
   { label: "正社員数", field: "fullTimeCount", unit: "名" },
   { label: "パート数", field: "partTimeCount", unit: "名" },
   { label: "正社員h/月", field: "fullTimeHours", unit: "h" },
   { label: "パート合計h/月", field: "partTimeTotalHours", unit: "h" },
-  { label: "案件工数/月", field: "projectHours", unit: "h" },
 ];
 
 export function TabOrganizationPlan({ months, settings, update }: Props) {
