@@ -7,13 +7,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "./SectionHeading";
-import { PlanSettings, ClientRevenuePlanRow, fmtNum } from "./PlanTypes";
-import { getMonthLabel, getCurrentMonth, ORG_ID } from "@/lib/fiscalYear";
+import { PlanSettings, ClientRevenuePlanRow, fmtNum, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
+import { getMonthLabel, getCurrentMonth, getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, Copy, ChevronsUpDown, Check, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronsUpDown, ArrowUp, ArrowDown, Wand2 } from "lucide-react";
 
 interface Props {
   months: string[];
@@ -28,6 +28,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   risk: "失注リスク",
 };
 
+const CATEGORY_BADGE_STYLES: Record<string, string> = {
+  existing: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+  new: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+  risk: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+};
+
 export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Props) {
   const { unit } = useCurrencyUnit();
   const currentMonth = getCurrentMonth();
@@ -36,6 +42,12 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
 
   const rows = settings.client_revenue_plan || [];
+
+  // Parse fiscal year end year from fiscalYear string like "2026年4月期"
+  const fyEndYear = parseInt(fiscalYear);
+
+  // Previous fiscal year months for computing averages
+  const prevMonths = useMemo(() => getFiscalYearMonths(fyEndYear - 1), [fyEndYear]);
 
   // Fetch clients list
   const clientsQuery = useQuery({
@@ -46,7 +58,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     },
   });
 
-  // Fetch actuals from project_pl
+  // Fetch actuals from project_pl for current FY
   const actualsQuery = useQuery({
     queryKey: ["client_revenue_actuals", fiscalYear],
     queryFn: async () => {
@@ -59,8 +71,31 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     },
   });
 
+  // Fetch previous year actuals for existing client auto-calc
+  const prevActualsQuery = useQuery({
+    queryKey: ["client_revenue_prev_actuals", fyEndYear - 1],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_pl")
+        .select("year_month, client_name, client_id, revenue")
+        .eq("org_id", ORG_ID)
+        .in("year_month", prevMonths);
+      return data ?? [];
+    },
+  });
+
   const actuals = actualsQuery.data ?? [];
+  const prevActuals = prevActualsQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
+
+  // Previous year monthly average per client
+  const getPrevYearMonthlyAvg = (clientName: string): number => {
+    const clientRevenues = prevActuals.filter(a => a.client_name === clientName);
+    if (clientRevenues.length === 0) return 0;
+    const total = clientRevenues.reduce((s, a) => s + Number(a.revenue ?? 0), 0);
+    const activeMonths = new Set(clientRevenues.map(a => a.year_month)).size;
+    return activeMonths > 0 ? total / activeMonths : 0;
+  };
 
   const getClientActual = (clientName: string, ym: string): number => {
     return actuals
@@ -78,6 +113,46 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     return settings.monthly_revenue_distribution[i] || 0;
   };
 
+  // Auto-calculate existing client revenue based on prev year avg + distribution pattern
+  const autoCalcExistingClient = (idx: number) => {
+    const row = rows[idx];
+    const monthlyAvg = getPrevYearMonthlyAvg(row.client_name);
+    if (monthlyAvg <= 0) return;
+
+    const annualEstimate = monthlyAvg * 12;
+    const cap = row.revenue_cap;
+    const cappedAnnual = cap && cap > 0 ? Math.min(annualEstimate, cap) : annualEstimate;
+
+    // Distribute using the same pattern as the sales plan
+    const growthFactor = PATTERN_GROWTH_MAP[settings.revenue_distribution_pattern] ?? settings.revenue_growth_factor ?? 1.5;
+
+    // Split into H1/H2 if half_year mode
+    let monthlyValues: number[];
+    if (settings.distribution_mode === "half_year") {
+      const h1Total = cappedAnnual * 0.4;
+      const h2Total = cappedAnnual * 0.6;
+      const h1 = distributeRevenue(h1Total, 6, growthFactor);
+      const h2 = distributeRevenue(h2Total, 6, growthFactor);
+      monthlyValues = [...h1, ...h2];
+    } else if (settings.distribution_mode === "equal") {
+      monthlyValues = months.map(() => Math.round(cappedAnnual / 12));
+    } else {
+      monthlyValues = distributeRevenue(cappedAnnual, 12, growthFactor);
+    }
+
+    // Apply cap per month if set
+    if (cap && cap > 0) {
+      monthlyValues = monthlyValues.map(v => Math.min(v, cap));
+    }
+
+    const newMonthly: Record<string, number> = {};
+    months.forEach((ym, i) => { newMonthly[ym] = monthlyValues[i] || 0; });
+
+    const newRows = [...rows];
+    newRows[idx] = { ...newRows[idx], monthly_revenue: newMonthly };
+    updateRows(newRows);
+  };
+
   const addClient = (clientId: string | null, clientName: string) => {
     const newRow: ClientRevenuePlanRow = {
       client_id: clientId,
@@ -85,6 +160,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
       category: clientId ? "existing" : "new",
       monthly_revenue: {},
       order: rows.length + 1,
+      revenue_cap: null,
     };
     updateRows([...rows, newRow]);
     setNewClientName("");
@@ -105,10 +181,13 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   };
 
   const setCellValue = (idx: number, ym: string, value: number) => {
+    const row = rows[idx];
+    const cap = row.revenue_cap;
+    const cappedValue = cap && cap > 0 ? Math.min(value, cap) : value;
     const newRows = [...rows];
     newRows[idx] = {
       ...newRows[idx],
-      monthly_revenue: { ...newRows[idx].monthly_revenue, [ym]: value },
+      monthly_revenue: { ...newRows[idx].monthly_revenue, [ym]: cappedValue },
     };
     updateRows(newRows);
   };
@@ -119,9 +198,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     updateRows(newRows);
   };
 
+  const setRevenueCap = (idx: number, cap: number | null) => {
+    const newRows = [...rows];
+    newRows[idx] = { ...newRows[idx], revenue_cap: cap };
+    updateRows(newRows);
+  };
+
   const applyToAllMonths = (idx: number) => {
     const firstMonth = months[0];
-    const val = rows[idx].monthly_revenue[firstMonth] || 0;
+    let val = rows[idx].monthly_revenue[firstMonth] || 0;
+    const cap = rows[idx].revenue_cap;
+    if (cap && cap > 0) val = Math.min(val, cap);
     const newRows = [...rows];
     const newMonthly = { ...newRows[idx].monthly_revenue };
     for (const ym of months) newMonthly[ym] = val;
@@ -176,90 +263,128 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
           <TableHeader>
             <TableRow>
               <TableHead className="sticky left-0 bg-card z-10 min-w-[150px] text-xs">顧客名</TableHead>
-              <TableHead className="sticky left-[150px] bg-card z-10 min-w-[70px] text-xs">区分</TableHead>
-              <TableHead className="sticky left-[220px] bg-card z-10 min-w-[30px] text-xs"></TableHead>
+              <TableHead className="sticky left-[150px] bg-card z-10 min-w-[80px] text-xs">区分</TableHead>
+              <TableHead className="sticky left-[230px] bg-card z-10 min-w-[90px] text-xs">上限額</TableHead>
+              <TableHead className="sticky left-[320px] bg-card z-10 min-w-[30px] text-xs"></TableHead>
               {months.map(m => (
                 <TableHead key={m} className={cn("text-center text-xs min-w-[120px]", m === currentMonth && "bg-primary/5")}>
                   {getMonthLabel(m)}
                 </TableHead>
               ))}
               <TableHead className="text-center text-xs min-w-[110px] bg-muted/50">年間合計</TableHead>
-              <TableHead className="text-xs min-w-[80px]"></TableHead>
+              <TableHead className="text-xs min-w-[110px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row, idx) => (
-              <TableRow key={idx} className={cn("hover:bg-muted/30", row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10")}>
-                <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
-                  <span className="truncate block max-w-[140px]">{row.client_name}</span>
-                </TableCell>
-                <TableCell className="sticky left-[150px] bg-card z-10 border-r p-1">
-                  <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
-                    <SelectTrigger className="h-6 text-[10px] w-[60px] px-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="existing">既存</SelectItem>
-                      <SelectItem value="new">新規</SelectItem>
-                      <SelectItem value="risk">失注リスク</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="sticky left-[220px] bg-card z-10 border-r p-0">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => applyToAllMonths(idx)} title="最初の月の値を全月にコピー">
-                    <Copy className="h-3 w-3 text-muted-foreground" />
-                  </Button>
-                </TableCell>
-                {months.map((ym) => {
-                  const planVal = row.monthly_revenue[ym] || 0;
-                  const hasActual = isPastMonth(ym);
-                  const actual = hasActual ? getClientActual(row.client_name, ym) : 0;
-                  const achRate = hasActual && planVal > 0 ? (actual / planVal) * 100 : 0;
+            {rows.map((row, idx) => {
+              const prevAvg = row.category === "existing" ? getPrevYearMonthlyAvg(row.client_name) : 0;
+              return (
+                <TableRow key={idx} className={cn("hover:bg-muted/30", row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10")}>
+                  <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Badge className={cn("text-[9px] px-1.5 py-0 h-4 font-normal border", CATEGORY_BADGE_STYLES[row.category])}>
+                        {CATEGORY_LABELS[row.category]}
+                      </Badge>
+                      <span className="truncate block max-w-[90px]">{row.client_name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="sticky left-[150px] bg-card z-10 border-r p-1">
+                    <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
+                      <SelectTrigger className="h-6 text-[10px] w-[70px] px-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="existing">既存</SelectItem>
+                        <SelectItem value="new">新規</SelectItem>
+                        <SelectItem value="risk">失注リスク</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="sticky left-[230px] bg-card z-10 border-r p-1">
+                    <Input
+                      type="text"
+                      value={row.revenue_cap ? row.revenue_cap.toLocaleString() : ""}
+                      onChange={(e) => {
+                        const v = parseInput(e.target.value);
+                        setRevenueCap(idx, v > 0 ? v : null);
+                      }}
+                      placeholder="上限なし"
+                      className="h-6 text-[10px] text-right w-[80px]"
+                    />
+                  </TableCell>
+                  <TableCell className="sticky left-[320px] bg-card z-10 border-r p-0">
+                    <div className="flex items-center">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => applyToAllMonths(idx)} title="最初の月の値を全月にコピー">
+                        <Copy className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                      {row.category === "existing" && prevAvg > 0 && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => autoCalcExistingClient(idx)} title="前期実績から自動計算">
+                          <Wand2 className="h-3 w-3 text-blue-500" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  {months.map((ym) => {
+                    const planVal = row.monthly_revenue[ym] || 0;
+                    const hasActual = isPastMonth(ym);
+                    const actual = hasActual ? getClientActual(row.client_name, ym) : 0;
+                    const achRate = hasActual && planVal > 0 ? (actual / planVal) * 100 : 0;
+                    const cap = row.revenue_cap;
+                    const isAtCap = cap && cap > 0 && planVal >= cap;
 
-                  return (
-                    <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
-                      <div className="flex flex-col items-end gap-0.5">
-                        <Input
-                          type="text"
-                          value={planVal > 0 ? planVal.toLocaleString() : ""}
-                          onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
-                          placeholder="0"
-                          className="h-7 text-xs text-right w-[100px] focus-visible:ring-[hsl(217,91%,60%)]"
-                        />
-                        {hasActual && actual > 0 && (
-                          <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1">
-                            <span>{fmtC(actual)}</span>
-                            <span className={cn(achRate >= 100 ? "text-green-600" : "text-destructive")}>
-                              {achRate > 0 ? `${achRate.toFixed(0)}%` : ""}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  );
-                })}
-                <TableCell className="text-right bg-muted/30 font-medium">{fmtC(getRowAnnual(row))}</TableCell>
-                <TableCell className="p-1">
-                  <div className="flex items-center gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "up")} disabled={idx === 0} title="上に移動">
-                      <ArrowUp className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "down")} disabled={idx === rows.length - 1} title="下に移動">
-                      <ArrowDown className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
-                      <Trash2 className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                    return (
+                      <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
+                        <div className="flex flex-col items-end gap-0.5">
+                          <Input
+                            type="text"
+                            value={planVal > 0 ? planVal.toLocaleString() : ""}
+                            onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
+                            placeholder="0"
+                            className={cn("h-7 text-xs text-right w-[100px]", isAtCap && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                          />
+                          {hasActual && actual > 0 && (
+                            <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1">
+                              <span>{fmtC(actual)}</span>
+                              <span className={cn(achRate >= 100 ? "text-green-600" : "text-destructive")}>
+                                {achRate > 0 ? `${achRate.toFixed(0)}%` : ""}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-right bg-muted/30 font-medium">
+                    <div className="flex flex-col items-end">
+                      <span>{fmtC(getRowAnnual(row))}</span>
+                      {row.category === "existing" && prevAvg > 0 && (
+                        <span className="text-[9px] text-muted-foreground">前期平均: {fmtC(prevAvg)}/月</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="p-1">
+                    <div className="flex items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "up")} disabled={idx === 0} title="上に移動">
+                        <ArrowUp className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveClient(idx, "down")} disabled={idx === rows.length - 1} title="下に移動">
+                        <ArrowDown className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
+                        <Trash2 className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
 
             {/* Month target row */}
             <TableRow className="bg-muted/30">
               <TableCell className="sticky left-0 bg-muted/30 z-10 text-xs text-muted-foreground border-r">月次目標</TableCell>
               <TableCell className="sticky left-[150px] bg-muted/30 z-10 border-r text-[10px] text-muted-foreground">配分</TableCell>
-              <TableCell className="sticky left-[220px] bg-muted/30 z-10 border-r" />
+              <TableCell className="sticky left-[230px] bg-muted/30 z-10 border-r" />
+              <TableCell className="sticky left-[320px] bg-muted/30 z-10 border-r" />
               {months.map((ym, i) => (
                 <TableCell key={ym} className={cn("text-right text-xs text-muted-foreground", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTarget(ym, i))}
@@ -273,7 +398,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
             <TableRow className="bg-muted/50 font-semibold">
               <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
               <TableCell className="sticky left-[150px] bg-muted/50 z-10 border-r">—</TableCell>
-              <TableCell className="sticky left-[220px] bg-muted/50 z-10 border-r" />
+              <TableCell className="sticky left-[230px] bg-muted/50 z-10 border-r" />
+              <TableCell className="sticky left-[320px] bg-muted/50 z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
@@ -287,7 +413,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
             <TableRow>
               <TableCell className="sticky left-0 bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
               <TableCell className="sticky left-[150px] bg-card z-10 border-r" />
-              <TableCell className="sticky left-[220px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[230px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[320px] bg-card z-10 border-r" />
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);
@@ -348,7 +475,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               placeholder="新規顧客名..."
               value={newClientName}
               onChange={(e) => setNewClientName(e.target.value)}
-              className="h-8 text-xs w-[160px] focus-visible:ring-[hsl(217,91%,60%)]"
+              className="h-8 text-xs w-[160px]"
               onKeyDown={(e) => e.key === "Enter" && newClientName.trim() && addClient(null, newClientName.trim())}
             />
             <Button variant="outline" size="sm" onClick={() => newClientName.trim() && addClient(null, newClientName.trim())} disabled={!newClientName.trim()}>
