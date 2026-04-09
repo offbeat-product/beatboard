@@ -281,12 +281,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               return (
                 <TableRow key={idx} className={cn("hover:bg-muted/30", row.category === "risk" && "bg-red-50/50 dark:bg-red-950/10")}>
                   <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <Badge className={cn("text-[9px] px-1.5 py-0 h-4 font-normal border", CATEGORY_BADGE_STYLES[row.category])}>
-                        {CATEGORY_LABELS[row.category]}
-                      </Badge>
-                      <span className="truncate block max-w-[90px]">{row.client_name}</span>
-                    </div>
+                    <span className="truncate block max-w-[140px]">{row.client_name}</span>
                   </TableCell>
                   <TableCell className="sticky left-[150px] bg-card z-10 border-r p-1">
                     <Select value={row.category} onValueChange={(v) => setCategory(idx, v)}>
