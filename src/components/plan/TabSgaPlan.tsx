@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "./SectionHeading";
-import { PlanSettings, SgaCategory, DEFAULT_SGA_CATEGORIES, fmtNum, computeAnnualSgaTotal, getSgaCellValue, SGA_CATEGORY_TOOLTIPS } from "./PlanTypes";
+import { PlanSettings, SgaCategory, DEFAULT_SGA_CATEGORIES, fmtNum, SGA_CATEGORY_TOOLTIPS } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { cn } from "@/lib/utils";
@@ -24,13 +24,51 @@ export function TabSgaPlan({ months, settings, update }: Props) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
   const categories = settings.sga_categories.length > 0 ? settings.sga_categories : DEFAULT_SGA_CATEGORIES;
-  const annualSga = computeAnnualSgaTotal(settings);
+
+  // --- Derive monthly SGA budget from monthly business plan ---
+  const getWeightedGpRate = (ym: string): number => {
+    const crp = settings.client_revenue_plan || [];
+    let totalRev = 0;
+    let weightedGp = 0;
+    for (const row of crp) {
+      const rev = row.monthly_revenue[ym] || 0;
+      if (rev > 0) {
+        const rate = row.gross_profit_rate ?? settings.gross_profit_rate;
+        totalRev += rev;
+        weightedGp += rev * (rate / 100);
+      }
+    }
+    if (totalRev <= 0) return settings.gross_profit_rate;
+    return (weightedGp / totalRev) * 100;
+  };
+
+  const getMonthlySgaBudget = (ym: string, monthIdx: number): number => {
+    const dist = settings.monthly_revenue_distribution ?? [];
+    const rev = settings.distribution_mode === "equal"
+      ? settings.annual_revenue_target / (months.length || 12)
+      : (dist[monthIdx] || 0);
+    const gpRate = getWeightedGpRate(ym);
+    const gpPlan = rev * (gpRate / 100);
+    const opPlan = rev * (settings.operating_profit_rate / 100);
+    return gpPlan - opPlan;
+  };
+
+  const annualSgaBudget = months.reduce((s, ym, i) => s + getMonthlySgaBudget(ym, i), 0);
+
+  // Category cell value: monthly SGA budget × allocation rate, or override
+  const getCell = (ym: string, monthIdx: number, catId: string): { value: number; isOverride: boolean } => {
+    const override = settings.monthly_sga_overrides?.[ym]?.[catId];
+    if (override !== undefined && override !== null) {
+      return { value: override, isOverride: true };
+    }
+    const rate = settings.sga_allocation_rates?.[catId] ?? 0;
+    const budget = getMonthlySgaBudget(ym, monthIdx);
+    return { value: budget * (rate / 100), isOverride: false };
+  };
 
   // Allocation rates sum
   const ratesSum = categories.reduce((s, cat) => s + (settings.sga_allocation_rates?.[cat.id] ?? 0), 0);
   const ratesValid = Math.abs(ratesSum - 100) < 0.1;
-
-  const getCell = (ym: string, catId: string) => getSgaCellValue(settings, ym, catId, annualSga, months);
 
   const setOverride = (ym: string, catId: string, value: number) => {
     const next = { ...settings.monthly_sga_overrides };
@@ -49,13 +87,13 @@ export function TabSgaPlan({ months, settings, update }: Props) {
     update("monthly_sga_overrides", next);
   };
 
-  const getMonthTotal = (ym: string): number =>
-    categories.reduce((s, cat) => s + getCell(ym, cat.id).value, 0);
+  const getMonthTotal = (ym: string, monthIdx: number): number =>
+    categories.reduce((s, cat) => s + getCell(ym, monthIdx, cat.id).value, 0);
 
   const getCategoryAnnualTotal = (catId: string): number =>
-    months.reduce((s, ym) => s + getCell(ym, catId).value, 0);
+    months.reduce((s, ym, i) => s + getCell(ym, i, catId).value, 0);
 
-  const grandTotal = months.reduce((s, ym) => s + getMonthTotal(ym), 0);
+  const grandTotal = months.reduce((s, ym, i) => s + getMonthTotal(ym, i), 0);
 
   const updateRate = (catId: string, rate: number) => {
     const next = { ...settings.sga_allocation_rates, [catId]: rate };
@@ -70,7 +108,6 @@ export function TabSgaPlan({ months, settings, update }: Props) {
       order: categories.length + 1,
     };
     update("sga_categories", [...categories, newCat]);
-    // Initialize rate to 0
     update("sga_allocation_rates", { ...settings.sga_allocation_rates, [newCat.id]: 0 });
     setNewCatName("");
   };
@@ -79,7 +116,6 @@ export function TabSgaPlan({ months, settings, update }: Props) {
     update("sga_categories", categories.filter(c => c.id !== catId));
     const { [catId]: _, ...restRates } = settings.sga_allocation_rates;
     update("sga_allocation_rates", restRates);
-    // Clean overrides
     const nextOv = { ...settings.monthly_sga_overrides };
     for (const ym of Object.keys(nextOv)) {
       if (nextOv[ym]?.[catId] !== undefined) {
@@ -92,32 +128,31 @@ export function TabSgaPlan({ months, settings, update }: Props) {
 
   const fmtC = (v: number) => fmtNum(v, unit);
   const parseInput = (v: string): number => parseInt(v.replace(/,/g, "")) || 0;
-
   const cellKey = (ym: string, catId: string) => `${ym}__${catId}`;
 
   return (
     <div className="space-y-8">
-      {/* Annual SGA total + allocation rates overview */}
+      {/* Annual SGA budget summary + allocation rates */}
       <section className="bg-card rounded-lg shadow-sm border border-border p-5">
-        <SectionHeading title="年間販管費・配分比率" description="年間販管費合計と各カテゴリへの配分比率を設定します。月別のセルは自動算出され、個別に上書きも可能です。" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="text-xs font-medium">年間販管費合計 (円)<span className="text-destructive ml-0.5">*</span></label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                type="text"
-                value={settings.annual_sga_total > 0 ? settings.annual_sga_total.toLocaleString() : ""}
-                placeholder={`自動算出: ${fmtC(computeAnnualSgaTotal({ ...settings, annual_sga_total: 0 }))}`}
-                onChange={(e) => update("annual_sga_total", parseInput(e.target.value))}
-                className="focus-visible:ring-[hsl(217,91%,60%)]"
-              />
-              {settings.annual_sga_total > 0 && (
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => update("annual_sga_total", 0)} title="自動算出に戻す">
-                  <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-              )}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">空欄の場合: 粗利 - 営業利益 から自動算出 ({fmtC(annualSga)})</p>
+        <SectionHeading title="販管費予算・配分比率" description="月次事業計画（粗利 − 営業利益）から年間販管費予算を自動算出し、各カテゴリへの配分比率を設定します。" />
+
+        {/* Budget summary cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">年間販管費予算（自動算出）</p>
+            <p className="text-lg font-bold">{fmtC(annualSgaBudget)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">= 年間粗利計画 − 年間営業利益計画</p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">月平均販管費予算</p>
+            <p className="text-lg font-bold">{fmtC(annualSgaBudget / Math.max(months.length, 1))}</p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">カテゴリ配分後合計</p>
+            <p className={cn("text-lg font-bold", Math.abs(grandTotal - annualSgaBudget) > 1 ? "text-amber-600" : "")}>{fmtC(grandTotal)}</p>
+            {Math.abs(grandTotal - annualSgaBudget) > 1 && (
+              <p className="text-[10px] text-amber-600 mt-0.5">手動上書きにより予算と差異があります</p>
+            )}
           </div>
         </div>
 
@@ -149,6 +184,9 @@ export function TabSgaPlan({ months, settings, update }: Props) {
                 onChange={(e) => updateRate(cat.id, parseFloat(e.target.value) || 0)}
                 className="mt-1 h-8 text-xs focus-visible:ring-[hsl(217,91%,60%)]"
               />
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                年間: {fmtC(annualSgaBudget * ((settings.sga_allocation_rates?.[cat.id] ?? 0) / 100))}
+              </p>
             </div>
           ))}
         </div>
@@ -157,11 +195,7 @@ export function TabSgaPlan({ months, settings, update }: Props) {
       {/* Monthly SGA matrix */}
       <section className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="px-5 py-4">
-          <SectionHeading title="販管費月次計画" description="配分比率から自動算出されます。セルをクリックして個別に上書きできます。" />
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-medium">年間販管費合計:</span>
-            <span className="text-base font-bold text-primary">{fmtC(grandTotal)}</span>
-          </div>
+          <SectionHeading title="販管費月次計画" description="月次の販管費予算（粗利−営業利益）× 配分比率で自動算出されます。セルをクリックして個別に上書きできます。" />
         </div>
 
         <div className="overflow-x-auto">
@@ -179,6 +213,18 @@ export function TabSgaPlan({ months, settings, update }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* Monthly SGA budget row */}
+              <TableRow className="bg-primary/5 font-medium">
+                <TableCell className="sticky left-0 bg-primary/5 z-10 font-semibold border-r text-xs border-l-4 border-l-primary">月次販管費予算</TableCell>
+                <TableCell className="sticky left-[160px] bg-primary/5 z-10 border-r text-xs text-center text-muted-foreground">—</TableCell>
+                {months.map((ym, i) => (
+                  <TableCell key={ym} className={cn("text-right font-medium", ym === currentMonth && "bg-primary/10")}>
+                    {fmtC(getMonthlySgaBudget(ym, i))}
+                  </TableCell>
+                ))}
+                <TableCell className="text-right bg-muted/30 font-bold">{fmtC(annualSgaBudget)}</TableCell>
+              </TableRow>
+
               {categories.map((cat) => (
                 <TableRow key={cat.id} className="hover:bg-muted/30">
                   <TableCell className="sticky left-0 bg-card z-10 font-medium border-r text-xs">
@@ -204,8 +250,8 @@ export function TabSgaPlan({ months, settings, update }: Props) {
                   <TableCell className="sticky left-[160px] bg-card z-10 border-r text-xs text-center text-muted-foreground">
                     {(settings.sga_allocation_rates?.[cat.id] ?? 0).toFixed(0)}%
                   </TableCell>
-                  {months.map((ym) => {
-                    const cell = getCell(ym, cat.id);
+                  {months.map((ym, mi) => {
+                    const cell = getCell(ym, mi, cat.id);
                     const key = cellKey(ym, cat.id);
                     const isEditing = editingCell === key;
 
@@ -260,11 +306,11 @@ export function TabSgaPlan({ months, settings, update }: Props) {
 
               {/* Month totals */}
               <TableRow className="bg-muted/50 font-semibold">
-                <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">月合計</TableCell>
+                <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">配分後合計</TableCell>
                 <TableCell className="sticky left-[160px] bg-muted/50 z-10 border-r" />
-                {months.map((ym) => (
+                {months.map((ym, i) => (
                   <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
-                    {fmtC(getMonthTotal(ym))}
+                    {fmtC(getMonthTotal(ym, i))}
                   </TableCell>
                 ))}
                 <TableCell className="text-right bg-muted/30 font-bold">{fmtC(grandTotal)}</TableCell>
