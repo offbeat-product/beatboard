@@ -562,16 +562,21 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);
-                const remaining = target - total;
+                const remaining = total - target;
                 return (
-                  <TableCell key={ym} className={cn("text-right text-xs", ym === currentMonth && "bg-primary/5", remaining > 0 ? "text-amber-600" : remaining < 0 ? "text-destructive" : "text-green-600")}>
-                    {fmtC(remaining)}
+                  <TableCell key={ym} className={cn("text-right text-xs", ym === currentMonth && "bg-primary/5", remaining < 0 ? "text-amber-600" : remaining > 0 ? "text-green-600" : "text-muted-foreground")}>
+                    {remaining > 0 ? `+${fmtC(remaining)}` : fmtC(remaining)}
                   </TableCell>
                 );
               })}
-              <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualTarget - grandTotal > 0 ? "text-amber-600" : annualTarget - grandTotal < 0 ? "text-destructive" : "text-green-600")}>
-                {fmtC(annualTarget - grandTotal)}
-              </TableCell>
+              {(() => {
+                const annualRemaining = grandTotal - annualTarget;
+                return (
+                  <TableCell className={cn("text-right bg-muted/30 text-xs font-medium", annualRemaining < 0 ? "text-amber-600" : annualRemaining > 0 ? "text-green-600" : "text-muted-foreground")}>
+                    {annualRemaining > 0 ? `+${fmtC(annualRemaining)}` : fmtC(annualRemaining)}
+                  </TableCell>
+                );
+              })()}
               <TableCell />
               <TableCell />
             </TableRow>
