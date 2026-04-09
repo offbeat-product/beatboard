@@ -259,7 +259,7 @@ const Plan = () => {
                 { value: "targets", label: "経営目標" },
                 { value: "monthly", label: "月次事業計画" },
                 { value: "customers", label: "顧客計画" },
-                { value: "organization", label: "組織・人員計画" },
+                { value: "organization", label: "人員・生産性計画" },
                 { value: "sga", label: "販管費計画" },
               ].map(tab => (
                 <TabsTrigger
