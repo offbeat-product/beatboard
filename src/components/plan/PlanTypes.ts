@@ -162,7 +162,7 @@ export function distributeRevenue(
   if (n === 1) return [totalAmount];
   if (Math.abs(g - 1.0) < 0.001) {
     // Equal distribution
-    const base = Math.round(totalAmount / n);
+    const base = ceilTo10k(totalAmount / n);
     const result = Array(n).fill(base);
     result[n - 1] += totalAmount - base * n;
     return result;
