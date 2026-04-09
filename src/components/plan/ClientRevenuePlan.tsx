@@ -190,6 +190,47 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     updateRows(newRows.map((r, i) => ({ ...r, order: i + 1 })));
   };
 
+  const setClientNameAt = (idx: number, name: string) => {
+    const newRows = [...rows];
+    newRows[idx] = { ...newRows[idx], client_name: name };
+    updateRows(newRows);
+  };
+
+  const handleDragStart = (idx: number) => {
+    setDragIdx(idx);
+    setSortDir(null);
+  };
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+  const handleDrop = (idx: number) => {
+    if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setDragOverIdx(null); return; }
+    const newRows = [...rows];
+    const [moved] = newRows.splice(dragIdx, 1);
+    newRows.splice(idx, 0, moved);
+    updateRows(newRows.map((r, i) => ({ ...r, order: i + 1 })));
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+  const handleDragEnd = () => { setDragIdx(null); setDragOverIdx(null); };
+
+  const toggleSort = () => {
+    if (sortDir === null) setSortDir("desc");
+    else if (sortDir === "desc") setSortDir("asc");
+    else setSortDir(null);
+  };
+
+  const displayRows = useMemo(() => {
+    const indexed = rows.map((row, idx) => ({ row, idx }));
+    if (!sortDir) return indexed;
+    return [...indexed].sort((a, b) => {
+      const aTotal = months.reduce((s, ym) => s + (a.row.monthly_revenue[ym] || 0), 0);
+      const bTotal = months.reduce((s, ym) => s + (b.row.monthly_revenue[ym] || 0), 0);
+      return sortDir === "desc" ? bTotal - aTotal : aTotal - bTotal;
+    });
+  }, [rows, sortDir, months]);
+
   const setCellValue = (idx: number, ym: string, value: number) => {
     const row = rows[idx];
     const cap = row.revenue_cap;
