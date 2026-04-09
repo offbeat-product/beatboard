@@ -505,10 +505,11 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
             {/* Remaining row */}
             <TableRow>
-              <TableCell className="sticky left-0 bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
-              <TableCell className="sticky left-[150px] bg-card z-10 border-r" />
-              <TableCell className="sticky left-[230px] bg-card z-10 border-r" />
-              <TableCell className="sticky left-[320px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-0 bg-card z-10 w-[30px] border-r" />
+              <TableCell className="sticky left-[30px] bg-card z-10 text-xs border-r">残額（未配分）</TableCell>
+              <TableCell className="sticky left-[180px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[260px] bg-card z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-card z-10 border-r" />
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);
