@@ -92,9 +92,18 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const prevActuals = prevActualsQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
 
+  // Match prev year actuals by client_id first, then fallback to client_name
+  const getPrevClientRevenues = (clientName: string, clientId: string | null) => {
+    if (clientId) {
+      const byId = prevActuals.filter(a => String(a.client_id) === String(clientId));
+      if (byId.length > 0) return byId;
+    }
+    return prevActuals.filter(a => a.client_name === clientName);
+  };
+
   // Previous year monthly average per client
-  const getPrevYearMonthlyAvg = (clientName: string): number => {
-    const clientRevenues = prevActuals.filter(a => a.client_name === clientName);
+  const getPrevYearMonthlyAvg = (clientName: string, clientId: string | null = null): number => {
+    const clientRevenues = getPrevClientRevenues(clientName, clientId);
     if (clientRevenues.length === 0) return 0;
     const total = clientRevenues.reduce((s, a) => s + Number(a.revenue ?? 0), 0);
     const activeMonths = new Set(clientRevenues.map(a => a.year_month)).size;
@@ -102,9 +111,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   };
 
   // Previous year annual total per client
-  const getPrevYearTotal = (clientName: string): number => {
-    return prevActuals
-      .filter(a => a.client_name === clientName)
+  const getPrevYearTotal = (clientName: string, clientId: string | null = null): number => {
+    return getPrevClientRevenues(clientName, clientId)
       .reduce((s, a) => s + Number(a.revenue ?? 0), 0);
   };
 
@@ -124,37 +132,74 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     return settings.monthly_revenue_distribution[i] || 0;
   };
 
-  // Auto-calculate existing client revenue based on prev year avg + distribution pattern
-  const autoCalcExistingClient = (idx: number) => {
+  // Auto-calculate client revenue based on prev year avg + distribution pattern
+  const autoCalcFromPrevYear = (idx: number) => {
     const row = rows[idx];
-    const monthlyAvg = getPrevYearMonthlyAvg(row.client_name);
+    const monthlyAvg = getPrevYearMonthlyAvg(row.client_name, row.client_id);
     if (monthlyAvg <= 0) return;
 
     const annualEstimate = monthlyAvg * 12;
     const cap = row.revenue_cap;
     const cappedAnnual = cap && cap > 0 ? Math.min(annualEstimate, cap) : annualEstimate;
 
-    // Distribute using the same pattern as the sales plan
+    const monthlyValues = distributeByPattern(cappedAnnual, cap);
+
+    const newMonthly: Record<string, number> = {};
+    months.forEach((ym, i) => { newMonthly[ym] = monthlyValues[i] || 0; });
+
+    const newRows = [...rows];
+    newRows[idx] = { ...newRows[idx], monthly_revenue: newMonthly };
+    updateRows(newRows);
+  };
+
+  // Distribute annual amount using current distribution pattern
+  const distributeByPattern = (annualAmount: number, cap?: number | null): number[] => {
     const growthFactor = PATTERN_GROWTH_MAP[settings.revenue_distribution_pattern] ?? settings.revenue_growth_factor ?? 1.5;
 
-    // Split into H1/H2 if half_year mode
     let monthlyValues: number[];
     if (settings.distribution_mode === "half_year") {
-      const h1Total = cappedAnnual * 0.4;
-      const h2Total = cappedAnnual * 0.6;
+      const h1Total = annualAmount * 0.4;
+      const h2Total = annualAmount * 0.6;
       const h1 = distributeRevenue(h1Total, 6, growthFactor);
       const h2 = distributeRevenue(h2Total, 6, growthFactor);
       monthlyValues = [...h1, ...h2];
     } else if (settings.distribution_mode === "equal") {
-      monthlyValues = months.map(() => Math.round(cappedAnnual / 12));
+      monthlyValues = months.map(() => Math.round(annualAmount / 12));
     } else {
-      monthlyValues = distributeRevenue(cappedAnnual, 12, growthFactor);
+      monthlyValues = distributeRevenue(annualAmount, 12, growthFactor);
     }
 
-    // Apply cap per month if set
     if (cap && cap > 0) {
       monthlyValues = monthlyValues.map(v => Math.min(v, cap));
     }
+    return monthlyValues;
+  };
+
+  // Distribute from first month value using distribution pattern
+  const distributeFromFirstMonth = (idx: number) => {
+    const row = rows[idx];
+    const firstMonthVal = row.monthly_revenue[months[0]] || 0;
+    if (firstMonthVal <= 0) return;
+
+    const growthFactor = PATTERN_GROWTH_MAP[settings.revenue_distribution_pattern] ?? settings.revenue_growth_factor ?? 1.5;
+    const cap = row.revenue_cap;
+
+    // Calculate what annual total would produce firstMonthVal as the first month
+    let annualEstimate: number;
+    if (settings.distribution_mode === "equal") {
+      annualEstimate = firstMonthVal * 12;
+    } else if (settings.distribution_mode === "half_year") {
+      // First month is in H1. H1 first value = a, H1 sum = 6/2 * a * (1+g) = 3*a*(1+g)
+      const h1Total = firstMonthVal * 3 * (1 + growthFactor);
+      annualEstimate = h1Total / 0.4; // H1 = 40% of annual
+    } else {
+      // Full year: annual = n/2 * a * (1+g) = 6 * a * (1+g)
+      annualEstimate = firstMonthVal * 6 * (1 + growthFactor);
+    }
+
+    if (cap && cap > 0) annualEstimate = Math.min(annualEstimate, cap * 12);
+
+    const monthlyValues = distributeByPattern(annualEstimate, cap);
 
     const newMonthly: Record<string, number> = {};
     months.forEach((ym, i) => { newMonthly[ym] = monthlyValues[i] || 0; });
@@ -336,7 +381,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
           </TableHeader>
           <TableBody>
             {displayRows.map(({ row, idx }, displayIdx) => {
-              const prevAvg = row.category === "existing" ? getPrevYearMonthlyAvg(row.client_name) : 0;
+              const prevAvg = getPrevYearMonthlyAvg(row.client_name, row.client_id);
               const isDragOver = dragOverIdx === displayIdx && dragIdx !== displayIdx;
               return (
                 <ContextMenu key={idx}>
@@ -423,11 +468,11 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                         {fmtC(getRowAnnual(row))}
                       </TableCell>
                       <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
-                        {(() => { const pt = getPrevYearTotal(row.client_name); return pt > 0 ? fmtC(pt) : "—"; })()}
+                        {(() => { const pt = getPrevYearTotal(row.client_name, row.client_id); return pt > 0 ? fmtC(pt) : "—"; })()}
                       </TableCell>
                       <TableCell className="text-right bg-muted/30 text-xs">
                         {(() => {
-                          const pt = getPrevYearTotal(row.client_name);
+                          const pt = getPrevYearTotal(row.client_name, row.client_id);
                           const annual = getRowAnnual(row);
                           if (pt <= 0 || annual <= 0) return <span className="text-muted-foreground">—</span>;
                           const growth = ((annual - pt) / pt) * 100;
@@ -440,12 +485,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       </TableCell>
                     </TableRow>
                   </ContextMenuTrigger>
-                  <ContextMenuContent className="w-48">
+                  <ContextMenuContent className="w-56">
                     <ContextMenuItem onClick={() => applyToAllMonths(idx)}>
                       <Copy className="h-3.5 w-3.5 mr-2" />初月の値を全月にコピー
                     </ContextMenuItem>
-                    {row.category === "existing" && prevAvg > 0 && (
-                      <ContextMenuItem onClick={() => autoCalcExistingClient(idx)}>
+                    {(row.monthly_revenue[months[0]] || 0) > 0 && (
+                      <ContextMenuItem onClick={() => distributeFromFirstMonth(idx)}>
+                        <ArrowUpDown className="h-3.5 w-3.5 mr-2" />初月値を配分パターンで展開
+                      </ContextMenuItem>
+                    )}
+                    {prevAvg > 0 && (
+                      <ContextMenuItem onClick={() => autoCalcFromPrevYear(idx)}>
                         <Wand2 className="h-3.5 w-3.5 mr-2" />前期実績から自動計算
                       </ContextMenuItem>
                     )}
