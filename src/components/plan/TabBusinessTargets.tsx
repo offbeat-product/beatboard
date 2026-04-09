@@ -8,8 +8,7 @@ import { SectionHeading } from "./SectionHeading";
 import { FieldWithTooltip } from "./FieldWithTooltip";
 import { PlanSettings, fmtNum, fmtInputVal, parseInputVal, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
-import { ORG_ID, getMonthLabel } from "@/lib/fiscalYear";
-import { ORG_ID, getMonthLabel } from "@/lib/fiscalYear";
+import { getMonthLabel } from "@/lib/fiscalYear";
 import { cn } from "@/lib/utils";
 import { RotateCcw } from "lucide-react";
 
