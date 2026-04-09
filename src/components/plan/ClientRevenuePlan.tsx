@@ -449,11 +449,6 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       );
                     })()}
                   </TableCell>
-                  <TableCell className="p-1">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeClient(idx)} title="削除">
-                      <Trash2 className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                    </div>
                   </TableCell>
                 </TableRow>
               );
