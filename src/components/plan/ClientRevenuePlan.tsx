@@ -506,9 +506,10 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                     <ContextMenuItem onClick={() => applyToAllMonths(idx)}>
                       <Copy className="h-3.5 w-3.5 mr-2" />初月の値を全月にコピー
                     </ContextMenuItem>
-                    {(row.monthly_revenue[months[0]] || 0) > 0 && (
-                      <ContextMenuItem onClick={() => distributeFromFirstMonth(idx)}>
-                        <ArrowUpDown className="h-3.5 w-3.5 mr-2" />初月値を配分パターンで展開
+                    {months.some(ym => (row.monthly_revenue[ym] || 0) > 0) && (
+                      <ContextMenuItem onClick={() => distributeFromMonth(idx)}>
+                        <ArrowUpDown className="h-3.5 w-3.5 mr-2" />
+                        入力値から配分パターンで展開
                       </ContextMenuItem>
                     )}
                     {prevAvg > 0 && (
