@@ -457,6 +457,8 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 {fmtC(annualTarget - grandTotal)}
               </TableCell>
               <TableCell />
+              <TableCell />
+              <TableCell />
             </TableRow>
           </TableBody>
         </Table>
