@@ -468,7 +468,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                         {fmtC(getRowAnnual(row))}
                       </TableCell>
                       <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
-                        {(() => { const pt = getPrevYearTotal(row.client_name); return pt > 0 ? fmtC(pt) : "—"; })()}
+                        {(() => { const pt = getPrevYearTotal(row.client_name, row.client_id); return pt > 0 ? fmtC(pt) : "—"; })()}
                       </TableCell>
                       <TableCell className="text-right bg-muted/30 text-xs">
                         {(() => {
