@@ -12,14 +12,13 @@ interface Props {
   update: (field: keyof PlanSettings, value: any) => void;
 }
 
-type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours" | "projectHours";
+type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours";
 
 const STAFF_ROWS: { label: string; field: StaffField; unit: string }[] = [
   { label: "正社員数", field: "fullTimeCount", unit: "名" },
   { label: "パート数", field: "partTimeCount", unit: "名" },
   { label: "正社員h/月", field: "fullTimeHours", unit: "h" },
   { label: "パート合計h/月", field: "partTimeTotalHours", unit: "h" },
-  { label: "案件工数/月", field: "projectHours", unit: "h" },
 ];
 
 export function TabOrganizationPlan({ months, settings, update }: Props) {
@@ -65,8 +64,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
   };
 
   const getProjectHours = (i: number): number => {
-    const row = plan[i];
-    return row ? ((row as any).projectHours || 0) : 0;
+    return Math.round(getTotalHours(i) * 0.8);
   };
 
   return (
@@ -116,6 +114,21 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                 ))}
                 <TableCell className="text-center text-xs bg-muted/30 font-bold">
                   {months.reduce((s, _, i) => s + getTotalHours(i), 0).toLocaleString()}h
+                </TableCell>
+              </TableRow>
+              {/* Computed: Project hours (80% of total) */}
+              <TableRow className="bg-muted/20">
+                <TableCell className="sticky left-0 bg-muted/20 z-10 text-xs font-medium">
+                  案件工数
+                  <span className="block text-[9px] text-muted-foreground">合計労働時間の80%</span>
+                </TableCell>
+                {months.map((m, i) => (
+                  <TableCell key={m} className={cn("text-center text-xs font-medium", m === currentMonth && "bg-primary/5")}>
+                    {getProjectHours(i).toLocaleString()}h
+                  </TableCell>
+                ))}
+                <TableCell className="text-center text-xs bg-muted/30 font-bold">
+                  {months.reduce((s, _, i) => s + getProjectHours(i), 0).toLocaleString()}h
                 </TableCell>
               </TableRow>
               {/* Total headcount */}
@@ -266,6 +279,31 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                     const totalPh = months.reduce((s, _, i) => s + getProjectHours(i), 0);
                     const totalGp = months.reduce((s, m, i) => s + getMonthlyRevenue(i) * (getWeightedGpRate(m) / 100), 0);
                     return totalPh > 0 ? `¥${Math.round(totalGp / totalPh).toLocaleString()}` : "—";
+                  })()}
+                </TableCell>
+              </TableRow>
+
+              {/* 案件稼働率 */}
+              <TableRow className="hover:bg-muted/30">
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">
+                  案件稼働率
+                  <span className="block text-[9px] text-muted-foreground">案件工数÷総労働工数</span>
+                </TableCell>
+                {months.map((m, i) => {
+                  const totalH = getTotalHours(i);
+                  const projH = getProjectHours(i);
+                  const rate = totalH > 0 ? (projH / totalH) * 100 : 0;
+                  return (
+                    <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
+                      {totalH > 0 ? `${rate.toFixed(1)}%` : "—"}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-right text-xs bg-muted/30 font-medium">
+                  {(() => {
+                    const totalH = months.reduce((s, _, i) => s + getTotalHours(i), 0);
+                    const totalP = months.reduce((s, _, i) => s + getProjectHours(i), 0);
+                    return totalH > 0 ? `${((totalP / totalH) * 100).toFixed(1)}%` : "—";
                   })()}
                 </TableCell>
               </TableRow>
