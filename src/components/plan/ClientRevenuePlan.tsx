@@ -381,7 +381,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
           </TableHeader>
           <TableBody>
             {displayRows.map(({ row, idx }, displayIdx) => {
-              const prevAvg = row.category === "existing" ? getPrevYearMonthlyAvg(row.client_name) : 0;
+              const prevAvg = getPrevYearMonthlyAvg(row.client_name, row.client_id);
               const isDragOver = dragOverIdx === displayIdx && dragIdx !== displayIdx;
               return (
                 <ContextMenu key={idx}>
