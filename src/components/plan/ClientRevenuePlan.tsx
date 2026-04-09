@@ -562,10 +562,10 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               {months.map((ym, i) => {
                 const target = getMonthTarget(ym, i);
                 const total = getMonthTotal(ym);
-                const remaining = target - total;
+                const remaining = total - target;
                 return (
-                  <TableCell key={ym} className={cn("text-right text-xs", ym === currentMonth && "bg-primary/5", remaining > 0 ? "text-amber-600" : remaining < 0 ? "text-destructive" : "text-green-600")}>
-                    {fmtC(remaining)}
+                  <TableCell key={ym} className={cn("text-right text-xs", ym === currentMonth && "bg-primary/5", remaining < 0 ? "text-amber-600" : remaining > 0 ? "text-green-600" : "text-muted-foreground")}>
+                    {remaining > 0 ? `+${fmtC(remaining)}` : fmtC(remaining)}
                   </TableCell>
                 );
               })}
