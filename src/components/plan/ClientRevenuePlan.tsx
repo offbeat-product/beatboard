@@ -175,34 +175,51 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     return monthlyValues;
   };
 
-  // Distribute from first month value using distribution pattern
-  const distributeFromFirstMonth = (idx: number) => {
+  // Distribute from a specific month value using distribution pattern
+  // Finds the first non-zero month and distributes from there onwards
+  const distributeFromMonth = (idx: number) => {
     const row = rows[idx];
-    const firstMonthVal = row.monthly_revenue[months[0]] || 0;
-    if (firstMonthVal <= 0) return;
-
-    const growthFactor = PATTERN_GROWTH_MAP[settings.revenue_distribution_pattern] ?? settings.revenue_growth_factor ?? 1.5;
     const cap = row.revenue_cap;
+    const growthFactor = PATTERN_GROWTH_MAP[settings.revenue_distribution_pattern] ?? settings.revenue_growth_factor ?? 1.5;
 
-    // Calculate what annual total would produce firstMonthVal as the first month
-    let annualEstimate: number;
-    if (settings.distribution_mode === "equal") {
-      annualEstimate = firstMonthVal * 12;
-    } else if (settings.distribution_mode === "half_year") {
-      // First month is in H1. H1 first value = a, H1 sum = 6/2 * a * (1+g) = 3*a*(1+g)
-      const h1Total = firstMonthVal * 3 * (1 + growthFactor);
-      annualEstimate = h1Total / 0.4; // H1 = 40% of annual
+    // Find the first month with a non-zero value
+    const startMonthIdx = months.findIndex(ym => (row.monthly_revenue[ym] || 0) > 0);
+    if (startMonthIdx < 0) return;
+
+    const startVal = row.monthly_revenue[months[startMonthIdx]] || 0;
+    const remainingMonths = months.length - startMonthIdx;
+
+    // Calculate total for remaining months based on startVal as first value
+    let totalForRemaining: number;
+    if (settings.distribution_mode === "equal" || remainingMonths === 1) {
+      totalForRemaining = startVal * remainingMonths;
     } else {
-      // Full year: annual = n/2 * a * (1+g) = 6 * a * (1+g)
-      annualEstimate = firstMonthVal * 6 * (1 + growthFactor);
+      // Reverse: total = n/2 * a * (1+g)
+      totalForRemaining = (remainingMonths / 2) * startVal * (1 + growthFactor);
     }
 
-    if (cap && cap > 0) annualEstimate = Math.min(annualEstimate, cap * 12);
+    if (cap && cap > 0) totalForRemaining = Math.min(totalForRemaining, cap * remainingMonths);
 
-    const monthlyValues = distributeByPattern(annualEstimate, cap);
+    // Distribute across remaining months
+    let distributed: number[];
+    if (settings.distribution_mode === "equal") {
+      distributed = Array(remainingMonths).fill(Math.round(totalForRemaining / remainingMonths));
+    } else {
+      distributed = distributeRevenue(totalForRemaining, remainingMonths, growthFactor);
+    }
+
+    if (cap && cap > 0) {
+      distributed = distributed.map(v => Math.min(v, cap));
+    }
 
     const newMonthly: Record<string, number> = {};
-    months.forEach((ym, i) => { newMonthly[ym] = monthlyValues[i] || 0; });
+    months.forEach((ym, i) => {
+      if (i < startMonthIdx) {
+        newMonthly[ym] = 0; // Before start month = 0
+      } else {
+        newMonthly[ym] = distributed[i - startMonthIdx] || 0;
+      }
+    });
 
     const newRows = [...rows];
     newRows[idx] = { ...newRows[idx], monthly_revenue: newMonthly };
@@ -489,9 +506,10 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                     <ContextMenuItem onClick={() => applyToAllMonths(idx)}>
                       <Copy className="h-3.5 w-3.5 mr-2" />初月の値を全月にコピー
                     </ContextMenuItem>
-                    {(row.monthly_revenue[months[0]] || 0) > 0 && (
-                      <ContextMenuItem onClick={() => distributeFromFirstMonth(idx)}>
-                        <ArrowUpDown className="h-3.5 w-3.5 mr-2" />初月値を配分パターンで展開
+                    {months.some(ym => (row.monthly_revenue[ym] || 0) > 0) && (
+                      <ContextMenuItem onClick={() => distributeFromMonth(idx)}>
+                        <ArrowUpDown className="h-3.5 w-3.5 mr-2" />
+                        入力値から配分パターンで展開
                       </ContextMenuItem>
                     )}
                     {prevAvg > 0 && (
