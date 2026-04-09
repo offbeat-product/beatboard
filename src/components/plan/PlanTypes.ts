@@ -62,6 +62,7 @@ export interface PlanSettings {
   client_revenue_plan: ClientRevenuePlanRow[];
   revenue_distribution_pattern: string;
   revenue_growth_factor: number;
+  labor_cost_sga_rate: number;
 }
 
 export const DEFAULT_SGA_CATEGORIES: SgaCategory[] = [
