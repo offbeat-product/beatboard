@@ -175,9 +175,9 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     return monthlyValues;
   };
 
-  // Distribute from any entered month using distribution pattern
-  // Back-calculates the annual total that would produce the entered value
-  // at the entered month's position, then fills remaining months
+  // Distribute from the first entered month: treat the entered value as month-1,
+  // then grow linearly using the growth factor (g = value after 6 months / initial value).
+  // d per month = a₁ × (g − 1) / 5, so month-6 value = a₁ × g.
   const distributeFromMonth = (idx: number) => {
     const row = rows[idx];
     const cap = row.revenue_cap;
@@ -188,54 +188,23 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
     if (startMonthIdx < 0) return;
 
     const startVal = row.monthly_revenue[months[startMonthIdx]] || 0;
+    const g = Math.max(growthFactor, 1);
 
-    // Back-calculate annual total that would produce startVal at this position
-    let annualEstimate: number;
+    // Monthly increment based on 6-month growth cycle: after 6 months value = startVal × g
+    // Arithmetic progression: a, a+d, a+2d, ...  where a+5d = a×g → d = a×(g-1)/5
+    const dPerMonth = Math.abs(g - 1) < 0.001 ? 0 : startVal * (g - 1) / 5;
 
-    if (settings.distribution_mode === "equal") {
-      annualEstimate = startVal * 12;
-    } else if (settings.distribution_mode === "half_year") {
-      // H1 = months 0-5 (40%), H2 = months 6-11 (60%)
-      // Within each half: arithmetic progression with growth factor g
-      // H1: a1, a1+d1, ..., a1+5*d1 where last/first = g
-      //   a1 = H1_total / (3*(1+g))
-      //   value at position p = a1 * (1 + p*(g-1)/5)
-      // H2: a2 = H2_total / (3*(1+g)), same structure
-      //   a2/a1 = 0.6/0.4 = 1.5
-      const g = growthFactor;
-      if (startMonthIdx < 6) {
-        // In H1: position p = startMonthIdx
-        const p = startMonthIdx;
-        const positionMultiplier = 1 + p * (g - 1) / 5;
-        const a1 = startVal / positionMultiplier;
-        const h1Total = a1 * 3 * (1 + g);
-        annualEstimate = h1Total / 0.4;
-      } else {
-        // In H2: position p = startMonthIdx - 6
-        const p = startMonthIdx - 6;
-        const positionMultiplier = 1 + p * (g - 1) / 5;
-        const a2 = startVal / positionMultiplier;
-        const h2Total = a2 * 3 * (1 + g);
-        annualEstimate = h2Total / 0.6;
-      }
-    } else {
-      // Full year growth: value at position p = a * (1 + p*(g-1)/11)
-      const g = growthFactor;
-      const p = startMonthIdx;
-      const positionMultiplier = 1 + p * (g - 1) / 11;
-      const a = startVal / positionMultiplier;
-      annualEstimate = a * 6 * (1 + g);
-    }
-
-    if (cap && cap > 0) annualEstimate = Math.min(annualEstimate, cap * 12);
-
-    // Get full 12-month distribution
-    const fullDistribution = distributeByPattern(annualEstimate, cap);
-
-    // Zero out months before start, keep the rest
+    const remainingMonths = months.length - startMonthIdx;
     const newMonthly: Record<string, number> = {};
     months.forEach((ym, i) => {
-      newMonthly[ym] = i < startMonthIdx ? 0 : (fullDistribution[i] || 0);
+      if (i < startMonthIdx) {
+        newMonthly[ym] = 0;
+      } else {
+        const monthOffset = i - startMonthIdx;
+        let val = ceilTo10k(startVal + monthOffset * dPerMonth);
+        if (cap && cap > 0) val = Math.min(val, cap);
+        newMonthly[ym] = val;
+      }
     });
 
     const newRows = [...rows];
