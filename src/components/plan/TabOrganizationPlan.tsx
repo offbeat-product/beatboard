@@ -313,7 +313,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
       </section>
       {/* 人件費計画 */}
       <section className="bg-card rounded-lg shadow-sm border border-border p-5">
-        <SectionHeading title="人件費計画" description="人件費予算は粗利益の30%で設定（役員を含まないため）" />
+        <SectionHeading title="人件費計画" description="人件費予算は販管費予算の30%で設定（役員を含まないため）" />
         <div className="overflow-x-auto">
           <Table className="text-xs">
             <TableHeader>
@@ -328,17 +328,19 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* 人件費予算（粗利の30%） */}
+              {/* 人件費予算（販管費の30%） */}
               <TableRow className="hover:bg-muted/30">
                 <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">
                   人件費予算
-                  <span className="block text-[9px] text-muted-foreground">粗利益の30%</span>
+                  <span className="block text-[9px] text-muted-foreground">販管費予算の30%</span>
                 </TableCell>
                 {months.map((m, i) => {
                   const rev = getMonthlyRevenue(i);
                   const gpRate = getWeightedGpRate(m);
                   const gp = rev * (gpRate / 100);
-                  const budget = gp * 0.3;
+                  const op = rev * (settings.operating_profit_rate / 100);
+                  const sga = gp - op;
+                  const budget = sga * 0.3;
                   return (
                     <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
                       {fmtC(budget)}
@@ -346,7 +348,12 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                   );
                 })}
                 <TableCell className="text-right text-xs bg-muted/30 font-medium">
-                  {fmtC(months.reduce((s, m, i) => s + getMonthlyRevenue(i) * (getWeightedGpRate(m) / 100) * 0.3, 0))}
+                  {fmtC(months.reduce((s, m, i) => {
+                    const rev = getMonthlyRevenue(i);
+                    const gp = rev * (getWeightedGpRate(m) / 100);
+                    const op = rev * (settings.operating_profit_rate / 100);
+                    return s + (gp - op) * 0.3;
+                  }, 0))}
                 </TableCell>
               </TableRow>
 
