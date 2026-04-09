@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SectionHeading } from "./SectionHeading";
-import { PlanSettings, fmtNum } from "./PlanTypes";
+import { PlanSettings, StaffingRow, fmtNum } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { cn } from "@/lib/utils";
