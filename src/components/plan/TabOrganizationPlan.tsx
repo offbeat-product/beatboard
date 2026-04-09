@@ -354,7 +354,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                   const gp = rev * (gpRate / 100);
                   const op = rev * (settings.operating_profit_rate / 100);
                   const sga = gp - op;
-                  const budget = sga * 0.3;
+                  const budget = sga * ((settings.labor_cost_sga_rate ?? 30) / 100);
                   return (
                     <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
                       {fmtC(budget)}
