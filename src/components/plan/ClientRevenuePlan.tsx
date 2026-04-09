@@ -478,10 +478,10 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                           const pt = getPrevYearTotal(row.client_name, row.client_id);
                           const annual = getRowAnnual(row);
                           if (pt <= 0 || annual <= 0) return <span className="text-muted-foreground">—</span>;
-                          const growth = ((annual - pt) / pt) * 100;
+                          const ratio = (annual / pt) * 100;
                           return (
-                            <span className={cn(growth >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>
-                              {growth >= 0 ? "+" : ""}{growth.toFixed(0)}%
+                            <span className={cn(ratio >= 100 ? "text-green-600" : "text-destructive", "font-medium")}>
+                              {ratio.toFixed(0)}%
                             </span>
                           );
                         })()}
