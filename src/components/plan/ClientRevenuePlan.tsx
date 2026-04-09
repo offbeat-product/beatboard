@@ -423,6 +423,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 </TableCell>
               ))}
               <TableCell className="text-right bg-muted/30 font-bold">{fmtC(grandTotal)}</TableCell>
+              <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
+                {fmtC(prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0))}
+              </TableCell>
+              <TableCell className="text-right bg-muted/30 text-xs">
+                {(() => {
+                  const prevTotal = prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0);
+                  if (prevTotal <= 0 || grandTotal <= 0) return <span className="text-muted-foreground">—</span>;
+                  const g = ((grandTotal - prevTotal) / prevTotal) * 100;
+                  return <span className={cn(g >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>{g >= 0 ? "+" : ""}{g.toFixed(0)}%</span>;
+                })()}
+              </TableCell>
               <TableCell />
             </TableRow>
 
