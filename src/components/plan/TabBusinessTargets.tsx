@@ -108,48 +108,6 @@ export function TabBusinessTargets({ months, settings, update, fiscalYear }: Pro
         </div>
       </section>
 
-      {/* 売上目標達成 */}
-      <section className="bg-card rounded-lg shadow-sm border border-border p-5">
-        <SectionHeading title="売上目標達成" description="年間売上目標に対する累計進捗を表示します" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-muted/50 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground mb-1">年間売上目標</p>
-            <p className="text-lg font-bold">{fmtNum(settings.annual_revenue_target, unit)}</p>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground mb-1">累計実績（{monthsWithData}ヶ月）</p>
-            <p className="text-lg font-bold">{fmtNum(totalActualRevenue, unit)}</p>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground mb-1">達成率</p>
-            <p className={cn("text-lg font-bold", achievementRate >= 100 ? "text-green-600" : achievementRate >= 80 ? "text-amber-600" : "text-destructive")}>
-              {achievementRate.toFixed(1)}%
-            </p>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-4">
-            <p className="text-xs text-muted-foreground mb-1">残り必要額</p>
-            <p className={cn("text-lg font-bold", totalActualRevenue >= settings.annual_revenue_target ? "text-green-600" : "")}>
-              {totalActualRevenue >= settings.annual_revenue_target ? "達成済" : fmtNum(settings.annual_revenue_target - totalActualRevenue, unit)}
-            </p>
-          </div>
-        </div>
-        {/* Progress bar */}
-        <div className="mt-4">
-          <div className="h-3 bg-muted rounded-full overflow-hidden">
-            <div
-              className={cn("h-full rounded-full transition-all", achievementRate >= 100 ? "bg-green-500" : achievementRate >= 80 ? "bg-amber-500" : "bg-primary")}
-              style={{ width: `${Math.min(achievementRate, 100)}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 売上目標構成（配分設定） */}
       <section className="bg-card rounded-lg shadow-sm border border-border p-5">
         <SectionHeading title="売上目標構成" description="月別の売上配分方法を設定します" />
         <div className="flex items-center gap-3 mb-4">
