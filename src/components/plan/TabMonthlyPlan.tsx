@@ -133,6 +133,16 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
       label: "粗利率",
       planFn: (mp) => `${mp.gpRatePlan.toFixed(1)}%`,
       actualFn: (mp) => mp.hasActual ? `${mp.gpRateActual.toFixed(1)}%` : "—",
+      totalPlanFn: () => {
+        const totalRev = monthlyPlans.reduce((s, m) => s + m.revPlan, 0);
+        const totalGp = monthlyPlans.reduce((s, m) => s + m.gpPlan, 0);
+        return totalRev > 0 ? `${((totalGp / totalRev) * 100).toFixed(1)}%` : "—";
+      },
+      totalActualFn: () => {
+        const totalRev = monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.revActual, 0);
+        const totalGp = monthlyPlans.filter(m => m.hasActual).reduce((s, m) => s + m.gpActual, 0);
+        return totalRev > 0 ? `${((totalGp / totalRev) * 100).toFixed(1)}%` : "—";
+      },
     },
     { label: "販管費・営業利益", section: true },
     {
