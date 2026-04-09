@@ -359,12 +359,23 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                     );
                   })}
                   <TableCell className="text-right bg-muted/30 font-medium">
-                    <div className="flex flex-col items-end">
-                      <span>{fmtC(getRowAnnual(row))}</span>
-                      {row.category === "existing" && prevAvg > 0 && (
-                        <span className="text-[9px] text-muted-foreground">前期平均: {fmtC(prevAvg)}/月</span>
-                      )}
-                    </div>
+                    {fmtC(getRowAnnual(row))}
+                  </TableCell>
+                  <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
+                    {(() => { const pt = getPrevYearTotal(row.client_name); return pt > 0 ? fmtC(pt) : "—"; })()}
+                  </TableCell>
+                  <TableCell className="text-right bg-muted/30 text-xs">
+                    {(() => {
+                      const pt = getPrevYearTotal(row.client_name);
+                      const annual = getRowAnnual(row);
+                      if (pt <= 0 || annual <= 0) return <span className="text-muted-foreground">—</span>;
+                      const growth = ((annual - pt) / pt) * 100;
+                      return (
+                        <span className={cn(growth >= 0 ? "text-green-600" : "text-destructive", "font-medium")}>
+                          {growth >= 0 ? "+" : ""}{growth.toFixed(0)}%
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="p-1">
                     <div className="flex items-center gap-0.5">
