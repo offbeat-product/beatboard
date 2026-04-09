@@ -472,7 +472,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       </TableCell>
                       <TableCell className="text-right bg-muted/30 text-xs">
                         {(() => {
-                          const pt = getPrevYearTotal(row.client_name);
+                          const pt = getPrevYearTotal(row.client_name, row.client_id);
                           const annual = getRowAnnual(row);
                           if (pt <= 0 || annual <= 0) return <span className="text-muted-foreground">—</span>;
                           const growth = ((annual - pt) / pt) * 100;
@@ -485,12 +485,17 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                       </TableCell>
                     </TableRow>
                   </ContextMenuTrigger>
-                  <ContextMenuContent className="w-48">
+                  <ContextMenuContent className="w-56">
                     <ContextMenuItem onClick={() => applyToAllMonths(idx)}>
                       <Copy className="h-3.5 w-3.5 mr-2" />初月の値を全月にコピー
                     </ContextMenuItem>
-                    {row.category === "existing" && prevAvg > 0 && (
-                      <ContextMenuItem onClick={() => autoCalcExistingClient(idx)}>
+                    {(row.monthly_revenue[months[0]] || 0) > 0 && (
+                      <ContextMenuItem onClick={() => distributeFromFirstMonth(idx)}>
+                        <ArrowUpDown className="h-3.5 w-3.5 mr-2" />初月値を配分パターンで展開
+                      </ContextMenuItem>
+                    )}
+                    {prevAvg > 0 && (
+                      <ContextMenuItem onClick={() => autoCalcFromPrevYear(idx)}>
                         <Wand2 className="h-3.5 w-3.5 mr-2" />前期実績から自動計算
                       </ContextMenuItem>
                     )}
