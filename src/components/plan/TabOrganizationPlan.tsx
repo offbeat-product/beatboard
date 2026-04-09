@@ -64,7 +64,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
   };
 
   const getProjectHours = (i: number): number => {
-    return Math.round(getTotalHours(i) * 0.8);
+    return Math.round(getTotalHours(i) * 0.75);
   };
 
   return (
@@ -120,7 +120,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
               <TableRow className="bg-muted/20">
                 <TableCell className="sticky left-0 bg-muted/20 z-10 text-xs font-medium">
                   案件工数
-                  <span className="block text-[9px] text-muted-foreground">合計労働時間の80%</span>
+                  <span className="block text-[9px] text-muted-foreground">合計労働時間の75%</span>
                 </TableCell>
                 {months.map((m, i) => (
                   <TableCell key={m} className={cn("text-center text-xs font-medium", m === currentMonth && "bg-primary/5")}>
