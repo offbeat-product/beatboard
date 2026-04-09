@@ -366,7 +366,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                     const rev = getMonthlyRevenue(i);
                     const gp = rev * (getWeightedGpRate(m) / 100);
                     const op = rev * (settings.operating_profit_rate / 100);
-                    return s + (gp - op) * 0.3;
+                    return s + (gp - op) * ((settings.labor_cost_sga_rate ?? 30) / 100);
                   }, 0))}
                 </TableCell>
               </TableRow>
