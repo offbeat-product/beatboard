@@ -66,17 +66,19 @@ export interface PlanSettings {
 }
 
 export const DEFAULT_SGA_CATEGORIES: SgaCategory[] = [
-  { id: "personnel", name: "人件費", order: 1 },
-  { id: "recruiting", name: "採用費", order: 2 },
-  { id: "office", name: "オフィス費", order: 3 },
-  { id: "marketing", name: "広告宣伝・営業活動費", order: 4 },
-  { id: "it_system", name: "IT・システム関連費", order: 5 },
-  { id: "professional", name: "専門家・税務費", order: 6 },
-  { id: "other", name: "その他", order: 7 },
+  { id: "executive_comp", name: "役員報酬", order: 1 },
+  { id: "personnel", name: "人件費", order: 2 },
+  { id: "recruiting", name: "採用費", order: 3 },
+  { id: "office", name: "オフィス費", order: 4 },
+  { id: "marketing", name: "広告宣伝・営業活動費", order: 5 },
+  { id: "it_system", name: "IT・システム関連費", order: 6 },
+  { id: "professional", name: "専門家・税務費", order: 7 },
+  { id: "other", name: "その他", order: 8 },
 ];
 
 export const DEFAULT_SGA_ALLOCATION_RATES: Record<string, number> = {
-  personnel: 50,
+  executive_comp: 10,
+  personnel: 40,
   recruiting: 10,
   office: 10,
   marketing: 12,
