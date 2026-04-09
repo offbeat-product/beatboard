@@ -12,13 +12,14 @@ interface Props {
   update: (field: keyof PlanSettings, value: any) => void;
 }
 
-type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours";
+type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours" | "projectHours";
 
 const STAFF_ROWS: { label: string; field: StaffField; unit: string }[] = [
   { label: "正社員数", field: "fullTimeCount", unit: "名" },
   { label: "パート数", field: "partTimeCount", unit: "名" },
   { label: "正社員h/月", field: "fullTimeHours", unit: "h" },
   { label: "パート合計h/月", field: "partTimeTotalHours", unit: "h" },
+  { label: "案件工数/月", field: "projectHours", unit: "h" },
 ];
 
 export function TabOrganizationPlan({ months, settings, update }: Props) {
@@ -32,7 +33,6 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
     update("staffing_plan", newPlan);
   };
 
-  // Productivity calculations
   const getMonthlyRevenue = (i: number): number => {
     if (settings.distribution_mode === "equal") return settings.annual_revenue_target / 12;
     return settings.monthly_revenue_distribution[i] || 0;
@@ -56,16 +56,22 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
 
   const fmtC = (v: number) => fmtNum(v, unit);
 
-  // Compute totals for annual column
-  const getAnnualTotal = (field: StaffField): number =>
-    plan.reduce((s, row) => s + (row[field] || 0), 0);
-
   const getAnnualAvg = (field: StaffField): number =>
-    plan.length > 0 ? getAnnualTotal(field) / plan.length : 0;
+    plan.length > 0 ? plan.reduce((s, row) => s + ((row as any)[field] || 0), 0) / plan.length : 0;
+
+  const getTotalHours = (i: number): number => {
+    const row = plan[i];
+    return row ? row.fullTimeCount * row.fullTimeHours + row.partTimeTotalHours : 0;
+  };
+
+  const getProjectHours = (i: number): number => {
+    const row = plan[i];
+    return row ? ((row as any).projectHours || 0) : 0;
+  };
 
   return (
     <div className="space-y-8">
-      {/* 人員計画 - 横向き */}
+      {/* 人員計画 */}
       <section className="bg-card rounded-lg shadow-sm border border-border p-5">
         <SectionHeading title="人員計画" description="月別の正社員・パート人数と労働時間を設定します" />
         <div className="overflow-x-auto">
@@ -73,7 +79,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
             <TableHeader>
               <TableRow>
                 <TableHead className="sticky left-0 bg-card z-10 min-w-[140px] text-xs">項目</TableHead>
-                {months.map((m, i) => (
+                {months.map((m) => (
                   <TableHead key={m} className={cn("text-center text-xs min-w-[80px]", m === currentMonth && "bg-primary/5")}>
                     {getMonthLabel(m)}
                   </TableHead>
@@ -89,31 +95,27 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                     <TableCell key={m} className={cn("p-1", m === currentMonth && "bg-primary/5")}>
                       <Input
                         type="number"
-                        value={plan[i]?.[sr.field] ?? 0}
+                        value={(plan[i] as any)?.[sr.field] ?? 0}
                         onChange={(e) => updateCell(i, sr.field, parseFloat(e.target.value) || 0)}
                         className="h-7 text-xs text-center w-[70px] mx-auto focus-visible:ring-[hsl(217,91%,60%)]"
                       />
                     </TableCell>
                   ))}
                   <TableCell className="text-center text-xs bg-muted/30 font-medium">
-                    {getAnnualAvg(sr.field).toFixed(sr.field.includes("Count") ? 0 : 0)}{sr.unit}
+                    {getAnnualAvg(sr.field).toFixed(0)}{sr.unit}
                   </TableCell>
                 </TableRow>
               ))}
               {/* Computed: Total hours */}
               <TableRow className="bg-muted/20">
                 <TableCell className="sticky left-0 bg-muted/20 z-10 text-xs font-medium">合計労働時間</TableCell>
-                {months.map((m, i) => {
-                  const row = plan[i];
-                  const total = row ? row.fullTimeCount * row.fullTimeHours + row.partTimeTotalHours : 0;
-                  return (
-                    <TableCell key={m} className={cn("text-center text-xs font-medium", m === currentMonth && "bg-primary/5")}>
-                      {total.toLocaleString()}h
-                    </TableCell>
-                  );
-                })}
+                {months.map((m, i) => (
+                  <TableCell key={m} className={cn("text-center text-xs font-medium", m === currentMonth && "bg-primary/5")}>
+                    {getTotalHours(i).toLocaleString()}h
+                  </TableCell>
+                ))}
                 <TableCell className="text-center text-xs bg-muted/30 font-bold">
-                  {plan.reduce((s, row) => s + row.fullTimeCount * row.fullTimeHours + row.partTimeTotalHours, 0).toLocaleString()}h
+                  {months.reduce((s, _, i) => s + getTotalHours(i), 0).toLocaleString()}h
                 </TableCell>
               </TableRow>
               {/* Total headcount */}
@@ -139,12 +141,12 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
 
       {/* 生産性計画 */}
       <section className="bg-card rounded-lg shadow-sm border border-border p-5">
-        <SectionHeading title="生産性計画" description="人員計画と売上目標から一人当たり生産性を自動計算します" />
+        <SectionHeading title="生産性計画" description="人員計画と売上目標から生産性指標を自動計算します" />
         <div className="overflow-x-auto">
           <Table className="text-xs">
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 bg-card z-10 min-w-[160px] text-xs">指標</TableHead>
+                <TableHead className="sticky left-0 bg-card z-10 min-w-[180px] text-xs">指標</TableHead>
                 {months.map((m) => (
                   <TableHead key={m} className={cn("text-center text-xs min-w-[90px]", m === currentMonth && "bg-primary/5")}>
                     {getMonthLabel(m)}
@@ -165,37 +167,45 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                 <TableCell className="text-right text-xs bg-muted/30 font-medium">{fmtC(settings.annual_revenue_target)}</TableCell>
               </TableRow>
 
-              {/* 一人当たり売上 */}
+              {/* 月次粗利目標 */}
               <TableRow className="hover:bg-muted/30">
-                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">一人当たり売上</TableCell>
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">月次粗利目標</TableCell>
                 {months.map((m, i) => {
-                  const row = plan[i];
-                  const headcount = row ? row.fullTimeCount + row.partTimeCount : 0;
                   const rev = getMonthlyRevenue(i);
-                  const perPerson = headcount > 0 ? rev / headcount : 0;
+                  const gpRate = getWeightedGpRate(m);
+                  const gp = rev * (gpRate / 100);
                   return (
                     <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
-                      {perPerson > 0 ? fmtC(perPerson) : "—"}
+                      {fmtC(gp)}
                     </TableCell>
                   );
                 })}
                 <TableCell className="text-right text-xs bg-muted/30 font-medium">
-                  {(() => {
-                    const avgHc = plan.reduce((s, r) => s + r.fullTimeCount + r.partTimeCount, 0) / Math.max(plan.length, 1);
-                    return avgHc > 0 ? fmtC(settings.annual_revenue_target / 12 / avgHc) : "—";
-                  })()}
+                  {fmtC(months.reduce((s, m, i) => s + getMonthlyRevenue(i) * (getWeightedGpRate(m) / 100), 0))}
                 </TableCell>
               </TableRow>
 
-              {/* 粗利工数単価 */}
+              {/* 総労働工数 */}
+              <TableRow className="hover:bg-muted/30">
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">総労働工数</TableCell>
+                {months.map((m, i) => (
+                  <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
+                    {getTotalHours(i) > 0 ? `${getTotalHours(i).toLocaleString()}h` : "—"}
+                  </TableCell>
+                ))}
+                <TableCell className="text-right text-xs bg-muted/30 font-medium">
+                  {months.reduce((s, _, i) => s + getTotalHours(i), 0).toLocaleString()}h
+                </TableCell>
+              </TableRow>
+
+              {/* 粗利工数単価（粗利÷総労働工数） */}
               <TableRow className="hover:bg-muted/30">
                 <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">
                   粗利工数単価（GPH）
-                  <span className="block text-[9px] text-muted-foreground">目標: ¥{settings.gp_per_hour_target.toLocaleString()}</span>
+                  <span className="block text-[9px] text-muted-foreground">粗利÷総労働工数 / 目標: ¥{settings.gp_per_hour_target.toLocaleString()}</span>
                 </TableCell>
                 {months.map((m, i) => {
-                  const row = plan[i];
-                  const totalHours = row ? row.fullTimeCount * row.fullTimeHours + row.partTimeTotalHours : 0;
+                  const totalHours = getTotalHours(i);
                   const rev = getMonthlyRevenue(i);
                   const gpRate = getWeightedGpRate(m);
                   const gp = rev * (gpRate / 100);
@@ -209,37 +219,53 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                 })}
                 <TableCell className="text-right text-xs bg-muted/30 font-medium">
                   {(() => {
-                    const totalHours = plan.reduce((s, r) => s + r.fullTimeCount * r.fullTimeHours + r.partTimeTotalHours, 0);
-                    const totalGp = months.reduce((s, m, i) => {
-                      const rev = getMonthlyRevenue(i);
-                      return s + rev * (getWeightedGpRate(m) / 100);
-                    }, 0);
+                    const totalHours = months.reduce((s, _, i) => s + getTotalHours(i), 0);
+                    const totalGp = months.reduce((s, m, i) => s + getMonthlyRevenue(i) * (getWeightedGpRate(m) / 100), 0);
                     return totalHours > 0 ? `¥${Math.round(totalGp / totalHours).toLocaleString()}` : "—";
                   })()}
                 </TableCell>
               </TableRow>
 
-              {/* 一人当たり粗利 */}
+              {/* 案件工数 */}
               <TableRow className="hover:bg-muted/30">
-                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">一人当たり粗利/月</TableCell>
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">案件工数</TableCell>
                 {months.map((m, i) => {
-                  const row = plan[i];
-                  const headcount = row ? row.fullTimeCount + row.partTimeCount : 0;
+                  const ph = getProjectHours(i);
+                  return (
+                    <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
+                      {ph > 0 ? `${ph.toLocaleString()}h` : "—"}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-right text-xs bg-muted/30 font-medium">
+                  {months.reduce((s, _, i) => s + getProjectHours(i), 0).toLocaleString()}h
+                </TableCell>
+              </TableRow>
+
+              {/* 案件粗利工数単価（粗利÷案件工数） */}
+              <TableRow className="hover:bg-muted/30">
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">
+                  案件粗利工数単価
+                  <span className="block text-[9px] text-muted-foreground">粗利÷案件工数 / 目標: ¥{settings.gp_per_project_hour_target.toLocaleString()}</span>
+                </TableCell>
+                {months.map((m, i) => {
+                  const ph = getProjectHours(i);
                   const rev = getMonthlyRevenue(i);
                   const gpRate = getWeightedGpRate(m);
                   const gp = rev * (gpRate / 100);
-                  const perPerson = headcount > 0 ? gp / headcount : 0;
+                  const gpph = ph > 0 ? gp / ph : 0;
+                  const isBelow = gpph > 0 && gpph < settings.gp_per_project_hour_target;
                   return (
-                    <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
-                      {perPerson > 0 ? fmtC(perPerson) : "—"}
+                    <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5", isBelow && "text-destructive")}>
+                      {gpph > 0 ? `¥${Math.round(gpph).toLocaleString()}` : "—"}
                     </TableCell>
                   );
                 })}
                 <TableCell className="text-right text-xs bg-muted/30 font-medium">
                   {(() => {
-                    const avgHc = plan.reduce((s, r) => s + r.fullTimeCount + r.partTimeCount, 0) / Math.max(plan.length, 1);
+                    const totalPh = months.reduce((s, _, i) => s + getProjectHours(i), 0);
                     const totalGp = months.reduce((s, m, i) => s + getMonthlyRevenue(i) * (getWeightedGpRate(m) / 100), 0);
-                    return avgHc > 0 ? fmtC(totalGp / 12 / avgHc) : "—";
+                    return totalPh > 0 ? `¥${Math.round(totalGp / totalPh).toLocaleString()}` : "—";
                   })()}
                 </TableCell>
               </TableRow>
