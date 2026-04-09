@@ -478,10 +478,11 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
 
             {/* Month totals */}
             <TableRow className="bg-muted/50 font-semibold">
-              <TableCell className="sticky left-0 bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
-              <TableCell className="sticky left-[150px] bg-muted/50 z-10 border-r">—</TableCell>
-              <TableCell className="sticky left-[230px] bg-muted/50 z-10 border-r" />
-              <TableCell className="sticky left-[320px] bg-muted/50 z-10 border-r" />
+              <TableCell className="sticky left-0 bg-muted/50 z-10 w-[30px] border-r" />
+              <TableCell className="sticky left-[30px] bg-muted/50 z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
+              <TableCell className="sticky left-[180px] bg-muted/50 z-10 border-r">—</TableCell>
+              <TableCell className="sticky left-[260px] bg-muted/50 z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-muted/50 z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
