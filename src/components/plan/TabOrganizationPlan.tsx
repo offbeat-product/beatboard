@@ -311,6 +311,130 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
           </Table>
         </div>
       </section>
+      {/* 人件費計画 */}
+      <section className="bg-card rounded-lg shadow-sm border border-border p-5">
+        <SectionHeading title="人件費計画" description="人件費予算は粗利益の30%で設定（役員を含まないため）" />
+        <div className="overflow-x-auto">
+          <Table className="text-xs">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 bg-card z-10 min-w-[180px] text-xs">項目</TableHead>
+                {months.map((m) => (
+                  <TableHead key={m} className={cn("text-center text-xs min-w-[90px]", m === currentMonth && "bg-primary/5")}>
+                    {getMonthLabel(m)}
+                  </TableHead>
+                ))}
+                <TableHead className="text-center text-xs min-w-[90px] bg-muted/50">通期</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* 人件費予算（粗利の30%） */}
+              <TableRow className="hover:bg-muted/30">
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">
+                  人件費予算
+                  <span className="block text-[9px] text-muted-foreground">粗利益の30%</span>
+                </TableCell>
+                {months.map((m, i) => {
+                  const rev = getMonthlyRevenue(i);
+                  const gpRate = getWeightedGpRate(m);
+                  const gp = rev * (gpRate / 100);
+                  const budget = gp * 0.3;
+                  return (
+                    <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
+                      {fmtC(budget)}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-right text-xs bg-muted/30 font-medium">
+                  {fmtC(months.reduce((s, m, i) => s + getMonthlyRevenue(i) * (getWeightedGpRate(m) / 100) * 0.3, 0))}
+                </TableCell>
+              </TableRow>
+
+              {/* 正社員人件費 */}
+              <TableRow className="hover:bg-muted/30">
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">正社員人件費</TableCell>
+                {months.map((m, i) => (
+                  <TableCell key={m} className={cn("p-1", m === currentMonth && "bg-primary/5")}>
+                    <Input
+                      type="number"
+                      value={(plan[i] as any)?.fullTimeLaborCost ?? 0}
+                      onChange={(e) => updateCell(i, "fullTimeLaborCost", parseFloat(e.target.value) || 0)}
+                      className="h-7 text-xs text-center w-[80px] mx-auto focus-visible:ring-[hsl(217,91%,60%)]"
+                    />
+                  </TableCell>
+                ))}
+                <TableCell className="text-right text-xs bg-muted/30 font-medium">
+                  {fmtC(plan.reduce((s, row) => s + (row.fullTimeLaborCost || 0), 0))}
+                </TableCell>
+              </TableRow>
+
+              {/* パート人件費 */}
+              <TableRow className="hover:bg-muted/30">
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">パート人件費</TableCell>
+                {months.map((m, i) => (
+                  <TableCell key={m} className={cn("p-1", m === currentMonth && "bg-primary/5")}>
+                    <Input
+                      type="number"
+                      value={(plan[i] as any)?.partTimeLaborCost ?? 0}
+                      onChange={(e) => updateCell(i, "partTimeLaborCost", parseFloat(e.target.value) || 0)}
+                      className="h-7 text-xs text-center w-[80px] mx-auto focus-visible:ring-[hsl(217,91%,60%)]"
+                    />
+                  </TableCell>
+                ))}
+                <TableCell className="text-right text-xs bg-muted/30 font-medium">
+                  {fmtC(plan.reduce((s, row) => s + (row.partTimeLaborCost || 0), 0))}
+                </TableCell>
+              </TableRow>
+
+              {/* 人件費合計 */}
+              <TableRow className="bg-muted/20">
+                <TableCell className="sticky left-0 bg-muted/20 z-10 text-xs font-medium">人件費合計</TableCell>
+                {months.map((m, i) => {
+                  const row = plan[i];
+                  const total = row ? (row.fullTimeLaborCost || 0) + (row.partTimeLaborCost || 0) : 0;
+                  return (
+                    <TableCell key={m} className={cn("text-right text-xs font-medium", m === currentMonth && "bg-primary/5")}>
+                      {fmtC(total)}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-right text-xs bg-muted/30 font-bold">
+                  {fmtC(plan.reduce((s, row) => s + (row.fullTimeLaborCost || 0) + (row.partTimeLaborCost || 0), 0))}
+                </TableCell>
+              </TableRow>
+
+              {/* 人件費率 */}
+              <TableRow className="bg-muted/20">
+                <TableCell className="sticky left-0 bg-muted/20 z-10 text-xs font-medium">
+                  人件費率
+                  <span className="block text-[9px] text-muted-foreground">人件費合計÷粗利益</span>
+                </TableCell>
+                {months.map((m, i) => {
+                  const row = plan[i];
+                  const laborTotal = row ? (row.fullTimeLaborCost || 0) + (row.partTimeLaborCost || 0) : 0;
+                  const rev = getMonthlyRevenue(i);
+                  const gpRate = getWeightedGpRate(m);
+                  const gp = rev * (gpRate / 100);
+                  const rate = gp > 0 ? (laborTotal / gp) * 100 : 0;
+                  const isOver = rate > 30;
+                  return (
+                    <TableCell key={m} className={cn("text-right text-xs font-medium", m === currentMonth && "bg-primary/5", isOver && "text-destructive")}>
+                      {laborTotal > 0 ? `${rate.toFixed(1)}%` : "—"}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-right text-xs bg-muted/30 font-bold">
+                  {(() => {
+                    const totalLabor = plan.reduce((s, row) => s + (row.fullTimeLaborCost || 0) + (row.partTimeLaborCost || 0), 0);
+                    const totalGp = months.reduce((s, m, i) => s + getMonthlyRevenue(i) * (getWeightedGpRate(m) / 100), 0);
+                    return totalGp > 0 ? `${((totalLabor / totalGp) * 100).toFixed(1)}%` : "—";
+                  })()}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </section>
     </div>
   );
 }
