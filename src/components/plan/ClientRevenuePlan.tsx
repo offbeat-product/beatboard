@@ -26,7 +26,7 @@ interface Props {
 const CATEGORY_LABELS: Record<string, string> = {
   existing: "既存",
   new: "新規",
-  risk: "失注リスク",
+  risk: "解約予定",
 };
 
 const CATEGORY_BADGE_STYLES: Record<string, string> = {
@@ -421,7 +421,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                           <SelectContent>
                             <SelectItem value="existing"><span className="text-blue-700 dark:text-blue-400">既存</span></SelectItem>
                             <SelectItem value="new"><span className="text-emerald-700 dark:text-emerald-400">新規</span></SelectItem>
-                            <SelectItem value="risk"><span className="text-red-700 dark:text-red-400">失注リスク</span></SelectItem>
+                            <SelectItem value="risk"><span className="text-red-700 dark:text-red-400">解約予定</span></SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
