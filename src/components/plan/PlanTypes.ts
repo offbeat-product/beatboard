@@ -175,7 +175,7 @@ export function distributeRevenue(
   const d = ((g - 1) * a) / (n - 1);
   const result: number[] = [];
   for (let i = 0; i < n; i++) {
-    result.push(Math.round(a + i * d));
+    result.push(ceilTo10k(a + i * d));
   }
   // Rounding adjustment on last month
   const sum = result.reduce((s, v) => s + v, 0);

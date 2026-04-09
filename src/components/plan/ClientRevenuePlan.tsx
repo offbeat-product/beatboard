@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { SectionHeading } from "./SectionHeading";
-import { PlanSettings, ClientRevenuePlanRow, fmtNum, distributeRevenue, PATTERN_GROWTH_MAP } from "./PlanTypes";
+import { PlanSettings, ClientRevenuePlanRow, fmtNum, distributeRevenue, PATTERN_GROWTH_MAP, ceilTo10k } from "./PlanTypes";
 import { getMonthLabel, getCurrentMonth, getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { supabase } from "@/integrations/supabase/client";
