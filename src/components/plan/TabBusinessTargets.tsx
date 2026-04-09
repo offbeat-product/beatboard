@@ -77,18 +77,6 @@ export function TabBusinessTargets({ months, settings, update, fiscalYear }: Pro
     : settings.annual_revenue_target;
   const distValid = settings.distribution_mode === "equal" || Math.abs(distSum - settings.annual_revenue_target) < 1;
 
-  // Fetch actuals for revenue achievement
-  const salesQuery = useQuery({
-    queryKey: ["plan_revenue_achievement", fiscalYear],
-    queryFn: async () => {
-      const { data } = await supabase.from("monthly_sales").select("year_month, revenue").eq("org_id", ORG_ID).in("year_month", months);
-      return data ?? [];
-    },
-  });
-  const sales = salesQuery.data ?? [];
-  const totalActualRevenue = sales.reduce((s, r) => s + (r.revenue || 0), 0);
-  const achievementRate = settings.annual_revenue_target > 0 ? (totalActualRevenue / settings.annual_revenue_target) * 100 : 0;
-  const monthsWithData = new Set(sales.filter(s => (s.revenue || 0) > 0).map(s => s.year_month)).size;
 
   return (
     <div className="space-y-8">
