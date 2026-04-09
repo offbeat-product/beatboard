@@ -445,6 +445,19 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                           className="h-6 text-[10px] text-right w-[80px]"
                         />
                       </TableCell>
+                      <TableCell className="sticky left-[350px] bg-card z-10 border-r p-1">
+                        <Input
+                          type="number"
+                          value={row.gross_profit_rate ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? null : parseFloat(e.target.value);
+                            setClientGpRate(idx, v);
+                          }}
+                          placeholder={`${settings.gross_profit_rate}%`}
+                          className="h-6 text-[10px] text-right w-[60px]"
+                          step="0.1"
+                        />
+                      </TableCell>
                       {months.map((ym) => {
                         const planVal = row.monthly_revenue[ym] || 0;
                         const hasActual = isPastMonth(ym);
