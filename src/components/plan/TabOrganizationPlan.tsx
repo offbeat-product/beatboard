@@ -313,7 +313,7 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
       </section>
       {/* 人件費計画 */}
       <section className="bg-card rounded-lg shadow-sm border border-border p-5">
-        <SectionHeading title="人件費計画" description="<SectionHeading title="人件費計画" description="人件費予算は販管費予算の30%で設定（役員除外）" />" />
+        <SectionHeading title="人件費計画" description="人件費予算は販管費予算の30%で設定（役員除外）" />
         <div className="overflow-x-auto">
           <Table className="text-xs">
             <TableHeader>
