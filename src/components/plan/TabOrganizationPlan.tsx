@@ -282,6 +282,31 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                   })()}
                 </TableCell>
               </TableRow>
+
+              {/* 案件稼働率 */}
+              <TableRow className="hover:bg-muted/30">
+                <TableCell className="sticky left-0 bg-card z-10 text-xs font-medium">
+                  案件稼働率
+                  <span className="block text-[9px] text-muted-foreground">案件工数÷総労働工数</span>
+                </TableCell>
+                {months.map((m, i) => {
+                  const totalH = getTotalHours(i);
+                  const projH = getProjectHours(i);
+                  const rate = totalH > 0 ? (projH / totalH) * 100 : 0;
+                  return (
+                    <TableCell key={m} className={cn("text-right text-xs", m === currentMonth && "bg-primary/5")}>
+                      {totalH > 0 ? `${rate.toFixed(1)}%` : "—"}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-right text-xs bg-muted/30 font-medium">
+                  {(() => {
+                    const totalH = months.reduce((s, _, i) => s + getTotalHours(i), 0);
+                    const totalP = months.reduce((s, _, i) => s + getProjectHours(i), 0);
+                    return totalH > 0 ? `${((totalP / totalH) * 100).toFixed(1)}%` : "—";
+                  })()}
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </div>
