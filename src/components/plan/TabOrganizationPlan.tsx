@@ -12,7 +12,7 @@ interface Props {
   update: (field: keyof PlanSettings, value: any) => void;
 }
 
-type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours";
+type StaffField = "fullTimeCount" | "partTimeCount" | "fullTimeHours" | "partTimeTotalHours" | "fullTimeLaborCost" | "partTimeLaborCost";
 
 const STAFF_ROWS: { label: string; field: StaffField; unit: string }[] = [
   { label: "正社員数", field: "fullTimeCount", unit: "名" },
