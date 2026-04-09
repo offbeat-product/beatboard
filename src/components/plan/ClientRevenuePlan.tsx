@@ -556,6 +556,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[30px] bg-muted z-10 font-semibold border-r border-l-4 border-l-primary">顧客合計</TableCell>
               <TableCell className="sticky left-[180px] bg-muted z-10 border-r">—</TableCell>
               <TableCell className="sticky left-[260px] bg-muted z-10 border-r" />
+              <TableCell className="sticky left-[350px] bg-muted z-10 border-r text-[10px] text-muted-foreground">加重平均</TableCell>
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
                   {fmtC(getMonthTotal(ym))}
