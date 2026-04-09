@@ -116,6 +116,21 @@ export function TabOrganizationPlan({ months, settings, update }: Props) {
                   {months.reduce((s, _, i) => s + getTotalHours(i), 0).toLocaleString()}h
                 </TableCell>
               </TableRow>
+              {/* Computed: Project hours (80% of total) */}
+              <TableRow className="bg-muted/20">
+                <TableCell className="sticky left-0 bg-muted/20 z-10 text-xs font-medium">
+                  案件工数
+                  <span className="block text-[9px] text-muted-foreground">合計労働時間の80%</span>
+                </TableCell>
+                {months.map((m, i) => (
+                  <TableCell key={m} className={cn("text-center text-xs font-medium", m === currentMonth && "bg-primary/5")}>
+                    {getProjectHours(i).toLocaleString()}h
+                  </TableCell>
+                ))}
+                <TableCell className="text-center text-xs bg-muted/30 font-bold">
+                  {months.reduce((s, _, i) => s + getProjectHours(i), 0).toLocaleString()}h
+                </TableCell>
+              </TableRow>
               {/* Total headcount */}
               <TableRow className="bg-muted/20">
                 <TableCell className="sticky left-0 bg-muted/20 z-10 text-xs font-medium">合計人員</TableCell>
