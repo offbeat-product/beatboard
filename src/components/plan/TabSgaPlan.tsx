@@ -23,7 +23,21 @@ export function TabSgaPlan({ months, settings, update }: Props) {
   const [newCatName, setNewCatName] = useState("");
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
-  const categories = settings.sga_categories.length > 0 ? settings.sga_categories : DEFAULT_SGA_CATEGORIES;
+  // Merge default categories into saved categories so new defaults (e.g. executive_comp) always appear
+  const categories = (() => {
+    const saved = settings.sga_categories.length > 0 ? settings.sga_categories : DEFAULT_SGA_CATEGORIES;
+    const savedIds = new Set(saved.map(c => c.id));
+    const missing = DEFAULT_SGA_CATEGORIES.filter(dc => !savedIds.has(dc.id));
+    if (missing.length === 0) return saved;
+    // Insert missing defaults at correct position
+    const merged = [...saved];
+    for (const m of missing) {
+      const insertIdx = merged.findIndex(c => c.order > m.order);
+      if (insertIdx >= 0) merged.splice(insertIdx, 0, m);
+      else merged.push(m);
+    }
+    return merged;
+  })();
 
   // --- Derive monthly SGA budget from monthly business plan ---
   const getWeightedGpRate = (ym: string): number => {
