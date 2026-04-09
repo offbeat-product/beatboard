@@ -654,6 +654,7 @@ export type Database = {
           gross_profit_rate: number | null
           id: string
           it_rate: number | null
+          labor_cost_sga_rate: number | null
           marketing_rate: number | null
           monthly_clients: Json | null
           monthly_revenue_distribution: Json | null
@@ -690,6 +691,7 @@ export type Database = {
           gross_profit_rate?: number | null
           id?: string
           it_rate?: number | null
+          labor_cost_sga_rate?: number | null
           marketing_rate?: number | null
           monthly_clients?: Json | null
           monthly_revenue_distribution?: Json | null
@@ -726,6 +728,7 @@ export type Database = {
           gross_profit_rate?: number | null
           id?: string
           it_rate?: number | null
+          labor_cost_sga_rate?: number | null
           marketing_rate?: number | null
           monthly_clients?: Json | null
           monthly_revenue_distribution?: Json | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.plan_settings ADD COLUMN IF NOT EXISTS labor_cost_sga_rate numeric DEFAULT 30;
