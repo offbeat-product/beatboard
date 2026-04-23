@@ -114,7 +114,7 @@ const PL = () => {
                   }} />
                   <Bar yAxisId="left" dataKey="売上原価" stackId="a" fill="#E5E7EB" />
                   <Bar yAxisId="left" dataKey="販管費" stackId="a" fill="#9CA3AF" />
-                  <Bar yAxisId="left" dataKey="営業利益" stackId="a" fill="#E85B2D" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="left" dataKey="営業利益" stackId="a" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                   <Line yAxisId="right" type="monotone" dataKey="粗利率" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -137,7 +137,7 @@ const PL = () => {
                       <stop offset="100%" stopColor="#EF4444" stopOpacity={0.3} />
                     </linearGradient>
                   </defs>
-                  <Area type="monotone" dataKey="粗利工数単価" stroke="#E85B2D" strokeWidth={2} fill="url(#gphGrad)" dot={{ r: 3, fill: "#E85B2D" }} />
+                  <Area type="monotone" dataKey="粗利工数単価" stroke="#3B82F6" strokeWidth={2} fill="url(#gphGrad)" dot={{ r: 3, fill: "#3B82F6" }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
