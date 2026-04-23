@@ -565,63 +565,9 @@ const Report = () => {
           )}
         </TabsContent>
 
-        {/* ── Tab 6: Analysis ── */}
-        <TabsContent value="analysis" className="space-y-4">
-          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold">■ 数値評価・課題分析</h3>
-              <Button onClick={handleGenerateAnalysis} disabled={analysisLoading} size="sm">
-                {analysisLoading ? (
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-1.5" />
-                )}
-                分析レポートを生成
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">最終生成: {fmtGeneratedAt(analysisGeneratedAt)}</p>
-            {analysisContent ? (
-              <div className="report-markdown max-w-4xl">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisContent}</ReactMarkdown>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                「分析レポートを生成」ボタンをクリックすると、AIが{ymLabel}のデータを分析します。
-              </p>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* ── Tab 7: Action ── */}
-        <TabsContent value="action" className="space-y-4">
-          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold">■ 解決策・来月アクション</h3>
-              <Button onClick={handleGenerateAction} disabled={actionLoading || !analysisContent} size="sm">
-                {actionLoading ? (
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-1.5" />
-                )}
-                アクション提案を生成
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">最終生成: {fmtGeneratedAt(actionGeneratedAt)}</p>
-            {!analysisContent && !actionContent && (
-              <p className="text-sm text-muted-foreground">
-                先に「数値評価・課題分析」タブで分析レポートを生成してください。
-              </p>
-            )}
-            {actionContent ? (
-              <div className="report-markdown max-w-4xl">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{actionContent}</ReactMarkdown>
-              </div>
-            ) : analysisContent && !actionLoading ? (
-              <p className="text-sm text-muted-foreground">
-                「アクション提案を生成」ボタンをクリックすると、分析結果に基づいた改善提案を生成します。
-              </p>
-            ) : null}
-          </div>
+        {/* ── Tab 6: Monthly Integrated Report ── */}
+        <TabsContent value="monthly_integrated" className="space-y-4">
+          <MonthlyIntegratedReport yearMonth={selectedYm} ymLabel={ymLabel} />
         </TabsContent>
       </Tabs>
     </div>
