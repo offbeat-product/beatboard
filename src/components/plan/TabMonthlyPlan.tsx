@@ -153,10 +153,10 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
     <div className="space-y-8">
       <section className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="px-5 py-4">
-          <SectionHeading title="月次事業計画" description="売上・粗利・販管費・営業利益の月次計画と実績を比較します。顧客別粗利率を反映した精緻な計算を行います。" />
+          <SectionHeading title="月次事業計画" description="売上・粗利・販管費・営業利益の月次計画と実績を比較します。" />
           <div className="flex items-center gap-3 mb-2 flex-wrap">
             <Badge variant="secondary" className="text-[10px]">
-              加重平均粗利率を使用（顧客別粗利率が設定されている場合）
+              粗利率は経営目標({settings.gross_profit_rate}%)で固定
             </Badge>
           </div>
         </div>
