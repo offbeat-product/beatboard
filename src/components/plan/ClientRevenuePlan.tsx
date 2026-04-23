@@ -395,7 +395,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 viewMode === "revenue" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"
               )}
             >
-              売上表示
+              売上
             </button>
             <button
               type="button"
@@ -405,7 +405,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 viewMode === "gp" ? "bg-emerald-600 text-white" : "bg-card text-muted-foreground hover:bg-muted"
               )}
             >
-              粗利表示
+              粗利
             </button>
           </div>
         </div>
