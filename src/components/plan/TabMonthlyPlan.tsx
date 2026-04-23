@@ -38,27 +38,13 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
   const sales = salesQuery.data ?? [];
   const freeeData = freeeQuery.data ?? [];
 
-  const getWeightedGpRate = (ym: string): number => {
-    const crp = settings.client_revenue_plan || [];
-    let totalRev = 0;
-    let weightedGp = 0;
-    for (const row of crp) {
-      const rev = row.monthly_revenue[ym] || 0;
-      if (rev > 0) {
-        const rate = row.gross_profit_rate ?? settings.gross_profit_rate;
-        totalRev += rev;
-        weightedGp += rev * (rate / 100);
-      }
-    }
-    if (totalRev <= 0) return settings.gross_profit_rate;
-    return (weightedGp / totalRev) * 100;
-  };
+  // 経営目標の粗利率を全月固定で使用(顧客別粗利率は顧客計画タブの参照用)
+  const targetGpRate = settings.gross_profit_rate;
 
   const monthlyPlans = useMemo(() => {
     return months.map((ym, i) => {
       const revPlan = settings.distribution_mode === "equal" ? settings.annual_revenue_target / 12 : (settings.monthly_revenue_distribution[i] || 0);
-      const weightedGpRate = getWeightedGpRate(ym);
-      const gpPlan = revPlan * (weightedGpRate / 100);
+      const gpPlan = revPlan * (targetGpRate / 100);
       const costPlan = revPlan - gpPlan;
       const opPlan = revPlan * (settings.operating_profit_rate / 100);
       const sgaPlan = gpPlan - opPlan;
@@ -77,7 +63,7 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
 
       return {
         ym, revPlan, costPlan, gpPlan, sgaPlan, opPlan,
-        gpRatePlan: weightedGpRate,
+        gpRatePlan: targetGpRate,
         revActual, costActual, gpActual, gpRateActual, sgaActual, opActual,
         hasActual,
       };
@@ -167,10 +153,10 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
     <div className="space-y-8">
       <section className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="px-5 py-4">
-          <SectionHeading title="月次事業計画" description="売上・粗利・販管費・営業利益の月次計画と実績を比較します。顧客別粗利率を反映した精緻な計算を行います。" />
+          <SectionHeading title="月次事業計画" description="売上・粗利・販管費・営業利益の月次計画と実績を比較します。" />
           <div className="flex items-center gap-3 mb-2 flex-wrap">
             <Badge variant="secondary" className="text-[10px]">
-              加重平均粗利率を使用（顧客別粗利率が設定されている場合）
+              粗利率は経営目標({settings.gross_profit_rate}%)で固定
             </Badge>
           </div>
         </div>

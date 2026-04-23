@@ -44,6 +44,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"revenue" | "gp">("revenue");
 
   const rows = settings.client_revenue_plan || [];
 
@@ -329,7 +330,24 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const getRowAnnual = (row: ClientRevenuePlanRow): number =>
     months.reduce((s, ym) => s + (row.monthly_revenue[ym] || 0), 0);
 
+  // 顧客の粗利率(未設定なら経営目標を継承)
+  const getRowGpRate = (row: ClientRevenuePlanRow): number =>
+    row.gross_profit_rate ?? settings.gross_profit_rate;
+
+  // 顧客×月の粗利額
+  const getCellGp = (row: ClientRevenuePlanRow, ym: string): number =>
+    (row.monthly_revenue[ym] || 0) * (getRowGpRate(row) / 100);
+
+  // 顧客の年間粗利額
+  const getRowAnnualGp = (row: ClientRevenuePlanRow): number =>
+    getRowAnnual(row) * (getRowGpRate(row) / 100);
+
+  // 全顧客の月次粗利合計
+  const getMonthGpTotal = (ym: string): number =>
+    rows.reduce((s, r) => s + getCellGp(r, ym), 0);
+
   const grandTotal = months.reduce((s, ym) => s + getMonthTotal(ym), 0);
+  const grandGpTotal = months.reduce((s, ym) => s + getMonthGpTotal(ym), 0);
 
   const annualTarget = settings.distribution_mode === "equal"
     ? settings.annual_revenue_target
@@ -362,6 +380,34 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
           {Math.abs(grandTotal - annualTarget) < 1 && (
             <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">一致</Badge>
           )}
+          <span className="text-sm text-muted-foreground">|</span>
+          <span className="text-sm font-medium">年間粗利合計:</span>
+          <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">{fmtC(grandGpTotal)}</span>
+          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">
+            平均粗利率: {grandTotal > 0 ? ((grandGpTotal / grandTotal) * 100).toFixed(1) : "0.0"}%
+          </Badge>
+          <div className="ml-auto inline-flex rounded-md border border-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode("revenue")}
+              className={cn(
+                "px-3 py-1 text-xs font-medium transition-colors",
+                viewMode === "revenue" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"
+              )}
+            >
+              売上表示
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("gp")}
+              className={cn(
+                "px-3 py-1 text-xs font-medium transition-colors border-l border-border",
+                viewMode === "gp" ? "bg-emerald-600 text-white" : "bg-card text-muted-foreground hover:bg-muted"
+              )}
+            >
+              粗利表示
+            </button>
+          </div>
         </div>
       </div>
 
@@ -465,18 +511,25 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                         const achRate = hasActual && planVal > 0 ? (actual / planVal) * 100 : 0;
                         const cap = row.revenue_cap;
                         const isAtCap = cap && cap > 0 && planVal >= cap;
+                        const gpVal = getCellGp(row, ym);
 
                         return (
                           <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
                             <div className="flex flex-col items-end gap-0.5">
-                              <Input
-                                type="text"
-                                value={planVal > 0 ? planVal.toLocaleString() : ""}
-                                onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
-                                placeholder="0"
-                                className={cn("h-7 text-xs text-right w-[100px]", isAtCap && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                              />
-                              {hasActual && actual > 0 && (
+                              {viewMode === "revenue" ? (
+                                <Input
+                                  type="text"
+                                  value={planVal > 0 ? planVal.toLocaleString() : ""}
+                                  onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
+                                  placeholder="0"
+                                  className={cn("h-7 text-xs text-right w-[100px]", isAtCap && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                />
+                              ) : (
+                                <div className="h-7 text-xs text-right w-[100px] flex items-center justify-end px-2 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 font-medium">
+                                  {gpVal > 0 ? fmtC(gpVal) : "—"}
+                                </div>
+                              )}
+                              {viewMode === "revenue" && hasActual && actual > 0 && (
                                 <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1">
                                   <span>{fmtC(actual)}</span>
                                   <span className={cn(achRate >= 100 ? "text-green-600" : "text-destructive")}>
@@ -484,12 +537,21 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                                   </span>
                                 </div>
                               )}
+                              {viewMode === "gp" && planVal > 0 && (
+                                <div className="text-[9px] text-muted-foreground px-1">
+                                  売上 {fmtC(planVal)}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                         );
                       })}
                       <TableCell className="text-right bg-muted/30 font-medium">
-                        {fmtC(getRowAnnual(row))}
+                        {viewMode === "revenue" ? (
+                          fmtC(getRowAnnual(row))
+                        ) : (
+                          <span className="text-emerald-700 dark:text-emerald-400">{fmtC(getRowAnnualGp(row))}</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
                         {(() => { const pt = getPrevYearTotal(row.client_name, row.client_id); return pt > 0 ? fmtC(pt) : "—"; })()}
@@ -559,10 +621,20 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
-                  {fmtC(getMonthTotal(ym))}
+                  {viewMode === "revenue" ? (
+                    fmtC(getMonthTotal(ym))
+                  ) : (
+                    <span className="text-emerald-700 dark:text-emerald-400">{fmtC(getMonthGpTotal(ym))}</span>
+                  )}
                 </TableCell>
               ))}
-              <TableCell className="text-right bg-muted font-bold">{fmtC(grandTotal)}</TableCell>
+              <TableCell className="text-right bg-muted font-bold">
+                {viewMode === "revenue" ? (
+                  fmtC(grandTotal)
+                ) : (
+                  <span className="text-emerald-700 dark:text-emerald-400">{fmtC(grandGpTotal)}</span>
+                )}
+              </TableCell>
               <TableCell className="text-right bg-muted text-xs text-muted-foreground">
                 {fmtC(prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0))}
               </TableCell>
