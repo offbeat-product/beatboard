@@ -367,7 +367,7 @@ TOP5顧客:
 ${top5List}
 
 ### 品質指標
-- 納品件数: ${deliveryCount}件
+- 納品件数: ${totalDeliveries}件
 - 納期遵守率: ${onTimeRate}% (目標 ${target_on_time}%以上)
 - 修正率: ${revisionRate}% (目標 ${target_revision}%以下)
 
