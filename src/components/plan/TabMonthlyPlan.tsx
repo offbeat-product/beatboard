@@ -63,7 +63,7 @@ export function TabMonthlyPlan({ months, settings, update, fiscalYear }: Props) 
 
       return {
         ym, revPlan, costPlan, gpPlan, sgaPlan, opPlan,
-        gpRatePlan: weightedGpRate,
+        gpRatePlan: targetGpRate,
         revActual, costActual, gpActual, gpRateActual, sgaActual, opActual,
         hasActual,
       };
