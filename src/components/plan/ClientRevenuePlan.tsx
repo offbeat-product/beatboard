@@ -330,7 +330,24 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const getRowAnnual = (row: ClientRevenuePlanRow): number =>
     months.reduce((s, ym) => s + (row.monthly_revenue[ym] || 0), 0);
 
+  // 顧客の粗利率(未設定なら経営目標を継承)
+  const getRowGpRate = (row: ClientRevenuePlanRow): number =>
+    row.gross_profit_rate ?? settings.gross_profit_rate;
+
+  // 顧客×月の粗利額
+  const getCellGp = (row: ClientRevenuePlanRow, ym: string): number =>
+    (row.monthly_revenue[ym] || 0) * (getRowGpRate(row) / 100);
+
+  // 顧客の年間粗利額
+  const getRowAnnualGp = (row: ClientRevenuePlanRow): number =>
+    getRowAnnual(row) * (getRowGpRate(row) / 100);
+
+  // 全顧客の月次粗利合計
+  const getMonthGpTotal = (ym: string): number =>
+    rows.reduce((s, r) => s + getCellGp(r, ym), 0);
+
   const grandTotal = months.reduce((s, ym) => s + getMonthTotal(ym), 0);
+  const grandGpTotal = months.reduce((s, ym) => s + getMonthGpTotal(ym), 0);
 
   const annualTarget = settings.distribution_mode === "equal"
     ? settings.annual_revenue_target
