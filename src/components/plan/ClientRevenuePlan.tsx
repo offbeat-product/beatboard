@@ -365,7 +365,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   return (
     <section className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
       <div className="px-5 py-4">
-        <SectionHeading title="顧客別売上計画" description="配分パターンで設定された月次売上目標の内訳を顧客別に入力します。" />
+        <SectionHeading title="顧客別売上・粗利計画" description="配分パターンで設定された月次売上目標の内訳を顧客別に入力します。" />
         <div className="flex items-center gap-3 mb-2 flex-wrap">
           <span className="text-sm font-medium">年間目標:</span>
           <span className="text-base font-bold text-primary">{fmtC(annualTarget)}</span>
@@ -395,7 +395,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 viewMode === "revenue" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"
               )}
             >
-              売上表示
+              売上
             </button>
             <button
               type="button"
@@ -405,7 +405,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                 viewMode === "gp" ? "bg-emerald-600 text-white" : "bg-card text-muted-foreground hover:bg-muted"
               )}
             >
-              粗利表示
+              粗利
             </button>
           </div>
         </div>
