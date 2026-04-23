@@ -1,24 +1,17 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useReportData } from "@/hooks/useReportData";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
-import { CURRENT_MONTH, ORG_ID } from "@/lib/fiscalYear";
+import { CURRENT_MONTH } from "@/lib/fiscalYear";
 import { SGA_CATEGORY_NAMES } from "@/hooks/useManagementData";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Download, ChevronDown, Sparkles, Loader2, FileText, Presentation } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { supabase } from "@/integrations/supabase/client";
-
-const N8N_WEBHOOK_URL = "https://offbeat-inc.app.n8n.cloud/webhook/wf06-report-generate";
+import { MonthlyIntegratedReport } from "@/components/MonthlyIntegratedReport";
 
 /* ── Helpers ── */
 function prevMonth(ym: string): string {
