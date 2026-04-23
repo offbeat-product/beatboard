@@ -380,6 +380,34 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
           {Math.abs(grandTotal - annualTarget) < 1 && (
             <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">一致</Badge>
           )}
+          <span className="text-sm text-muted-foreground">|</span>
+          <span className="text-sm font-medium">年間粗利合計:</span>
+          <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">{fmtC(grandGpTotal)}</span>
+          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">
+            平均粗利率: {grandTotal > 0 ? ((grandGpTotal / grandTotal) * 100).toFixed(1) : "0.0"}%
+          </Badge>
+          <div className="ml-auto inline-flex rounded-md border border-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode("revenue")}
+              className={cn(
+                "px-3 py-1 text-xs font-medium transition-colors",
+                viewMode === "revenue" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"
+              )}
+            >
+              売上表示
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("gp")}
+              className={cn(
+                "px-3 py-1 text-xs font-medium transition-colors border-l border-border",
+                viewMode === "gp" ? "bg-emerald-600 text-white" : "bg-card text-muted-foreground hover:bg-muted"
+              )}
+            >
+              粗利表示
+            </button>
+          </div>
         </div>
       </div>
 
