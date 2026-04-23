@@ -621,10 +621,20 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
               <TableCell className="sticky left-[350px] bg-muted z-10 border-r" />
               {months.map((ym) => (
                 <TableCell key={ym} className={cn("text-right font-semibold", ym === currentMonth && "bg-primary/5")}>
-                  {fmtC(getMonthTotal(ym))}
+                  {viewMode === "revenue" ? (
+                    fmtC(getMonthTotal(ym))
+                  ) : (
+                    <span className="text-emerald-700 dark:text-emerald-400">{fmtC(getMonthGpTotal(ym))}</span>
+                  )}
                 </TableCell>
               ))}
-              <TableCell className="text-right bg-muted font-bold">{fmtC(grandTotal)}</TableCell>
+              <TableCell className="text-right bg-muted font-bold">
+                {viewMode === "revenue" ? (
+                  fmtC(grandTotal)
+                ) : (
+                  <span className="text-emerald-700 dark:text-emerald-400">{fmtC(grandGpTotal)}</span>
+                )}
+              </TableCell>
               <TableCell className="text-right bg-muted text-xs text-muted-foreground">
                 {fmtC(prevActuals.reduce((s, a) => s + Number(a.revenue ?? 0), 0))}
               </TableCell>
