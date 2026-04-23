@@ -531,7 +531,7 @@ const Report = () => {
             {/* AI分析タブ */}
             <TabsTrigger
               value="analysis"
-              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 data-[state=active]:dark:bg-orange-600"
+              className="data-[state=active]:bg-blue-500 data-[state=active]:text-white bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 data-[state=active]:dark:bg-blue-600"
             >
               <Sparkles className="h-3.5 w-3.5 mr-1" />
               数値評価・課題分析
