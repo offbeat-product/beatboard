@@ -137,7 +137,7 @@ const PL = () => {
                       <stop offset="100%" stopColor="#EF4444" stopOpacity={0.3} />
                     </linearGradient>
                   </defs>
-                  <Area type="monotone" dataKey="粗利工数単価" stroke="#E85B2D" strokeWidth={2} fill="url(#gphGrad)" dot={{ r: 3, fill: "#E85B2D" }} />
+                  <Area type="monotone" dataKey="粗利工数単価" stroke="#3B82F6" strokeWidth={2} fill="url(#gphGrad)" dot={{ r: 3, fill: "#3B82F6" }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
