@@ -83,57 +83,50 @@ serve(async (req) => {
     const monthEnd = new Date(y, m, 0).toISOString().slice(0, 10);
 
     const [
-      { data: salesRows },
-      { data: prevSalesRows },
-      { data: plRows },
+      { data: freeePl },
+      { data: prevFreeePl },
+      { data: finance },
       { data: worklogs },
-      { data: qualityRows },
-      { data: kpiSnap },
+      { data: qualityMonthly },
       { data: targetsRows },
-      { data: clients },
+      { data: planRows },
+      { data: projectPl },
     ] = await Promise.all([
-      supabase.from("monthly_sales").select("*").eq("org_id", org_id).eq("year_month", year_month),
-      supabase.from("monthly_sales").select("*").eq("org_id", org_id).eq("year_month", pYm),
-      supabase.from("pl_records").select("*").eq("org_id", org_id).eq("year_month", year_month),
+      supabase.from("freee_monthly_pl").select("*").eq("year_month", year_month).maybeSingle(),
+      supabase.from("freee_monthly_pl").select("*").eq("year_month", pYm).maybeSingle(),
+      supabase.from("finance_monthly").select("*").eq("year_month", year_month).maybeSingle(),
       supabase
         .from("daily_worklogs")
         .select("hours, project_id")
-        .eq("org_id", org_id)
         .gte("date", monthStart)
         .lte("date", monthEnd),
-      supabase.from("quality_records").select("*").eq("org_id", org_id).eq("year_month", year_month),
+      supabase.from("quality_monthly").select("*").eq("year_month", year_month),
       supabase
-        .from("kpi_snapshots")
+        .from("targets")
         .select("*")
-        .eq("org_id", org_id)
-        .eq("ym", year_month)
-        .order("created_at", { ascending: false })
-        .limit(1),
-      supabase.from("targets").select("*").eq("org_id", org_id).eq("year_month", year_month),
-      supabase.from("clients").select("id, name_disp, name").eq("org_id", org_id),
+        .eq("year_month", year_month)
+        .order("created_at", { ascending: true }), // 古い順 → Mapで上書きされ最新が残る
+      supabase.from("plan_settings").select("*"),
+      supabase.from("project_pl").select("client_id, client_name, revenue").eq("year_month", year_month),
     ]);
 
-    // 売上集計
-    const sumRev = (rows: any[] | null) =>
-      (rows || []).reduce((s, r) => s + Number(r.revenue || 0), 0);
-    const sumGp = (rows: any[] | null) =>
-      (rows || []).reduce((s, r) => s + Number(r.gross_profit || 0), 0);
-
-    const monthlyRevenue = sumRev(salesRows);
-    const monthlyGp = sumGp(salesRows);
-    const prevRevenue = sumRev(prevSalesRows);
-    const prevGp = sumGp(prevSalesRows);
-    const gpRate = pct(monthlyGp, monthlyRevenue);
-    const prevGpRate = pct(prevGp, prevRevenue);
-
-    // PL から販管費・営業利益
-    const sgaTotal = (plRows || [])
-      .filter((r: any) => r.account_name?.includes("販管費") || r.account_name?.includes("SGA"))
-      .reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
-    const operatingProfit = monthlyGp - sgaTotal;
+    // ───────── 経営指標 (freee_monthly_pl 優先) ─────────
+    const monthlyRevenue = Number(freeePl?.revenue || 0);
+    const monthlyGp = Number(freeePl?.gross_profit || 0);
+    const sgaTotal = Number(freeePl?.sga_total || 0);
+    const operatingProfit = Number(freeePl?.operating_profit || (monthlyGp - sgaTotal));
+    const gpRate = freeePl?.gross_profit_rate != null
+      ? Number(freeePl.gross_profit_rate)
+      : pct(monthlyGp, monthlyRevenue);
     const opRate = pct(operatingProfit, monthlyRevenue);
 
-    // 工数
+    const prevRevenue = Number(prevFreeePl?.revenue || 0);
+    const prevGp = Number(prevFreeePl?.gross_profit || 0);
+    const prevGpRate = prevFreeePl?.gross_profit_rate != null
+      ? Number(prevFreeePl.gross_profit_rate)
+      : pct(prevGp, prevRevenue);
+
+    // ───────── 工数 ─────────
     const totalHours = (worklogs || []).reduce((s, r: any) => s + Number(r.hours || 0), 0);
     const projectHours = (worklogs || [])
       .filter((r: any) => r.project_id)
@@ -142,60 +135,95 @@ serve(async (req) => {
     const ghp = totalHours > 0 ? Math.round(monthlyGp / totalHours) : 0;
     const pghp = projectHours > 0 ? Math.round(monthlyGp / projectHours) : 0;
 
-    // 顧客集計
-    const clientMap = new Map<string, string>();
-    (clients || []).forEach((c: any) => clientMap.set(String(c.id), c.name_disp || c.name || ""));
-    const clientRev = new Map<string, number>();
-    (salesRows || []).forEach((r: any) => {
-      const k = String(r.client_id || "unknown");
-      clientRev.set(k, (clientRev.get(k) || 0) + Number(r.revenue || 0));
+    // ───────── 顧客集計 (project_pl から、なければ quality_monthly から取引社数のみ) ─────────
+    const clientRev = new Map<string, { name: string; rev: number }>();
+    (projectPl || []).forEach((r: any) => {
+      const cid = String(r.client_id || "unknown");
+      const cur = clientRev.get(cid) || { name: r.client_name || cid, rev: 0 };
+      cur.rev += Number(r.revenue || 0);
+      cur.name = r.client_name || cur.name;
+      clientRev.set(cid, cur);
     });
-    const sortedClients = [...clientRev.entries()].sort((a, b) => b[1] - a[1]);
-    const top5 = sortedClients.slice(0, 5);
-    const top1Share = monthlyRevenue > 0 ? pct(top5[0]?.[1] || 0, monthlyRevenue) : 0;
-    const top2Share =
-      monthlyRevenue > 0 ? pct((top5[0]?.[1] || 0) + (top5[1]?.[1] || 0), monthlyRevenue) : 0;
-    const activeClients = sortedClients.length;
+
+    let activeClients = clientRev.size;
+    let top5: { name: string; rev: number }[] = [...clientRev.values()].sort((a, b) => b.rev - a.rev).slice(0, 5);
+    let top1Share = 0;
+    let top2Share = 0;
+
+    if (clientRev.size > 0 && monthlyRevenue > 0) {
+      top1Share = pct(top5[0]?.rev || 0, monthlyRevenue);
+      top2Share = pct((top5[0]?.rev || 0) + (top5[1]?.rev || 0), monthlyRevenue);
+    } else {
+      // フォールバック: quality_monthly から取引顧客数のみ
+      const qClients = (qualityMonthly || []).filter(
+        (r: any) => r.client_id && r.client_id !== "__total__",
+      );
+      activeClients = qClients.length;
+    }
+
     const top5List =
-      top5
-        .map(
-          ([cid, rev], i) =>
-            `${i + 1}. ${clientMap.get(cid) || cid}: ${fmtJPY(rev)} (${pct(rev, monthlyRevenue)}%)`,
-        )
-        .join("\n") || "(データなし)";
+      top5.length > 0
+        ? top5
+            .map(
+              (c, i) =>
+                `${i + 1}. ${c.name}: ${fmtJPY(c.rev)} (${pct(c.rev, monthlyRevenue)}%)`,
+            )
+            .join("\n")
+        : "(顧客別売上データなし)";
 
-    // 品質
-    const deliveryCount = (qualityRows || []).length;
-    const onTimeCount = (qualityRows || []).filter((r: any) => Number(r.first_pass_rate) >= 100).length;
-    const onTimeRate = deliveryCount > 0 ? pct(onTimeCount, deliveryCount) : 0;
-    const totalRev = (qualityRows || []).reduce(
-      (s: number, r: any) => s + Number(r.revision_count || 0),
-      0,
+    // ───────── 品質 (quality_monthly から、__total__ 行を除外して合算) ─────────
+    const qRows = (qualityMonthly || []).filter(
+      (r: any) => r.client_id && r.client_id !== "__total__",
     );
-    const revisionRate = deliveryCount > 0 ? Math.round((totalRev / deliveryCount) * 10) / 10 : 0;
+    const totalDeliveries = qRows.reduce((s, r: any) => s + Number(r.total_deliveries || 0), 0);
+    const totalOnTime = qRows.reduce((s, r: any) => s + Number(r.on_time_deliveries || 0), 0);
+    const totalRevisions = qRows.reduce((s, r: any) => s + Number(r.revision_count || 0), 0);
+    const onTimeRate = totalDeliveries > 0 ? pct(totalOnTime, totalDeliveries) : 0;
+    const revisionRate =
+      totalDeliveries > 0 ? Math.round((totalRevisions / totalDeliveries) * 1000) / 10 : 0;
 
-    // 目標値（targets テーブル → なければデフォルト）
+    // ───────── 目標値 (targets 最新 → plan_settings → デフォルト) ─────────
     const tMap = new Map<string, number>();
-    (targetsRows || []).forEach((t: any) => tMap.set(t.metric_name, Number(t.target_value || 0)));
-    const target_sales = tMap.get("monthly_revenue") || 6250000;
-    const target_gpr = tMap.get("gross_profit_rate") || 70;
-    const target_opr = tMap.get("operating_profit_rate") || 20;
-    const target_ghp = tMap.get("gp_per_hour") || 21552;
-    const target_pghp = tMap.get("gp_per_project_hour") || 25000;
+    (targetsRows || []).forEach((t: any) =>
+      tMap.set(t.metric_name, Number(t.target_value || 0)),
+    );
+    // plan_settings は会計年度別。当該年度を優先するが、無ければ任意の1件。
+    const plan: any =
+      (planRows || []).find((p: any) => p.fiscal_year?.includes(String(y))) ||
+      (planRows || [])[0] || {};
+
+    const target_sales =
+      tMap.get("monthly_revenue") ||
+      (plan.annual_revenue_target ? Math.round(Number(plan.annual_revenue_target) / 12) : 0) ||
+      6250000;
+    const target_gpr =
+      tMap.get("gross_margin_rate") ||
+      tMap.get("gross_profit_rate") ||
+      Number(plan.gross_profit_rate) ||
+      70;
+    const target_opr = Number(plan.operating_profit_rate) || 20;
+    const target_ghp =
+      tMap.get("gross_profit_per_hour") ||
+      tMap.get("gp_per_hour") ||
+      Number(plan.gp_per_hour_target) ||
+      21552;
+    const target_pghp =
+      tMap.get("gp_per_project_hour") || Number(plan.gp_per_project_hour_target) || 25000;
     const target_utilization = tMap.get("utilization_rate") || 70;
-    const target_on_time = tMap.get("on_time_rate") || 95;
-    const target_revision = tMap.get("revision_rate") || 20;
-    const target_clients = tMap.get("annual_clients") || 30;
+    const target_on_time =
+      tMap.get("on_time_rate") || Number(plan.on_time_delivery_target) || 95;
+    const target_revision =
+      tMap.get("revision_rate") || Number(plan.revision_rate_target) || 20;
+    const target_clients = Number(plan.annual_client_target) || 30;
     const target_top1_max = 25;
 
-    // KPI snapshot から財務系
-    const snap: any = (kpiSnap || [])[0] || {};
-    const cashBalance = snap.cash_and_deposits || 0;
-    const netAssets = snap.net_assets || 0;
-    const income = snap.income_amount || 0;
-    const expense = snap.expense_amount || 0;
-    const receivables = snap.accounts_receivable || 0;
-    const payables = snap.accounts_payable || 0;
+    // ───────── 財務指標 (finance_monthly) ─────────
+    const cashBalance = Number(finance?.cash_and_deposits || 0);
+    const netAssets = Number(finance?.net_assets || 0);
+    const income = Number(finance?.income_amount || 0);
+    const expense = Number(finance?.expense_amount || 0);
+    const receivables = Number(finance?.accounts_receivable || 0);
+    const payables = Number(finance?.accounts_payable || 0);
 
     // ───────── 3. プロンプト構築 ─────────
     const systemPrompt = `あなたはOff Beat株式会社の経営アドバイザーです。
