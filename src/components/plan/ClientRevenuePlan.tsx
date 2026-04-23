@@ -381,10 +381,32 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
             <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">一致</Badge>
           )}
           <span className="text-sm text-muted-foreground">|</span>
+          <span className="text-sm font-medium">年間粗利目標:</span>
+          <span className="text-base font-bold text-primary">{fmtC(annualTarget * (settings.gross_profit_rate / 100))}</span>
+          <span className="text-sm text-muted-foreground">|</span>
           <span className="text-sm font-medium">年間粗利合計:</span>
-          <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">{fmtC(grandGpTotal)}</span>
+          {(() => {
+            const annualGpTarget = annualTarget * (settings.gross_profit_rate / 100);
+            const gpDiff = grandGpTotal - annualGpTarget;
+            const isMatch = Math.abs(gpDiff) < 1;
+            return (
+              <>
+                <span className={cn("text-base font-bold", isMatch ? "text-green-600" : gpDiff > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                  {fmtC(grandGpTotal)}
+                </span>
+                {!isMatch && (
+                  <Badge variant={gpDiff > 0 ? "secondary" : "destructive"} className={cn("text-[9px] px-1.5 py-0 h-4", gpDiff > 0 && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400")}>
+                    差額: {gpDiff > 0 ? "+" : ""}{fmtC(gpDiff)}
+                  </Badge>
+                )}
+                {isMatch && (
+                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">一致</Badge>
+                )}
+              </>
+            );
+          })()}
           <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">
-            平均粗利率: {grandTotal > 0 ? ((grandGpTotal / grandTotal) * 100).toFixed(1) : "0.0"}%
+            平均粗利率: {grandTotal > 0 ? ((grandGpTotal / grandTotal) * 100).toFixed(1) : "0.0"}% / 目標 {settings.gross_profit_rate}%
           </Badge>
           <div className="ml-auto inline-flex rounded-md border border-border overflow-hidden">
             <button
