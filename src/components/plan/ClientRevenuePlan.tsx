@@ -511,18 +511,25 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                         const achRate = hasActual && planVal > 0 ? (actual / planVal) * 100 : 0;
                         const cap = row.revenue_cap;
                         const isAtCap = cap && cap > 0 && planVal >= cap;
+                        const gpVal = getCellGp(row, ym);
 
                         return (
                           <TableCell key={ym} className={cn("p-1", ym === currentMonth && "bg-primary/5")}>
                             <div className="flex flex-col items-end gap-0.5">
-                              <Input
-                                type="text"
-                                value={planVal > 0 ? planVal.toLocaleString() : ""}
-                                onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
-                                placeholder="0"
-                                className={cn("h-7 text-xs text-right w-[100px]", isAtCap && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                              />
-                              {hasActual && actual > 0 && (
+                              {viewMode === "revenue" ? (
+                                <Input
+                                  type="text"
+                                  value={planVal > 0 ? planVal.toLocaleString() : ""}
+                                  onChange={(e) => setCellValue(idx, ym, parseInput(e.target.value))}
+                                  placeholder="0"
+                                  className={cn("h-7 text-xs text-right w-[100px]", isAtCap && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                />
+                              ) : (
+                                <div className="h-7 text-xs text-right w-[100px] flex items-center justify-end px-2 rounded bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 font-medium">
+                                  {gpVal > 0 ? fmtC(gpVal) : "—"}
+                                </div>
+                              )}
+                              {viewMode === "revenue" && hasActual && actual > 0 && (
                                 <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1">
                                   <span>{fmtC(actual)}</span>
                                   <span className={cn(achRate >= 100 ? "text-green-600" : "text-destructive")}>
@@ -530,12 +537,21 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
                                   </span>
                                 </div>
                               )}
+                              {viewMode === "gp" && planVal > 0 && (
+                                <div className="text-[9px] text-muted-foreground px-1">
+                                  売上 {fmtC(planVal)}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                         );
                       })}
                       <TableCell className="text-right bg-muted/30 font-medium">
-                        {fmtC(getRowAnnual(row))}
+                        {viewMode === "revenue" ? (
+                          fmtC(getRowAnnual(row))
+                        ) : (
+                          <span className="text-emerald-700 dark:text-emerald-400">{fmtC(getRowAnnualGp(row))}</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right bg-muted/30 text-xs text-muted-foreground">
                         {(() => { const pt = getPrevYearTotal(row.client_name, row.client_id); return pt > 0 ? fmtC(pt) : "—"; })()}
