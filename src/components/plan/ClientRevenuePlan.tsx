@@ -44,6 +44,7 @@ export function ClientRevenuePlan({ months, settings, update, fiscalYear }: Prop
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"revenue" | "gp">("revenue");
 
   const rows = settings.client_revenue_plan || [];
 
