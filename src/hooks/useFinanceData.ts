@@ -35,46 +35,48 @@ export interface FinanceRow {
   netAssets: number;
 }
 
-export function useFinanceData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
+export function useFinanceData(months?: string[]) {
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(2026);
   const currentMonth = CURRENT_MONTH;
   const fyLabel = getFiscalYearLabel(currentMonth);
   const monthsElapsed = getFiscalMonthNumber(currentMonth);
+  const fetchMonths = fiscalMonths.includes(currentMonth) ? fiscalMonths : [...fiscalMonths, currentMonth];
+  const rangeKey = fetchMonths.join(",");
 
   const financeQuery = useQuery({
-    queryKey: ["finance_monthly"],
+    queryKey: ["finance_monthly", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("finance_monthly")
         .select("*")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fetchMonths);
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const salesQuery = useQuery({
-    queryKey: ["monthly_sales", "finance"],
+    queryKey: ["monthly_sales", "finance", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("monthly_sales")
         .select("year_month, revenue, cost_total")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fetchMonths);
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const sgaQuery = useQuery({
-    queryKey: ["freee_monthly_pl", "finance"],
+    queryKey: ["freee_monthly_pl", "finance", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("freee_monthly_pl")
         .select("year_month, sga_total")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fetchMonths);
       if (error) throw error;
       return data ?? [];
     },

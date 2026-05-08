@@ -20,17 +20,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID } from "@/lib/fiscalYear";
+import { ORG_ID, getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
 import { MemberResourceTable } from "@/components/MemberResourceTable";
+import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
 const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "生産性指標");
-  const d = useProductivityData();
+  const defaultFyMonths = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
+  const [startYm, setStartYm] = useState(defaultFyMonths[0]);
+  const [endYm, setEndYm] = useState(defaultFyMonths[11]);
+  const rangeMonths = useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
+  const d = useProductivityData(rangeMonths);
   const { formatAmount } = useCurrencyUnit();
   const queryClient = useQueryClient();
 
@@ -312,6 +317,11 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
             delay={350}
           />
         </div>
+      </div>
+
+      {/* Period range picker */}
+      <div className="bg-card rounded-lg shadow-sm p-3 flex items-center justify-end animate-fade-in">
+        <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
       </div>
 
       {/* Charts Row */}

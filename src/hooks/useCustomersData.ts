@@ -10,22 +10,26 @@ function prevMonth(ym: string): string {
   return `${py}-${String(pm).padStart(2, "0")}`;
 }
 
-export function useCustomersData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
+export function useCustomersData(months?: string[]) {
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(2026);
   const currentMonth = CURRENT_MONTH;
   const previousMonth = prevMonth(currentMonth);
+  const fetchMonths = fiscalMonths.includes(currentMonth)
+    ? (fiscalMonths.includes(previousMonth) ? fiscalMonths : [...fiscalMonths, previousMonth])
+    : [...fiscalMonths, currentMonth, previousMonth];
+  const rangeKey = fetchMonths.join(",");
 
   // Fiscal months up to current month
   const fiscalMonthsToDate = fiscalMonths.filter((m) => m <= currentMonth);
 
   const projectPlQuery = useQuery({
-    queryKey: ["project_pl", "customers_v2", fiscalMonths],
+    queryKey: ["project_pl", "customers_v2", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_pl")
         .select("year_month, revenue, gross_profit, client_id, client_name, project_id")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths)
+        .in("year_month", fetchMonths)
         .not("client_id", "is", null);
       if (error) throw error;
       return data;

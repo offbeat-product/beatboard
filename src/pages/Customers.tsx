@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCustomersData } from "@/hooks/useCustomersData";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
@@ -14,15 +14,20 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getMonthLabel } from "@/lib/fiscalYear";
+import { getMonthLabel, getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
 import { PageHeader } from "@/components/PageHeader";
 import { RefreshButton } from "@/components/RefreshButton";
+import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
 
 const Customers = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "顧客分析");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
-  const d = useCustomersData();
+  const defaultFyMonths = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
+  const [startYm, setStartYm] = useState(defaultFyMonths[0]);
+  const [endYm, setEndYm] = useState(defaultFyMonths[11]);
+  const rangeMonths = useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
+  const d = useCustomersData(rangeMonths);
   const [tableMode, setTableMode] = useState<"revenue" | "grossProfit" | "grossProfitRate">("revenue");
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
@@ -141,6 +146,9 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
         <EmptyState />
       ) : (
         <>
+          <div className="bg-card rounded-lg shadow-sm p-3 flex items-center justify-end animate-fade-in">
+            <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+          </div>
           {/* Section 3: Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* 顧客数推移 */}

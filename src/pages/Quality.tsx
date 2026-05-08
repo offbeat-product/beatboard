@@ -19,15 +19,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID } from "@/lib/fiscalYear";
+import { ORG_ID, getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { QualityCsvUpload } from "@/components/QualityCsvUpload";
+import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
 
 const Quality = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "品質指標");
   const queryClient = useQueryClient();
-  const d = useQualityData();
+  const defaultFyMonths = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
+  const [startYm, setStartYm] = useState(defaultFyMonths[0]);
+  const [endYm, setEndYm] = useState(defaultFyMonths[11]);
+  const rangeMonths = useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
+  const d = useQualityData(rangeMonths);
 
   // Editable inputs state
   const [inputMap, setInputMap] = useState<Record<string, QualityMonthlyInput>>({});
@@ -219,6 +224,11 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
           <DiffCard label="前月比" value={kpis.revisionRateDiff} positiveIsGood={false} />
           <KpiMiniCard label="通期 平均修正率" value={`${kpis.ytdAvgRevisionRate.toFixed(1)}%`} />
         </div>
+      </div>
+
+      {/* Period range picker */}
+      <div className="bg-card rounded-lg shadow-sm p-3 flex items-center justify-end animate-fade-in">
+        <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
       </div>
 
       {/* Section 2: Charts */}
