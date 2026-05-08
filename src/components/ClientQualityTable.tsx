@@ -142,7 +142,7 @@ function QualityInputModal({
             <Select value={ym} onValueChange={setYm}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {FISCAL_MONTHS.map((m) => (
+                {displayMonths.map((m) => (
                   <SelectItem key={m} value={m}>{getMonthLabel(m)}</SelectItem>
                 ))}
               </SelectContent>
@@ -354,7 +354,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
-      for (const ym of FISCAL_MONTHS) {
+      for (const ym of displayMonths) {
         const m = monthlyData.get(ym);
         if (m) {
           monthly[ym] = m;
@@ -384,7 +384,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
-      for (const ym of FISCAL_MONTHS) {
+      for (const ym of displayMonths) {
         const m = monthlyMap.get(ym);
         if (m) {
           monthly[ym] = m;
@@ -436,7 +436,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
   // Grand totals (only from rows with data)
   const grandTotals = useMemo(() => {
     const monthly: Record<string, MonthlyQuality> = {};
-    for (const ym of FISCAL_MONTHS) {
+    for (const ym of displayMonths) {
       let del = 0, ot = 0, rev = 0;
       for (const r of rows) {
         const m = r.monthly[ym];
@@ -500,7 +500,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
         <TableHeader>
           <TableRow>
             <TableHead className="sticky left-0 bg-card z-10 min-w-[160px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">顧客名</TableHead>
-            {FISCAL_MONTHS.map((ym) => (
+            {displayMonths.map((ym) => (
               <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
             ))}
             {/* 3 summary columns always visible */}
@@ -530,7 +530,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
               <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] whitespace-nowrap">
                 <span className="text-xs font-medium truncate max-w-[140px] inline-block">{row.clientName}</span>
               </TableCell>
-              {FISCAL_MONTHS.map((ym) => {
+              {displayMonths.map((ym) => {
                 const m = row.monthly[ym];
                 if (!m) {
                   return <TableCell key={ym} className="text-right text-xs text-muted-foreground">—</TableCell>;
@@ -581,7 +581,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
           {/* Grand totals row */}
           <TableRow className="border-t-2 border-border font-semibold">
             <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold text-xs">全体</TableCell>
-            {FISCAL_MONTHS.map((ym) => {
+            {displayMonths.map((ym) => {
               const m = grandTotals.monthly[ym];
               const del = m?.totalDeliveries ?? 0;
               const ot = m?.onTime ?? 0;
