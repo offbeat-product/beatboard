@@ -75,7 +75,7 @@ export function useManagementData(months?: string[]) {
   });
 
   const freeePlQuery = useQuery({
-    queryKey: ["freee_monthly_pl", "management"],
+    queryKey: ["freee_monthly_pl", "management", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("freee_monthly_pl")
