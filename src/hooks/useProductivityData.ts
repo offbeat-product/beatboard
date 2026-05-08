@@ -31,9 +31,9 @@ export interface MonthlyProductivityRow {
 }
 
 export function useProductivityData(months?: string[]) {
-  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(2026);
-  const currentMonth = CURRENT_MONTH;
-  const previousMonth = "2026-02";
+  const currentMonth = getCurrentMonth();
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(getFiscalEndYear(currentMonth));
+  const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const fyLabel = getFiscalYearLabel(currentMonth);
   const fetchMonths = fiscalMonths.includes(currentMonth) ? fiscalMonths : [...fiscalMonths, currentMonth];
