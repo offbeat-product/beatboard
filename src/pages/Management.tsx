@@ -85,7 +85,18 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
 
   const hasData = d.monthlyData.some((m) => m.revenue > 0);
   const currentBudget = planBudget.getBudget(d.currentMonth);
-  // totals are used directly for cumulative values
+  // Cumulative budget across the elapsed months in the selected range
+  const elapsedMonths = rangeMonths.slice(0, Math.max(0, d.monthsElapsed));
+  const cumulativeBudget = elapsedMonths.reduce(
+    (acc, ym) => {
+      const b = planBudget.getBudget(ym);
+      acc.revenue += b.revenue;
+      acc.grossProfit += b.grossProfit;
+      acc.operatingProfit += b.operatingProfit;
+      return acc;
+    },
+    { revenue: 0, grossProfit: 0, operatingProfit: 0 }
+  );
 
   // Chart data converted
   const displayChartData = d.chartData.map((c) => ({
