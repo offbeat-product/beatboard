@@ -385,7 +385,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
       </div>
 
       {/* Section 4: Client Quality Table */}
-      <ClientQualityTable />
+      <ClientQualityTable months={rangeMonths} />
 
       {/* Section 5: AI Advisor */}
       <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
