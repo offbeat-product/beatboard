@@ -216,16 +216,19 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
     },
   });
 
-  // Fetch all unique clients from project_pl for the fiscal year
+  // Fetch unique clients from project_pl for the selected period
+  const periodStart = displayMonths[0];
+  const periodEnd = displayMonths[displayMonths.length - 1];
   const clientsQuery = useQuery({
-    queryKey: ["project_pl", "client_list_quality"],
+    queryKey: ["project_pl", "client_list_quality", periodStart, periodEnd],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_pl")
-        .select("client_id, client_name")
+        .select("client_id, client_name, revenue")
         .eq("org_id", ORG_ID)
-        .gte("year_month", "2025-05")
-        .lte("year_month", "2026-04");
+        .gte("year_month", periodStart)
+        .lte("year_month", periodEnd)
+        .gt("revenue", 0);
       if (error) throw error;
       // Deduplicate by client_id
       const map = new Map<string, string>();
