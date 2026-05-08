@@ -335,7 +335,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
                   <TableRow>
                     <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]">項目</TableHead>
                     {d.rows.map((r) => (
-                      <TableHead key={r.month} className="text-right min-w-[90px]">{r.label}</TableHead>
+                      <TableHead key={r.month} className="text-right min-w-[90px]">{fmtTableMonth(r.month)}</TableHead>
                     ))}
                     <TableHead className="text-right min-w-[100px] bg-muted/30">通期</TableHead>
                   </TableRow>
