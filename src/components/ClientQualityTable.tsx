@@ -1,7 +1,12 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID, getFiscalYearMonths, getMonthLabel } from "@/lib/fiscalYear";
+import { ORG_ID, getFiscalYearMonths, getMonthLabel, getCurrentMonth, getFiscalEndYear } from "@/lib/fiscalYear";
+
+const fmtMonthShort = (ym: string) => {
+  const [y, m] = ym.split("-");
+  return `${y.slice(2)}/${Number(m)}月`;
+};
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
@@ -48,7 +53,7 @@ function isJunkClientEntry(clientId: string | null, clientName: string | null): 
   return false;
 }
 
-const FISCAL_MONTHS = getFiscalYearMonths(2026);
+const FISCAL_MONTHS = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
 
 type TabType = "onTimeRate" | "revisionRate" | "deliveries";
 type SortDirection = "desc" | "asc";
@@ -178,10 +183,11 @@ function QualityInputModal({
 }
 
 // ── Main Component ──
-export function ClientQualityTable() {
+export function ClientQualityTable({ months }: { months?: string[] } = {}) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("deliveries"); // Default to deliveries (案件数)
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Default high to low
+  const displayMonths = months && months.length > 0 ? months : FISCAL_MONTHS;
 
   // Fetch ALL quality_monthly data for the org
   const qualityQuery = useQuery({
@@ -348,7 +354,7 @@ export function ClientQualityTable() {
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
-      for (const ym of FISCAL_MONTHS) {
+      for (const ym of displayMonths) {
         const m = monthlyData.get(ym);
         if (m) {
           monthly[ym] = m;
@@ -378,7 +384,7 @@ export function ClientQualityTable() {
 
       let totalDel = 0, totalOnTime = 0, totalRev = 0;
       const monthly: Record<string, MonthlyQuality> = {};
-      for (const ym of FISCAL_MONTHS) {
+      for (const ym of displayMonths) {
         const m = monthlyMap.get(ym);
         if (m) {
           monthly[ym] = m;
@@ -401,7 +407,7 @@ export function ClientQualityTable() {
     }
 
     return result;
-  }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName]);
+  }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName, displayMonths]);
 
   // Sort based on active tab and sort direction; clients without data go to bottom
   const sortedRows = useMemo(() => {
@@ -430,7 +436,7 @@ export function ClientQualityTable() {
   // Grand totals (only from rows with data)
   const grandTotals = useMemo(() => {
     const monthly: Record<string, MonthlyQuality> = {};
-    for (const ym of FISCAL_MONTHS) {
+    for (const ym of displayMonths) {
       let del = 0, ot = 0, rev = 0;
       for (const r of rows) {
         const m = r.monthly[ym];
@@ -442,7 +448,7 @@ export function ClientQualityTable() {
     const totalOnTime = rows.reduce((s, r) => s + r.totals.onTime, 0);
     const totalRev = rows.reduce((s, r) => s + r.totals.revisions, 0);
     return { monthly, totalDel, totalOnTime, totalRev };
-  }, [rows]);
+  }, [rows, displayMonths]);
 
   const refetch = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["quality_monthly"] });
@@ -494,8 +500,8 @@ export function ClientQualityTable() {
         <TableHeader>
           <TableRow>
             <TableHead className="sticky left-0 bg-card z-10 min-w-[160px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">顧客名</TableHead>
-            {FISCAL_MONTHS.map((ym) => (
-              <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
+            {displayMonths.map((ym) => (
+              <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{fmtMonthShort(ym)}</TableHead>
             ))}
             {/* 3 summary columns always visible */}
             <TableHead className="text-right font-bold whitespace-nowrap min-w-[80px]">
@@ -524,7 +530,7 @@ export function ClientQualityTable() {
               <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] whitespace-nowrap">
                 <span className="text-xs font-medium truncate max-w-[140px] inline-block">{row.clientName}</span>
               </TableCell>
-              {FISCAL_MONTHS.map((ym) => {
+              {displayMonths.map((ym) => {
                 const m = row.monthly[ym];
                 if (!m) {
                   return <TableCell key={ym} className="text-right text-xs text-muted-foreground">—</TableCell>;
@@ -575,7 +581,7 @@ export function ClientQualityTable() {
           {/* Grand totals row */}
           <TableRow className="border-t-2 border-border font-semibold">
             <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold text-xs">全体</TableCell>
-            {FISCAL_MONTHS.map((ym) => {
+            {displayMonths.map((ym) => {
               const m = grandTotals.monthly[ym];
               const del = m?.totalDeliveries ?? 0;
               const ot = m?.onTime ?? 0;

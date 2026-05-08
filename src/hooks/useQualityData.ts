@@ -79,9 +79,9 @@ export function useQualityData(months?: string[]) {
     return { onTime: 0, revisions: 0 };
   };
 
-  // Default editable values from DB
+  // Default editable values from DB (include current/previous months even if outside fiscal range)
   const defaultInputMap: Record<string, QualityMonthlyInput> = {};
-  fiscalMonths.forEach((ym) => {
+  fetchMonths.forEach((ym) => {
     const q = qualityForMonth(ym);
     defaultInputMap[ym] = {
       onTimeDeliveries: q.onTime,

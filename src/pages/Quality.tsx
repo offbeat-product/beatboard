@@ -19,11 +19,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID, getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
+import { ORG_ID, getCurrentMonth, getFiscalEndYear, getFiscalYearMonths, getPreviousMonth } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { QualityCsvUpload } from "@/components/QualityCsvUpload";
 import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
+
+const fmtMonthShort = (ym: string) => {
+  const [y, m] = ym.split("-");
+  return `${y.slice(2)}/${Number(m)}月`;
+};
 
 const Quality = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "品質指標");
@@ -79,19 +84,21 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
     });
   }, [inputMap, d.fiscalMonths, d.defaultInputMap, d.computeMonthlyRow]);
 
-  // Recompute KPIs from edited data
+  // Recompute KPIs from edited data (use current/previous month directly, independent of range)
   const kpis = useMemo(() => {
-    const curr = editedMonthlyData.find((m) => m.ym === d.currentMonth);
-    const prev = editedMonthlyData.find((m) => m.ym === d.previousMonth);
-    const currDel = curr?.deliveries ?? 0;
-    const prevDel = prev?.deliveries ?? 0;
+    const currYm = d.currentMonth;
+    const prevYm = d.previousMonth;
+    const currInput = inputMap[currYm] ?? d.defaultInputMap[currYm] ?? { onTimeDeliveries: 0, revisionCount: 0 };
+    const prevInput = inputMap[prevYm] ?? d.defaultInputMap[prevYm] ?? { onTimeDeliveries: 0, revisionCount: 0 };
+    const currDel = d.projectCountForMonth(currYm);
+    const prevDel = d.projectCountForMonth(prevYm);
     const deliveriesGrowth = prevDel > 0 ? ((currDel - prevDel) / prevDel) * 100 : 0;
 
-    const prevOnTimeRate = prevDel > 0 ? ((prev?.onTimeDeliveries ?? 0) / prevDel) * 100 : 0;
-    const currOnTimeRate = currDel > 0 ? ((curr?.onTimeDeliveries ?? 0) / currDel) * 100 : 0;
+    const prevOnTimeRate = prevDel > 0 ? (prevInput.onTimeDeliveries / prevDel) * 100 : 0;
+    const currOnTimeRate = currDel > 0 ? (currInput.onTimeDeliveries / currDel) * 100 : 0;
 
-    const prevRevisionRate = prevDel > 0 ? ((prev?.revisionCount ?? 0) / prevDel) * 100 : 0;
-    const currRevisionRate = currDel > 0 ? ((curr?.revisionCount ?? 0) / currDel) * 100 : 0;
+    const prevRevisionRate = prevDel > 0 ? (prevInput.revisionCount / prevDel) * 100 : 0;
+    const currRevisionRate = currDel > 0 ? (currInput.revisionCount / currDel) * 100 : 0;
 
     const fiscalMonthsToDate = d.fiscalMonths.filter((m) => m <= d.currentMonth);
     const activeMonths = editedMonthlyData.filter((m) => fiscalMonthsToDate.includes(m.ym) && m.deliveries > 0);
@@ -105,17 +112,17 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
 
     return {
       prevDel, currDel, deliveriesGrowth, ytdDeliveries,
-      prevOnTime: prev?.onTimeDeliveries ?? 0,
-      currOnTime: curr?.onTimeDeliveries ?? 0,
+      prevOnTime: prevInput.onTimeDeliveries,
+      currOnTime: currInput.onTimeDeliveries,
       prevOnTimeRate, currOnTimeRate,
       onTimeRateDiff: currOnTimeRate - prevOnTimeRate,
-      prevRevisions: prev?.revisionCount ?? 0,
-      currRevisions: curr?.revisionCount ?? 0,
+      prevRevisions: prevInput.revisionCount,
+      currRevisions: currInput.revisionCount,
       prevRevisionRate, currRevisionRate,
       revisionRateDiff: currRevisionRate - prevRevisionRate,
       ytdAvgOnTimeRate, ytdAvgRevisionRate,
     };
-  }, [editedMonthlyData, d.currentMonth, d.previousMonth, d.fiscalMonths]);
+  }, [editedMonthlyData, inputMap, d.defaultInputMap, d.currentMonth, d.previousMonth, d.fiscalMonths, d.projectCountForMonth]);
 
   const updateInput = useCallback((ym: string, field: keyof QualityMonthlyInput, value: number) => {
     setInputMap((prev) => ({
@@ -293,7 +300,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
             <TableRow>
               <TableHead className="sticky left-0 bg-card z-10 min-w-[140px]">項目</TableHead>
               {editedMonthlyData.map((m) => (
-                <TableHead key={m.ym} className="text-center whitespace-nowrap min-w-[80px]">{m.month}</TableHead>
+                <TableHead key={m.ym} className="text-center whitespace-nowrap min-w-[80px]">{fmtMonthShort(m.ym)}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -378,7 +385,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
       </div>
 
       {/* Section 4: Client Quality Table */}
-      <ClientQualityTable />
+      <ClientQualityTable months={rangeMonths} />
 
       {/* Section 5: AI Advisor */}
       <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
