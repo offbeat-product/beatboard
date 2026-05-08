@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { RefreshButton } from "@/components/RefreshButton";
+import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
+import { getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -28,7 +30,14 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "経営指標");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
-  const d = useManagementData();
+
+  // Period range state — default to current fiscal year
+  const defaultFyMonths = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
+  const [startYm, setStartYm] = useState(defaultFyMonths[0]);
+  const [endYm, setEndYm] = useState(defaultFyMonths[11]);
+  const rangeMonths = React.useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
+
+  const d = useManagementData(rangeMonths);
   const [logicOpen, setLogicOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
