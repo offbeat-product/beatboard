@@ -39,9 +39,11 @@ function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
 }
 
 export function useManagementData(months?: string[]) {
-  const currentMonth = getCurrentMonth();
-  const fyEndYear = getFiscalEndYear(currentMonth);
+  const jstNow = getCurrentMonth();
+  const fyEndYear = getFiscalEndYear(jstNow);
   const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(fyEndYear);
+  // "Current month" is the JST current month if it's in range, otherwise the last month of the selected range
+  const currentMonth = fiscalMonths.includes(jstNow) ? jstNow : fiscalMonths[fiscalMonths.length - 1];
   const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const monthsElapsed = currentIdx >= 0 ? currentIdx + 1 : fiscalMonths.length;
