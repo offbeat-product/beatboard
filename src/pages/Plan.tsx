@@ -4,6 +4,7 @@ import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { CurrencyToggle } from "@/components/CurrencyToggle";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
