@@ -21,12 +21,18 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
+import { getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
 
 const Finance = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "財務指標");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
-  const d = useFinanceData();
+  const defaultFyMonths = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
+  const [startYm, setStartYm] = React.useState(defaultFyMonths[0]);
+  const [endYm, setEndYm] = React.useState(defaultFyMonths[11]);
+  const rangeMonths = React.useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
+  const d = useFinanceData(rangeMonths);
   const [logicOpen, setLogicOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
