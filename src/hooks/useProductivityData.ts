@@ -36,7 +36,9 @@ export function useProductivityData(months?: string[]) {
   const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const fyLabel = getFiscalYearLabel(currentMonth);
-  const fetchMonths = fiscalMonths.includes(currentMonth) ? fiscalMonths : [...fiscalMonths, currentMonth];
+  // Always fetch current & previous month so KPI cards work even when range doesn't include them
+  const extraMonths = [currentMonth, previousMonth].filter((m) => !fiscalMonths.includes(m));
+  const fetchMonths = [...fiscalMonths, ...extraMonths];
   const rangeKey = fetchMonths.join(",");
 
   const salesQuery = useQuery({
