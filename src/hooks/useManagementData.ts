@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getFiscalYearMonths, getCurrentMonth, getPreviousMonth, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel, getFiscalEndYear } from "@/lib/fiscalYear";
+import { getFiscalYearMonths, getCurrentMonth, getPreviousMonth, ORG_ID, getFiscalYearLabel, getFiscalEndYear } from "@/lib/fiscalYear";
 
 export const SGA_CATEGORIES: Record<string, string[]> = {
   '人件費': ['役員報酬', '給料手当', '法定福利費', '福利厚生費', '外注費'],
