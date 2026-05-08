@@ -1,6 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
+import { getCurrentMonth } from "@/lib/fiscalYear";
 
 export interface MonthRangePickerProps {
   startYm: string;
@@ -33,29 +32,6 @@ export function MonthRangePicker({ startYm, endYm, onChange, monthsBack = 36 }: 
   const cur = getCurrentMonth();
   const options = buildOptions(monthsBack, 12);
 
-  const setPreset = (preset: "current_fy" | "prev_fy" | "h1" | "h2" | "last6" | "last12") => {
-    const fyEnd = getFiscalEndYear(cur);
-    if (preset === "current_fy") {
-      const m = getFiscalYearMonths(fyEnd);
-      onChange(m[0], m[11]);
-    } else if (preset === "prev_fy") {
-      const m = getFiscalYearMonths(fyEnd - 1);
-      onChange(m[0], m[11]);
-    } else if (preset === "h1") {
-      const m = getFiscalYearMonths(fyEnd);
-      onChange(m[0], m[5]);
-    } else if (preset === "h2") {
-      const m = getFiscalYearMonths(fyEnd);
-      onChange(m[6], m[11]);
-    } else if (preset === "last6") {
-      const idx = options.indexOf(cur);
-      onChange(options[Math.max(0, idx - 5)], cur);
-    } else if (preset === "last12") {
-      const idx = options.indexOf(cur);
-      onChange(options[Math.max(0, idx - 11)], cur);
-    }
-  };
-
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-xs text-muted-foreground">期間:</span>
@@ -80,14 +56,6 @@ export function MonthRangePicker({ startYm, endYm, onChange, monthsBack = 36 }: 
           ))}
         </SelectContent>
       </Select>
-      <div className="flex items-center gap-1 ml-1 flex-wrap">
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("current_fy")}>今期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("prev_fy")}>前期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("h1")}>上半期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("h2")}>下半期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("last6")}>直近6ヶ月</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("last12")}>直近12ヶ月</Button>
-      </div>
     </div>
   );
 }
