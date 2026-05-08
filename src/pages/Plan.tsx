@@ -4,6 +4,7 @@ import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import { CurrencyToggle } from "@/components/CurrencyToggle";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getFiscalYearMonths, ORG_ID } from "@/lib/fiscalYear";
@@ -18,7 +19,18 @@ import { TabMonthlyPlan } from "@/components/plan/TabMonthlyPlan";
 
 const Plan = () => {
   usePageTitle("事業計画");
-  const [fyTab, setFyTab] = useState("2026");
+  // JST現在月から当期(fyEndYear)を算出: 5月以降はその年が期首 → fyEndYear=year+1
+  const currentFyEndYear = useMemo(() => {
+    const jst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+    const y = jst.getFullYear();
+    const m = jst.getMonth() + 1;
+    return m >= 5 ? y + 1 : y;
+  }, []);
+  const fyOptions = useMemo(
+    () => Array.from({ length: 5 }, (_, i) => currentFyEndYear + i),
+    [currentFyEndYear]
+  );
+  const [fyTab, setFyTab] = useState(String(currentFyEndYear));
   const [categoryTab, setCategoryTab] = useState("targets");
   const fyEndYear = parseInt(fyTab);
   const months = useMemo(() => getFiscalYearMonths(fyEndYear), [fyEndYear]);
@@ -237,22 +249,22 @@ const Plan = () => {
         </div>
       </div>
 
-      {/* Fiscal Year Tabs (pill style) */}
-      <Tabs value={fyTab} onValueChange={(v) => { setFyTab(v); setDirty(false); }}>
-        <TabsList className="bg-muted/50 rounded-full p-0.5 h-auto gap-0.5">
-          {[
-            { value: "2026", label: "当期（2026年4月期）" },
-            { value: "2027", label: "来期（2027年4月期）" },
-            { value: "2028", label: "3期目" },
-            { value: "2029", label: "4期目" },
-            { value: "2030", label: "5期目" },
-          ].map(fy => (
-            <TabsTrigger key={fy.value} value={fy.value} className="rounded-full text-xs px-4 py-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              {fy.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Fiscal Year Selector (dropdown) */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">対象期</span>
+        <Select value={fyTab} onValueChange={(v) => { setFyTab(v); setDirty(false); }}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {fyOptions.map(y => (
+              <SelectItem key={y} value={String(y)}>{y}年4月期</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
+      <Tabs value={fyTab} onValueChange={(v) => { setFyTab(v); setDirty(false); }}>
         <TabsContent value={fyTab}>
           {/* Category Tabs (underline style) */}
           <Tabs value={categoryTab} onValueChange={setCategoryTab} className="mt-4">
