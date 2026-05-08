@@ -30,7 +30,8 @@ interface ClientRow {
   avgGph: number;
 }
 
-export function ClientGphTable() {
+export function ClientGphTable({ months }: { months?: string[] } = {}) {
+  const DISPLAY_MONTHS = months && months.length > 0 ? months : getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
   const queryClient = useQueryClient();
   const { formatAmount } = useCurrencyUnit();
   const [activeTab, setActiveTab] = useState<TabType>("gph");
