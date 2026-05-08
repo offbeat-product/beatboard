@@ -1,7 +1,12 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID, getFiscalYearMonths, getMonthLabel } from "@/lib/fiscalYear";
+import { ORG_ID, getFiscalYearMonths, getMonthLabel, getCurrentMonth, getFiscalEndYear } from "@/lib/fiscalYear";
+
+const fmtMonthShort = (ym: string) => {
+  const [y, m] = ym.split("-");
+  return `${y.slice(2)}/${Number(m)}月`;
+};
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
