@@ -165,7 +165,7 @@ export function useFinanceData(months?: string[]) {
       expense: f?.expense_amount ?? 0,
       borrowings: f?.borrowings ?? 0,
       interest: f?.interest_expense ?? 0,
-      workingCapitalMonths: avgOpex > 0 ? cash / avgOpex : 0,
+      workingCapitalMonths: avgSgaLast3 > 0 ? cash / avgSgaLast3 : 0,
       totalAssets: f?.total_assets ?? 0,
       totalLiabilities: f?.total_liabilities ?? 0,
       netAssets: f?.net_assets ?? 0,
