@@ -23,6 +23,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { RefreshButton } from "@/components/RefreshButton";
 import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
 import { getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
+import { usePlanBudget } from "@/hooks/usePlanBudget";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -38,6 +39,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const rangeMonths = React.useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
 
   const d = useManagementData(rangeMonths);
+  const planBudget = usePlanBudget(rangeMonths);
   const [logicOpen, setLogicOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
@@ -394,29 +396,31 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
 
           {/* Budget vs Actuals Table */}
           {(() => {
-            function calcBudget(target: number) {
-              const gp = target * 0.70;
-              const op = target * 0.20;
-              const sgaT = gp - op;
-              const personnel = gp * 0.50;
-              const rem = sgaT - personnel;
-              return {
-                revenue: target, cost: target * 0.30, grossProfit: gp, grossMarginRate: 70,
-                sgaTotal: sgaT, '人件費': personnel, '採用費': rem * 0.15, 'オフィス費': rem * 0.35,
-                '広告宣伝・営業活動費': rem * 0.20, 'IT・システム費': rem * 0.15, '専門家・税務費': rem * 0.10,
-                'その他': rem * 0.05, operatingProfit: op, operatingMarginRate: 20,
+            type BudgetShape = {
+              revenue: number; cost: number; grossProfit: number; grossMarginRate: number;
+              sgaTotal: number; operatingProfit: number; operatingMarginRate: number;
+            } & Record<string, number>;
+            function buildBudget(ym: string): BudgetShape {
+              const pb = planBudget.getBudget(ym);
+              const out: BudgetShape = {
+                revenue: pb.revenue, cost: pb.cost, grossProfit: pb.grossProfit,
+                grossMarginRate: pb.grossMarginRate, sgaTotal: pb.sgaTotal,
+                operatingProfit: pb.operatingProfit, operatingMarginRate: pb.operatingMarginRate,
               };
+              SGA_CATEGORY_NAMES.forEach((c) => { out[c] = pb.sgaCategories[c] ?? 0; });
+              return out;
             }
-            const budgetMonths = d.monthlyData.map((m) => ({ ym: m.ym, label: m.label, budget: calcBudget(m.target), actual: m, target: m.target }));
+            const budgetMonths = d.monthlyData.map((m) => ({ ym: m.ym, label: m.label, budget: buildBudget(m.ym), actual: m, target: m.target }));
             const bTotals = budgetMonths.reduce((a, bd) => {
               const b = bd.budget;
               a.revenue += b.revenue; a.cost += b.cost; a.grossProfit += b.grossProfit;
               a.sgaTotal += b.sgaTotal; a.operatingProfit += b.operatingProfit;
-              SGA_CATEGORY_NAMES.forEach((c) => { a.sgaCats[c] = (a.sgaCats[c] ?? 0) + (b[c as keyof typeof b] as number ?? 0); });
+              SGA_CATEGORY_NAMES.forEach((c) => { a.sgaCats[c] = (a.sgaCats[c] ?? 0) + (b[c] ?? 0); });
               return a;
             }, { revenue: 0, cost: 0, grossProfit: 0, sgaTotal: 0, operatingProfit: 0, sgaCats: {} as Record<string, number> });
 
-            type RowDef = { label: string; isRate?: boolean; isSgaHeader?: boolean; isSgaSub?: boolean; invertColor?: boolean; getBudget: (b: ReturnType<typeof calcBudget>) => number | null; getActual: (m: typeof d.monthlyData[0]) => number | null; getBudgetTotal: () => number | null; getActualTotal: () => number | null; };
+
+            type RowDef = { label: string; isRate?: boolean; isSgaHeader?: boolean; isSgaSub?: boolean; invertColor?: boolean; getBudget: (b: BudgetShape) => number | null; getActual: (m: typeof d.monthlyData[0]) => number | null; getBudgetTotal: () => number | null; getActualTotal: () => number | null; };
             const rows: RowDef[] = [
               { label: '売上', getBudget: (b) => b.revenue, getActual: (m) => m.revenue, getBudgetTotal: () => bTotals.revenue, getActualTotal: () => totals.revenue },
               { label: '原価', invertColor: true, getBudget: (b) => b.cost, getActual: (m) => m.cost, getBudgetTotal: () => bTotals.cost, getActualTotal: () => totals.cost },
@@ -464,7 +468,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                             {row.isSgaHeader ? <span className="flex items-center gap-1"><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !budgetSgaOpen && "-rotate-90")} />{row.label}</span> : row.isSgaSub ? `└ ${row.label}` : row.label}
                           </TableCell>
                           {budgetMonths.map((bd) => {
-                            const bV = bd.target > 0 ? row.getBudget(bd.budget) : null;
+                            const bV = bd.budget.revenue > 0 ? row.getBudget(bd.budget) : null;
                             const aV = row.getActual(bd.actual);
                             const diff = bV !== null && aV !== null ? aV - bV : null;
                             return (
@@ -489,13 +493,15 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                   </TableBody>
                 </Table>
                 <div className="mt-4 text-[11px] text-muted-foreground space-y-0.5 leading-relaxed">
-                  <p className="font-medium text-foreground/70 mb-1">予算配分ルール:</p>
-                  <p>・粗利目標 = 売上目標 × 70%</p>
-                  <p>・営業利益目標 = 売上目標 × 20%</p>
-                  <p>・販管費予算 = 粗利目標 - 営業利益目標（= 売上目標 × 50%）</p>
-                  <p>・人件費 = 粗利目標 × 50%</p>
-                  <p>・残り予算（販管費 - 人件費）の配分: 採用費15%, オフィス費35%, 広告宣伝・営業活動費20%, IT・システム費15%, 専門家・税務費10%, その他5%</p>
+                  <p className="font-medium text-foreground/70 mb-1">予算ソース（事業計画と連動）:</p>
+                  <p>・売上予算 = 事業計画「売上計画」の月次配分</p>
+                  <p>・粗利予算 = 月次売上予算 × 事業計画の粗利率</p>
+                  <p>・原価予算 = 月次売上予算 × 事業計画の原価率</p>
+                  <p>・営業利益予算 = 月次売上予算 × 事業計画の営業利益率</p>
+                  <p>・販管費予算 = 粗利予算 - 営業利益予算</p>
+                  <p>・販管費カテゴリ = 月次オーバーライド優先、なければ「販管費計画」のカテゴリ配分率 × 販管費予算</p>
                 </div>
+
               </div>
             );
           })()}
