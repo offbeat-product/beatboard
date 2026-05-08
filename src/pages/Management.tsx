@@ -218,6 +218,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
+                  width={80}
                   tickFormatter={(v) => v.toLocaleString()}
                   domain={[0, yMax]}
                   label={{ value: `(${unitSuffix})`, position: "top", offset: 12, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
