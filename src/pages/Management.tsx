@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { RefreshButton } from "@/components/RefreshButton";
+import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
+import { getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -28,7 +30,14 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "経営指標");
   const queryClient = useQueryClient();
   const { formatAmount, toDisplayValue, unitSuffix } = useCurrencyUnit();
-  const d = useManagementData();
+
+  // Period range state — default to current fiscal year
+  const defaultFyMonths = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
+  const [startYm, setStartYm] = useState(defaultFyMonths[0]);
+  const [endYm, setEndYm] = useState(defaultFyMonths[11]);
+  const rangeMonths = React.useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
+
+  const d = useManagementData(rangeMonths);
   const [logicOpen, setLogicOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
@@ -237,7 +246,10 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
 
           {/* Monthly P/L Table (transposed: months as columns) */}
           <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
-            <h3 className="text-sm font-semibold mb-4">月次P/Lテーブル</h3>
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+              <h3 className="text-sm font-semibold">月次P/Lテーブル</h3>
+              <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -400,7 +412,10 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
 
             return (
               <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
-                <h3 className="text-sm font-semibold mb-4">月次予算 vs 実績</h3>
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                  <h3 className="text-sm font-semibold">月次予算 vs 実績</h3>
+                  <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>

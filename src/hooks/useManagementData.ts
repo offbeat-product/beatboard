@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getFiscalYearMonths, getCurrentMonth, getPreviousMonth, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel, getFiscalEndYear } from "@/lib/fiscalYear";
+import { getFiscalYearMonths, getCurrentMonth, getPreviousMonth, ORG_ID, getFiscalYearLabel, getFiscalEndYear } from "@/lib/fiscalYear";
 
 export const SGA_CATEGORIES: Record<string, string[]> = {
   '人件費': ['役員報酬', '給料手当', '法定福利費', '福利厚生費', '外注費'],
@@ -38,17 +38,19 @@ function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
   return result;
 }
 
-export function useManagementData() {
+export function useManagementData(months?: string[]) {
   const currentMonth = getCurrentMonth();
   const fyEndYear = getFiscalEndYear(currentMonth);
-  const fiscalMonths = getFiscalYearMonths(fyEndYear);
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(fyEndYear);
   const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
-  const monthsElapsed = getFiscalMonthNumber(currentMonth);
+  const monthsElapsed = currentIdx >= 0 ? currentIdx + 1 : fiscalMonths.length;
   const fyLabel = getFiscalYearLabel(currentMonth);
 
+  const rangeKey = fiscalMonths.join(",");
+
   const salesQuery = useQuery({
-    queryKey: ["monthly_sales", "management"],
+    queryKey: ["monthly_sales", "management", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("monthly_sales")
@@ -73,7 +75,7 @@ export function useManagementData() {
   });
 
   const freeePlQuery = useQuery({
-    queryKey: ["freee_monthly_pl", "management"],
+    queryKey: ["freee_monthly_pl", "management", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("freee_monthly_pl")
@@ -111,7 +113,7 @@ export function useManagementData() {
 
     return {
       ym,
-      label: getMonthLabel(ym),
+      label: `${ym.split("-")[0].slice(2)}/${Number(ym.split("-")[1])}月`,
       revenue,
       cost,
       grossProfit,
