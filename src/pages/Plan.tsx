@@ -249,22 +249,22 @@ const Plan = () => {
         </div>
       </div>
 
-      {/* Fiscal Year Tabs (pill style) */}
-      <Tabs value={fyTab} onValueChange={(v) => { setFyTab(v); setDirty(false); }}>
-        <TabsList className="bg-muted/50 rounded-full p-0.5 h-auto gap-0.5">
-          {[
-            { value: "2026", label: "当期（2026年4月期）" },
-            { value: "2027", label: "来期（2027年4月期）" },
-            { value: "2028", label: "3期目" },
-            { value: "2029", label: "4期目" },
-            { value: "2030", label: "5期目" },
-          ].map(fy => (
-            <TabsTrigger key={fy.value} value={fy.value} className="rounded-full text-xs px-4 py-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              {fy.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Fiscal Year Selector (dropdown) */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">対象期</span>
+        <Select value={fyTab} onValueChange={(v) => { setFyTab(v); setDirty(false); }}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {fyOptions.map(y => (
+              <SelectItem key={y} value={String(y)}>{y}年4月期</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
+      <Tabs value={fyTab} onValueChange={(v) => { setFyTab(v); setDirty(false); }}>
         <TabsContent value={fyTab}>
           {/* Category Tabs (underline style) */}
           <Tabs value={categoryTab} onValueChange={setCategoryTab} className="mt-4">
