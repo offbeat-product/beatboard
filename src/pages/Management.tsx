@@ -199,23 +199,23 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
         <DashboardKpiCard
           label={`累計売上（${d.fyLabel}）`}
           value={formatAmount(totals.revenue)}
-          target={formatAmount(d.annualTarget)}
-          progress={d.annualTarget > 0 ? (totals.revenue / d.annualTarget) * 100 : undefined}
+          target={formatAmount(cumulativeBudget.revenue)}
+          progress={cumulativeBudget.revenue > 0 ? (totals.revenue / cumulativeBudget.revenue) * 100 : undefined}
           subtext={`${d.monthsElapsed}/12ヶ月経過`}
           delay={150}
         />
         <DashboardKpiCard
           label={`累計粗利（${d.fyLabel}）`}
           value={formatAmount(totals.grossProfit)}
-          target={formatAmount(d.annualTarget * 0.7)}
-          progress={d.annualTarget > 0 ? (totals.grossProfit / (d.annualTarget * 0.7)) * 100 : undefined}
+          target={formatAmount(cumulativeBudget.grossProfit)}
+          progress={cumulativeBudget.grossProfit > 0 ? (totals.grossProfit / cumulativeBudget.grossProfit) * 100 : undefined}
           delay={200}
         />
         <DashboardKpiCard
           label={`累計営業利益（${d.fyLabel}）`}
           value={formatAmount(totals.operatingProfit)}
-          target={formatAmount(d.annualTarget * 0.2)}
-          progress={d.annualTarget > 0 ? (totals.operatingProfit / (d.annualTarget * 0.2)) * 100 : undefined}
+          target={formatAmount(cumulativeBudget.operatingProfit)}
+          progress={cumulativeBudget.operatingProfit > 0 ? (totals.operatingProfit / cumulativeBudget.operatingProfit) * 100 : undefined}
           delay={250}
         />
       </div>
