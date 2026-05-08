@@ -233,9 +233,27 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                 />
                 <Tooltip
                   contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12, backgroundColor: "hsl(var(--card))" }}
-                  formatter={(value: number, name: string) => {
-                    if (name === "粗利率") return [`${value}%`, name];
-                    return [`${value.toLocaleString()}${unitSuffix}`, name];
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const row = payload[0].payload as { 売上原価: number; 粗利: number; 粗利率: number };
+                    const sales = (row.売上原価 ?? 0) + (row.粗利 ?? 0);
+                    const items = [
+                      { name: "売上", value: `${sales.toLocaleString()}${unitSuffix}`, color: "hsl(var(--foreground))" },
+                      { name: "売上原価", value: `${(row.売上原価 ?? 0).toLocaleString()}${unitSuffix}`, color: "hsl(var(--muted-foreground))" },
+                      { name: "粗利", value: `${(row.粗利 ?? 0).toLocaleString()}${unitSuffix}`, color: "hsl(var(--chart-2))" },
+                      { name: "粗利率", value: `${row.粗利率}%`, color: "hsl(var(--primary))" },
+                    ];
+                    return (
+                      <div className="rounded-md border bg-card p-2 text-xs shadow-md">
+                        <div className="font-semibold mb-1">{label}</div>
+                        {items.map((i) => (
+                          <div key={i.name} className="flex justify-between gap-4" style={{ color: i.color }}>
+                            <span>{i.name}</span>
+                            <span className="font-mono-num">{i.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
                   }}
                 />
                 <Bar yAxisId="left" dataKey="売上原価" stackId="a" fill="hsl(var(--muted))" radius={[0, 0, 0, 0]} />
