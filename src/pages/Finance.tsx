@@ -135,6 +135,10 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
   ];
 
   const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
+  const fmtTableMonth = (ym: string) => {
+    const [y, m] = ym.split("-");
+    return `${y.slice(2)}/${Number(m)}月`;
+  };
 
   const getCellValue = (row: typeof d.rows[0], key: string): string => {
     const hasFinance = d.financeMap.has(row.month);
