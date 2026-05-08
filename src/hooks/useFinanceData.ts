@@ -40,10 +40,10 @@ export function useFinanceData(months?: string[]) {
   const currentMonth = CURRENT_MONTH;
   const fyLabel = getFiscalYearLabel(currentMonth);
   const monthsElapsed = getFiscalMonthNumber(currentMonth);
-  // Last 3 months relative to current month (for 運転資金月数 calculation - SGA only)
+  // 運転資金月数の分母用：当月と前月を除外した直近3ヶ月（=2,3,4ヶ月前）の販管費平均
   const last3Months: string[] = (() => {
     const arr: string[] = [];
-    let m = currentMonth;
+    let m = getPreviousMonth(getPreviousMonth(currentMonth)); // 2ヶ月前から開始
     for (let i = 0; i < 3; i++) {
       arr.push(m);
       m = getPreviousMonth(m);
