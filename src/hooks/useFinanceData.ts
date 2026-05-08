@@ -115,7 +115,19 @@ export function useFinanceData(months?: string[]) {
     sgaMap.set(r.year_month, Number(r.sga_total ?? 0));
   });
 
-  // Calculate average SGA from months with meaningful data (> 10,000)
+  // Calculate average monthly operating expenses (cost of sales + SGA) from months with meaningful data.
+  // 運転資金月数 = 現預金 ÷ 月平均運転費用（売上原価＋販管費）
+  const opexByMonth: number[] = [];
+  fetchMonths.forEach((ym) => {
+    const sga = sgaMap.get(ym) ?? 0;
+    const cost = salesMap.get(ym)?.costTotal ?? 0;
+    const total = sga + cost;
+    if (total > 10000) opexByMonth.push(total);
+  });
+  const avgOpex = opexByMonth.length > 0
+    ? opexByMonth.reduce((sum, v) => sum + v, 0) / opexByMonth.length
+    : 0;
+  // Keep avgSga for backward compatibility (safety line on chart)
   const sgaValues = Array.from(sgaMap.values()).filter((v) => v > 10000);
   const avgSga = sgaValues.length > 0
     ? sgaValues.reduce((sum, v) => sum + v, 0) / sgaValues.length
@@ -147,7 +159,7 @@ export function useFinanceData(months?: string[]) {
       expense: f?.expense_amount ?? 0,
       borrowings: f?.borrowings ?? 0,
       interest: f?.interest_expense ?? 0,
-      workingCapitalMonths: avgSga > 0 ? cash / avgSga : 0,
+      workingCapitalMonths: avgOpex > 0 ? cash / avgOpex : 0,
       totalAssets: f?.total_assets ?? 0,
       totalLiabilities: f?.total_liabilities ?? 0,
       netAssets: f?.net_assets ?? 0,
@@ -177,7 +189,7 @@ export function useFinanceData(months?: string[]) {
   }
 
   // Use average SGA for safety line
-  const currentSga = avgSga;
+  const currentSga = avgOpex;
 
   return {
     isLoading,

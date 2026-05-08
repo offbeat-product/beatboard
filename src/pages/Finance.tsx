@@ -135,6 +135,10 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
   ];
 
   const fmtYen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
+  const fmtTableMonth = (ym: string) => {
+    const [y, m] = ym.split("-");
+    return `${y.slice(2)}/${Number(m)}月`;
+  };
 
   const getCellValue = (row: typeof d.rows[0], key: string): string => {
     const hasFinance = d.financeMap.has(row.month);
@@ -237,7 +241,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
         />
         <div className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow p-5 animate-fade-in" style={{ animationDelay: "50ms" }}>
           <p className="text-xs text-muted-foreground mb-1">運転資金月数</p>
-          <p className="text-[10px] text-muted-foreground mb-2">（月平均販管費ベース）</p>
+          <p className="text-[10px] text-muted-foreground mb-2">（月平均運転費用ベース）</p>
           <div className="flex items-baseline gap-2">
             <span className={cn("text-2xl font-bold font-mono-num tracking-tight", wcmColor)}>
               {c.workingCapitalMonths > 0 ? `${c.workingCapitalMonths.toFixed(1)}ヶ月` : "—"}
@@ -331,7 +335,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
                   <TableRow>
                     <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]">項目</TableHead>
                     {d.rows.map((r) => (
-                      <TableHead key={r.month} className="text-right min-w-[90px]">{r.label}</TableHead>
+                      <TableHead key={r.month} className="text-right min-w-[90px]">{fmtTableMonth(r.month)}</TableHead>
                     ))}
                     <TableHead className="text-right min-w-[100px] bg-muted/30">通期</TableHead>
                   </TableRow>
@@ -368,7 +372,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
                   <TableRow>
                     <TableHead className="sticky left-0 bg-card z-10 min-w-[120px]">項目</TableHead>
                     {d.rows.map((r) => (
-                      <TableHead key={r.month} className="text-right min-w-[90px]">{r.label}</TableHead>
+                      <TableHead key={r.month} className="text-right min-w-[90px]">{fmtTableMonth(r.month)}</TableHead>
                     ))}
                     <TableHead className="text-right min-w-[100px] bg-muted/30">直近</TableHead>
                   </TableRow>
