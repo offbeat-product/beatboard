@@ -33,29 +33,6 @@ export function MonthRangePicker({ startYm, endYm, onChange, monthsBack = 36 }: 
   const cur = getCurrentMonth();
   const options = buildOptions(monthsBack, 12);
 
-  const setPreset = (preset: "current_fy" | "prev_fy" | "h1" | "h2" | "last6" | "last12") => {
-    const fyEnd = getFiscalEndYear(cur);
-    if (preset === "current_fy") {
-      const m = getFiscalYearMonths(fyEnd);
-      onChange(m[0], m[11]);
-    } else if (preset === "prev_fy") {
-      const m = getFiscalYearMonths(fyEnd - 1);
-      onChange(m[0], m[11]);
-    } else if (preset === "h1") {
-      const m = getFiscalYearMonths(fyEnd);
-      onChange(m[0], m[5]);
-    } else if (preset === "h2") {
-      const m = getFiscalYearMonths(fyEnd);
-      onChange(m[6], m[11]);
-    } else if (preset === "last6") {
-      const idx = options.indexOf(cur);
-      onChange(options[Math.max(0, idx - 5)], cur);
-    } else if (preset === "last12") {
-      const idx = options.indexOf(cur);
-      onChange(options[Math.max(0, idx - 11)], cur);
-    }
-  };
-
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span className="text-xs text-muted-foreground">期間:</span>
