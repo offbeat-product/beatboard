@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID } from "@/lib/fiscalYear";
+import { ORG_ID, getFiscalYearMonths, getCurrentMonth, getFiscalEndYear } from "@/lib/fiscalYear";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -13,16 +13,9 @@ import { Save, RotateCcw, Trophy, Award, Medal, ArrowUpDown, ArrowUp, ArrowDown 
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-// Months to display (Nov 2025 - Apr 2026)
-const DISPLAY_MONTHS = [
-  "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10",
-  "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04",
-];
-const MONTH_LABELS: Record<string, string> = {
-  "2025-05": "5月", "2025-06": "6月", "2025-07": "7月",
-  "2025-08": "8月", "2025-09": "9月", "2025-10": "10月",
-  "2025-11": "11月", "2025-12": "12月", "2026-01": "1月",
-  "2026-02": "2月", "2026-03": "3月", "2026-04": "4月",
+const fmtMonthShort = (ym: string) => {
+  const [y, m] = ym.split("-");
+  return `${y.slice(2)}/${Number(m)}月`;
 };
 
 type TabType = "gph" | "grossProfit" | "hours";
@@ -37,7 +30,8 @@ interface ClientRow {
   avgGph: number;
 }
 
-export function ClientGphTable() {
+export function ClientGphTable({ months }: { months?: string[] } = {}) {
+  const DISPLAY_MONTHS = months && months.length > 0 ? months : getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
   const queryClient = useQueryClient();
   const { formatAmount } = useCurrencyUnit();
   const [activeTab, setActiveTab] = useState<TabType>("gph");
@@ -47,9 +41,10 @@ export function ClientGphTable() {
   const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
   const [sortColumn, setSortColumn] = useState<string>("avg"); // "avg" or a year_month like "2026-03"
 
-  // Fetch project_pl for Nov-Apr
+  const rangeKey = DISPLAY_MONTHS.join(",");
+
   const projectPlQuery = useQuery({
-    queryKey: ["project_pl", "client_gph"],
+    queryKey: ["project_pl", "client_gph", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_pl")
@@ -61,9 +56,8 @@ export function ClientGphTable() {
     },
   });
 
-  // Fetch client_monthly_hours
   const hoursQuery = useQuery({
-    queryKey: ["client_monthly_hours"],
+    queryKey: ["client_monthly_hours", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_monthly_hours" as any)
@@ -280,7 +274,7 @@ export function ClientGphTable() {
                 }}
               >
                 <span className="inline-flex items-center gap-1 justify-end">
-                  {MONTH_LABELS[ym]}
+                  {fmtMonthShort(ym)}
                   {activeTab === "gph" && sortColumn === ym && sortOrder === "desc" && <ArrowDown className="h-3 w-3" />}
                   {activeTab === "gph" && sortColumn === ym && sortOrder === "asc" && <ArrowUp className="h-3 w-3" />}
                 </span>

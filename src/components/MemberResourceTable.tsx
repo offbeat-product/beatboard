@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getFiscalYearMonths, ORG_ID, getMonthLabel } from "@/lib/fiscalYear";
+import { getFiscalYearMonths, getCurrentMonth, getFiscalEndYear, ORG_ID } from "@/lib/fiscalYear";
+
+const fmtMonthShort = (ym: string) => {
+  const [y, m] = ym.split("-");
+  return `${y.slice(2)}/${Number(m)}月`;
+};
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
@@ -18,8 +23,8 @@ interface MemberClassRow {
   end_month: string | null;
 }
 
-export function MemberResourceTable() {
-  const fiscalMonths = getFiscalYearMonths(2026);
+export function MemberResourceTable({ months }: { months?: string[] } = {}) {
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
   const [selectedMember, setSelectedMember] = useState<string>("");
 
   const hoursQuery = useQuery({
@@ -179,7 +184,7 @@ export function MemberResourceTable() {
             <TableHead className="sticky left-0 bg-card z-10 min-w-[160px]">項目</TableHead>
             {fiscalMonths.map((ym) => (
               <TableHead key={ym} className="text-center whitespace-nowrap min-w-[90px]">
-                {getMonthLabel(ym)}
+                {fmtMonthShort(ym)}
               </TableHead>
             ))}
             <TableHead className="text-center whitespace-nowrap min-w-[90px] bg-muted/50 font-semibold">通期平均</TableHead>

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getFiscalYearMonths, CURRENT_MONTH, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel } from "@/lib/fiscalYear";
+import { getFiscalYearMonths, getCurrentMonth, getPreviousMonth, getFiscalEndYear, ORG_ID, getFiscalYearLabel, getFiscalMonthNumber, getMonthLabel } from "@/lib/fiscalYear";
 
 export interface MonthlyHoursInput {
   employeeTotalHours: number;
@@ -31,12 +31,14 @@ export interface MonthlyProductivityRow {
 }
 
 export function useProductivityData(months?: string[]) {
-  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(2026);
-  const currentMonth = CURRENT_MONTH;
-  const previousMonth = "2026-02";
+  const currentMonth = getCurrentMonth();
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(getFiscalEndYear(currentMonth));
+  const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const fyLabel = getFiscalYearLabel(currentMonth);
-  const fetchMonths = fiscalMonths.includes(currentMonth) ? fiscalMonths : [...fiscalMonths, currentMonth];
+  // Always fetch current & previous month so KPI cards work even when range doesn't include them
+  const extraMonths = [currentMonth, previousMonth].filter((m) => !fiscalMonths.includes(m));
+  const fetchMonths = [...fiscalMonths, ...extraMonths];
   const rangeKey = fetchMonths.join(",");
 
   const salesQuery = useQuery({
@@ -239,8 +241,9 @@ export function useProductivityData(months?: string[]) {
   // Build monthly data with default hours
   const monthlyData = fiscalMonths.map((ym) => computeMonthlyRow(ym, defaultHoursMap[ym]));
 
-  const currentData = monthlyData.find((m) => m.ym === currentMonth);
-  const prevData = monthlyData.find((m) => m.ym === previousMonth);
+  // Compute current/prev directly so KPI cards work even when out of selected range
+  const currentData = computeMonthlyRow(currentMonth, getDefaultHoursForMonth(currentMonth));
+  const prevData = computeMonthlyRow(previousMonth, getDefaultHoursForMonth(previousMonth));
 
   const currentGPH = currentData?.gph ?? 0;
   const prevGPH = prevData?.gph ?? 0;

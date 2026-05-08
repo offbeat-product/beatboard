@@ -96,10 +96,11 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
   const kpis = useMemo(() => {
     const current = editedMonthlyData.find((m) => m.ym === d.currentMonth);
     const prev = editedMonthlyData.find((m) => m.ym === d.previousMonth);
-    const currentGPH = current?.gph ?? 0;
-    const prevGPH = prev?.gph ?? 0;
-    const currentProjectGPH = current?.projectGph ?? 0;
-    const prevProjectGPH = prev?.projectGph ?? 0;
+    // Fallback to hook-computed values if current/previous month outside selected range
+    const currentGPH = current?.gph ?? d.currentGPH;
+    const prevGPH = prev?.gph ?? d.prevGPH;
+    const currentProjectGPH = current?.projectGph ?? d.currentProjectGPH;
+    const prevProjectGPH = prev?.projectGph ?? d.prevProjectGPH;
     const gphMomChange = prevGPH > 0 ? ((currentGPH - prevGPH) / prevGPH) * 100 : 0;
     const projectGphMomChange = prevProjectGPH > 0 ? ((currentProjectGPH - prevProjectGPH) / prevProjectGPH) * 100 : 0;
 
@@ -111,7 +112,7 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
     const avgProjectGPH = totalProjectHours > 0 ? totalGP / totalProjectHours : 0;
 
     return { currentGPH, prevGPH, currentProjectGPH, prevProjectGPH, gphMomChange, projectGphMomChange, avgGPH, avgProjectGPH };
-  }, [editedMonthlyData, d.currentMonth, d.previousMonth]);
+  }, [editedMonthlyData, d.currentMonth, d.previousMonth, d.currentGPH, d.prevGPH, d.currentProjectGPH, d.prevProjectGPH]);
 
   const gphChartData = useMemo(() =>
     editedMonthlyData.map((m) => ({
@@ -539,13 +540,13 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
       </div>
 
       {/* Member Resource Breakdown */}
-      <MemberResourceTable />
+      <MemberResourceTable months={rangeMonths} />
 
 
 
       {/* Client GPH Table */}
       <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
-      <ClientGphTable />
+      <ClientGphTable months={rangeMonths} />
 
       {/* AI Advisor */}
       <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
