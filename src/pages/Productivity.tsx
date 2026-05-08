@@ -319,6 +319,11 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
         </div>
       </div>
 
+      {/* Period range picker */}
+      <div className="bg-card rounded-lg shadow-sm p-3 flex items-center justify-end animate-fade-in">
+        <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+      </div>
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
