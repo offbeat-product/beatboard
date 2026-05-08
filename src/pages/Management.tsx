@@ -79,7 +79,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
     );
   }
 
-  if (d.isError) {
+  if (d.isError || planBudget.isError) {
     return <ErrorState onRetry={() => queryClient.invalidateQueries()} />;
   }
 
