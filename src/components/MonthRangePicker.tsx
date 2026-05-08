@@ -57,14 +57,6 @@ export function MonthRangePicker({ startYm, endYm, onChange, monthsBack = 36 }: 
           ))}
         </SelectContent>
       </Select>
-      <div className="flex items-center gap-1 ml-1 flex-wrap">
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("current_fy")}>今期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("prev_fy")}>前期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("h1")}>上半期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("h2")}>下半期</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("last6")}>直近6ヶ月</Button>
-        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setPreset("last12")}>直近12ヶ月</Button>
-      </div>
     </div>
   );
 }
