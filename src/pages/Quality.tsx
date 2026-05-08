@@ -25,6 +25,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { QualityCsvUpload } from "@/components/QualityCsvUpload";
 import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
 
+const fmtMonthShort = (ym: string) => {
+  const [y, m] = ym.split("-");
+  return `${y.slice(2)}/${Number(m)}月`;
+};
+
 const Quality = ({ embedded }: { embedded?: boolean }) => {
   usePageTitle(embedded ? undefined : "品質指標");
   const queryClient = useQueryClient();
