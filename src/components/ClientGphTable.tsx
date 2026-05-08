@@ -41,9 +41,10 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
   const [sortOrder, setSortOrder] = useState<"default" | "asc" | "desc">("default");
   const [sortColumn, setSortColumn] = useState<string>("avg"); // "avg" or a year_month like "2026-03"
 
-  // Fetch project_pl for Nov-Apr
+  const rangeKey = DISPLAY_MONTHS.join(",");
+
   const projectPlQuery = useQuery({
-    queryKey: ["project_pl", "client_gph"],
+    queryKey: ["project_pl", "client_gph", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_pl")
@@ -55,9 +56,8 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
     },
   });
 
-  // Fetch client_monthly_hours
   const hoursQuery = useQuery({
-    queryKey: ["client_monthly_hours"],
+    queryKey: ["client_monthly_hours", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_monthly_hours" as any)
