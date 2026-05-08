@@ -58,7 +58,7 @@ export function useManagementData(months?: string[]) {
         .from("monthly_sales")
         .select("year_month, revenue, cost, cost_total, gross_profit")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fetchMonths);
       if (error) throw error;
       return data;
     },
