@@ -195,7 +195,7 @@ export function useFinanceData(months?: string[]) {
   }
 
   // Use average SGA for safety line
-  const currentSga = avgOpex;
+  const currentSga = avgSgaLast3;
 
   return {
     isLoading,
