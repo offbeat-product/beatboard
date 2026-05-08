@@ -396,27 +396,29 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
 
           {/* Budget vs Actuals Table */}
           {(() => {
-            function calcBudget(target: number) {
-              const gp = target * 0.70;
-              const op = target * 0.20;
-              const sgaT = gp - op;
-              const personnel = gp * 0.50;
-              const rem = sgaT - personnel;
-              return {
-                revenue: target, cost: target * 0.30, grossProfit: gp, grossMarginRate: 70,
-                sgaTotal: sgaT, '人件費': personnel, '採用費': rem * 0.15, 'オフィス費': rem * 0.35,
-                '広告宣伝・営業活動費': rem * 0.20, 'IT・システム費': rem * 0.15, '専門家・税務費': rem * 0.10,
-                'その他': rem * 0.05, operatingProfit: op, operatingMarginRate: 20,
+            type BudgetShape = {
+              revenue: number; cost: number; grossProfit: number; grossMarginRate: number;
+              sgaTotal: number; operatingProfit: number; operatingMarginRate: number;
+            } & Record<string, number>;
+            function buildBudget(ym: string): BudgetShape {
+              const pb = planBudget.getBudget(ym);
+              const out: BudgetShape = {
+                revenue: pb.revenue, cost: pb.cost, grossProfit: pb.grossProfit,
+                grossMarginRate: pb.grossMarginRate, sgaTotal: pb.sgaTotal,
+                operatingProfit: pb.operatingProfit, operatingMarginRate: pb.operatingMarginRate,
               };
+              SGA_CATEGORY_NAMES.forEach((c) => { out[c] = pb.sgaCategories[c] ?? 0; });
+              return out;
             }
-            const budgetMonths = d.monthlyData.map((m) => ({ ym: m.ym, label: m.label, budget: calcBudget(m.target), actual: m, target: m.target }));
+            const budgetMonths = d.monthlyData.map((m) => ({ ym: m.ym, label: m.label, budget: buildBudget(m.ym), actual: m, target: m.target }));
             const bTotals = budgetMonths.reduce((a, bd) => {
               const b = bd.budget;
               a.revenue += b.revenue; a.cost += b.cost; a.grossProfit += b.grossProfit;
               a.sgaTotal += b.sgaTotal; a.operatingProfit += b.operatingProfit;
-              SGA_CATEGORY_NAMES.forEach((c) => { a.sgaCats[c] = (a.sgaCats[c] ?? 0) + (b[c as keyof typeof b] as number ?? 0); });
+              SGA_CATEGORY_NAMES.forEach((c) => { a.sgaCats[c] = (a.sgaCats[c] ?? 0) + (b[c] ?? 0); });
               return a;
             }, { revenue: 0, cost: 0, grossProfit: 0, sgaTotal: 0, operatingProfit: 0, sgaCats: {} as Record<string, number> });
+
 
             type RowDef = { label: string; isRate?: boolean; isSgaHeader?: boolean; isSgaSub?: boolean; invertColor?: boolean; getBudget: (b: ReturnType<typeof calcBudget>) => number | null; getActual: (m: typeof d.monthlyData[0]) => number | null; getBudgetTotal: () => number | null; getActualTotal: () => number | null; };
             const rows: RowDef[] = [
