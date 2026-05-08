@@ -412,7 +412,10 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
 
             return (
               <div className="bg-card rounded-lg shadow-sm p-5 overflow-x-auto animate-fade-in">
-                <h3 className="text-sm font-semibold mb-4">月次予算 vs 実績</h3>
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                  <h3 className="text-sm font-semibold">月次予算 vs 実績</h3>
+                  <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
