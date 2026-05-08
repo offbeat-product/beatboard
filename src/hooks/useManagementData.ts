@@ -39,17 +39,17 @@ function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
 }
 
 export function useManagementData(months?: string[]) {
-  const jstNow = getCurrentMonth();
-  const fyEndYear = getFiscalEndYear(jstNow);
+  const currentMonth = getCurrentMonth();
+  const fyEndYear = getFiscalEndYear(currentMonth);
   const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(fyEndYear);
-  // "Current month" is the JST current month if it's in range, otherwise the last month of the selected range
-  const currentMonth = fiscalMonths.includes(jstNow) ? jstNow : fiscalMonths[fiscalMonths.length - 1];
   const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const monthsElapsed = currentIdx >= 0 ? currentIdx + 1 : fiscalMonths.length;
   const fyLabel = getFiscalYearLabel(currentMonth);
 
-  const rangeKey = fiscalMonths.join(",");
+  // Always fetch JST current month so KPI cards reflect it even when outside the selected range
+  const fetchMonths = fiscalMonths.includes(currentMonth) ? fiscalMonths : [...fiscalMonths, currentMonth];
+  const rangeKey = fetchMonths.join(",");
 
   const salesQuery = useQuery({
     queryKey: ["monthly_sales", "management", rangeKey],
