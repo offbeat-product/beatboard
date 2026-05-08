@@ -129,7 +129,26 @@ export function useManagementData(months?: string[]) {
     };
   });
 
-  const currentData = monthlyData.find((m) => m.ym === currentMonth);
+  // Current month data — look up directly in fetched sales/freee since it may be outside the displayed range
+  const currentSalesRows = sales.filter((s) => s.year_month === currentMonth);
+  const currentRevenueRaw = currentSalesRows.reduce((s, r) => s + r.revenue, 0);
+  const currentCostRaw = currentSalesRows.reduce((s, r) => s + Number(r.cost_total ?? r.cost ?? 0), 0);
+  const currentGrossProfitRaw = currentSalesRows.reduce((s, r) => s + r.gross_profit, 0);
+  const currentGrossMarginRateRaw = currentRevenueRaw > 0 ? (currentGrossProfitRaw / currentRevenueRaw) * 100 : 0;
+  const currentFreeeRow = freeePl.find((f) => f.year_month === currentMonth);
+  const currentSgaTotal = currentFreeeRow?.sga_total ?? null;
+  const currentOperatingProfitRaw = currentSgaTotal !== null ? currentGrossProfitRaw - Number(currentSgaTotal) : null;
+  const currentOperatingMarginRateRaw = currentOperatingProfitRaw !== null && currentRevenueRaw > 0 ? (currentOperatingProfitRaw / currentRevenueRaw) * 100 : null;
+  const currentTargetRow = targets.find((t) => t.year_month === currentMonth && t.metric_name === "monthly_revenue");
+
+  const currentData = {
+    revenue: currentRevenueRaw,
+    grossProfit: currentGrossProfitRaw,
+    grossMarginRate: currentGrossMarginRateRaw,
+    operatingProfit: currentOperatingProfitRaw,
+    operatingMarginRate: currentOperatingMarginRateRaw,
+    target: currentTargetRow?.target_value ?? 0,
+  };
   const prevData = monthlyData.find((m) => m.ym === previousMonth);
 
   // Whether current month actually has data (revenue > 0 from monthly_sales)
