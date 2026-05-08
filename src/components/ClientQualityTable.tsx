@@ -501,7 +501,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
           <TableRow>
             <TableHead className="sticky left-0 bg-card z-10 min-w-[160px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">顧客名</TableHead>
             {displayMonths.map((ym) => (
-              <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{getMonthLabel(ym)}</TableHead>
+              <TableHead key={ym} className="text-right whitespace-nowrap min-w-[80px]">{fmtMonthShort(ym)}</TableHead>
             ))}
             {/* 3 summary columns always visible */}
             <TableHead className="text-right font-bold whitespace-nowrap min-w-[80px]">
