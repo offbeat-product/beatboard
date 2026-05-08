@@ -39,6 +39,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const rangeMonths = React.useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
 
   const d = useManagementData(rangeMonths);
+  const planBudget = usePlanBudget(rangeMonths);
   const [logicOpen, setLogicOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
