@@ -40,7 +40,18 @@ export function useFinanceData(months?: string[]) {
   const currentMonth = CURRENT_MONTH;
   const fyLabel = getFiscalYearLabel(currentMonth);
   const monthsElapsed = getFiscalMonthNumber(currentMonth);
-  const fetchMonths = fiscalMonths.includes(currentMonth) ? fiscalMonths : [...fiscalMonths, currentMonth];
+  // Last 3 months relative to current month (for 運転資金月数 calculation - SGA only)
+  const last3Months: string[] = (() => {
+    const arr: string[] = [];
+    let m = currentMonth;
+    for (let i = 0; i < 3; i++) {
+      arr.push(m);
+      m = getPreviousMonth(m);
+    }
+    return arr;
+  })();
+  const fetchMonthsSet = new Set<string>([...fiscalMonths, currentMonth, ...last3Months]);
+  const fetchMonths = Array.from(fetchMonthsSet);
   const rangeKey = fetchMonths.join(",");
 
   const financeQuery = useQuery({
