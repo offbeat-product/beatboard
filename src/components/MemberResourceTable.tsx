@@ -23,8 +23,8 @@ interface MemberClassRow {
   end_month: string | null;
 }
 
-export function MemberResourceTable() {
-  const fiscalMonths = getFiscalYearMonths(2026);
+export function MemberResourceTable({ months }: { months?: string[] } = {}) {
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
   const [selectedMember, setSelectedMember] = useState<string>("");
 
   const hoursQuery = useQuery({
