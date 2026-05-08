@@ -126,19 +126,14 @@ export function useFinanceData(months?: string[]) {
     sgaMap.set(r.year_month, Number(r.sga_total ?? 0));
   });
 
-  // Calculate average monthly operating expenses (cost of sales + SGA) from months with meaningful data.
-  // 運転資金月数 = 現預金 ÷ 月平均運転費用（売上原価＋販管費）
-  const opexByMonth: number[] = [];
-  fetchMonths.forEach((ym) => {
-    const sga = sgaMap.get(ym) ?? 0;
-    const cost = salesMap.get(ym)?.costTotal ?? 0;
-    const total = sga + cost;
-    if (total > 10000) opexByMonth.push(total);
-  });
-  const avgOpex = opexByMonth.length > 0
-    ? opexByMonth.reduce((sum, v) => sum + v, 0) / opexByMonth.length
+  // 運転資金月数 = 現預金 ÷ 直近3ヶ月の月平均販管費（SGA のみ、売上原価は含めない）
+  const last3SgaValues = last3Months
+    .map((ym) => sgaMap.get(ym) ?? 0)
+    .filter((v) => v > 10000);
+  const avgSgaLast3 = last3SgaValues.length > 0
+    ? last3SgaValues.reduce((sum, v) => sum + v, 0) / last3SgaValues.length
     : 0;
-  // Keep avgSga for backward compatibility (safety line on chart)
+  // Keep avgSga (full range) for backward-compat / safety line on chart
   const sgaValues = Array.from(sgaMap.values()).filter((v) => v > 10000);
   const avgSga = sgaValues.length > 0
     ? sgaValues.reduce((sum, v) => sum + v, 0) / sgaValues.length
