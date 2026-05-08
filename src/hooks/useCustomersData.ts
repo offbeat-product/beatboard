@@ -100,9 +100,11 @@ export function useCustomersData(months?: string[]) {
   });
 
   // --- Client monthly table data ---
-  // Aggregate by client across all fiscal months
+  // Only consider rows within the selected fiscal months (期間内)
+  const fiscalMonthsSet = new Set(fiscalMonths);
+  const inRangeRows = projectPl.filter((r) => fiscalMonthsSet.has(r.year_month));
   const clientAgg: Record<string, { name: string; revenue: number; grossProfit: number; monthly: Record<string, { revenue: number; grossProfit: number }> }> = {};
-  projectPl.forEach((r) => {
+  inRangeRows.forEach((r) => {
     const cid = String(r.client_id);
     if (!clientAgg[cid]) {
       clientAgg[cid] = { name: r.client_name ?? "不明", revenue: 0, grossProfit: 0, monthly: {} };
@@ -116,9 +118,12 @@ export function useCustomersData(months?: string[]) {
     clientAgg[cid].monthly[r.year_month].grossProfit += Number(r.gross_profit ?? 0);
   });
 
+  // Only show clients that had transactions (revenue > 0) within the selected period
   const clientTableData = Object.entries(clientAgg)
     .map(([id, data]) => ({ id, ...data }))
+    .filter((c) => c.revenue > 0)
     .sort((a, b) => b.revenue - a.revenue);
+
 
   // Monthly totals for footer
   const monthlyTotals: Record<string, { revenue: number; grossProfit: number }> = {};
