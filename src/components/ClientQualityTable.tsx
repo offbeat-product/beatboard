@@ -407,7 +407,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
     }
 
     return result;
-  }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName]);
+  }, [allClients, qualityLookup, clientDisplayNameMap, resolveDisplayName, displayMonths]);
 
   // Sort based on active tab and sort direction; clients without data go to bottom
   const sortedRows = useMemo(() => {
@@ -448,7 +448,7 @@ export function ClientQualityTable({ months }: { months?: string[] } = {}) {
     const totalOnTime = rows.reduce((s, r) => s + r.totals.onTime, 0);
     const totalRev = rows.reduce((s, r) => s + r.totals.revisions, 0);
     return { monthly, totalDel, totalOnTime, totalRev };
-  }, [rows]);
+  }, [rows, displayMonths]);
 
   const refetch = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["quality_monthly"] });
