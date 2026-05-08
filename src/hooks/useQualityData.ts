@@ -14,21 +14,25 @@ export interface QualityMonthlyInput {
   revisionCount: number;
 }
 
-export function useQualityData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
+export function useQualityData(months?: string[]) {
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(2026);
   const currentMonth = CURRENT_MONTH;
   const previousMonth = prevMonth(currentMonth);
   const fiscalMonthsToDate = fiscalMonths.filter((m) => m <= currentMonth);
+  const fetchMonths = fiscalMonths.includes(currentMonth)
+    ? (fiscalMonths.includes(previousMonth) ? fiscalMonths : [...fiscalMonths, previousMonth])
+    : [...fiscalMonths, currentMonth, previousMonth];
+  const rangeKey = fetchMonths.join(",");
 
   // Get project counts from project_pl (same as customers page)
   const projectPlQuery = useQuery({
-    queryKey: ["project_pl", "quality_deliveries", fiscalMonths],
+    queryKey: ["project_pl", "quality_deliveries", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_pl")
         .select("year_month, revenue, project_id")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths)
+        .in("year_month", fetchMonths)
         .gt("revenue", 0);
       if (error) throw error;
       return data;
@@ -37,13 +41,13 @@ export function useQualityData() {
 
   // Get quality manual data
   const qualityQuery = useQuery({
-    queryKey: ["quality_monthly", fiscalMonths],
+    queryKey: ["quality_monthly", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quality_monthly")
         .select("*")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fetchMonths);
       if (error) throw error;
       return data;
     },
