@@ -113,7 +113,7 @@ export function useManagementData(months?: string[]) {
 
     return {
       ym,
-      label: getMonthLabel(ym),
+      label: `${ym.split("-")[0].slice(2)}/${Number(ym.split("-")[1])}月`,
       revenue,
       cost,
       grossProfit,
