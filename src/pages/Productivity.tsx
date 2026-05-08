@@ -540,7 +540,7 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
       </div>
 
       {/* Member Resource Breakdown */}
-      <MemberResourceTable />
+      <MemberResourceTable months={rangeMonths} />
 
 
 
