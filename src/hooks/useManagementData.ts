@@ -83,7 +83,7 @@ export function useManagementData(months?: string[]) {
         .from("freee_monthly_pl")
         .select("year_month, revenue, cost_of_sales, gross_profit, gross_profit_rate, sga_total, sga_details, operating_profit")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fetchMonths);
       if (error) throw error;
       return data;
     },
