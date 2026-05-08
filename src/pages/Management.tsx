@@ -37,9 +37,13 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const [startYm, setStartYm] = useState(defaultFyMonths[0]);
   const [endYm, setEndYm] = useState(defaultFyMonths[11]);
   const rangeMonths = React.useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
+  const planMonths = React.useMemo(() => {
+    const currentMonth = getCurrentMonth();
+    return rangeMonths.includes(currentMonth) ? rangeMonths : [...rangeMonths, currentMonth];
+  }, [rangeMonths]);
 
   const d = useManagementData(rangeMonths);
-  const planBudget = usePlanBudget(rangeMonths);
+  const planBudget = usePlanBudget(planMonths);
   const [logicOpen, setLogicOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; content: string }[]>([]);
@@ -63,7 +67,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
     setChatInput("");
   };
 
-  if (d.isLoading) {
+  if (d.isLoading || planBudget.isLoading) {
     return (
       <div className="space-y-6">
         {!embedded && <PageHeader title="経営指標" description="CEO向け - 売上成長・利益構造・財務健全性" />}
@@ -75,11 +79,12 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
     );
   }
 
-  if (d.isError) {
+  if (d.isError || planBudget.isError) {
     return <ErrorState onRetry={() => queryClient.invalidateQueries()} />;
   }
 
   const hasData = d.monthlyData.some((m) => m.revenue > 0);
+  const currentBudget = planBudget.getBudget(d.currentMonth);
   // totals are used directly for cumulative values
 
   // Chart data converted
@@ -136,15 +141,15 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
             <DashboardKpiCard
               label="今月の売上"
               value={formatAmount(d.currentRevenue)}
-              target={formatAmount(d.currentTarget)}
-              progress={d.currentTarget > 0 ? (d.currentRevenue / d.currentTarget) * 100 : undefined}
+              target={formatAmount(currentBudget.revenue)}
+              progress={currentBudget.revenue > 0 ? (d.currentRevenue / currentBudget.revenue) * 100 : undefined}
               delay={0}
             />
             <DashboardKpiCard
               label="今月の粗利"
               value={formatAmount(d.currentGrossProfit)}
-              target={formatAmount(d.currentTarget * 0.7)}
-              progress={d.currentTarget > 0 ? (d.currentGrossProfit / (d.currentTarget * 0.7)) * 100 : undefined}
+              target={formatAmount(currentBudget.grossProfit)}
+              progress={currentBudget.grossProfit > 0 ? (d.currentGrossProfit / currentBudget.grossProfit) * 100 : undefined}
               subtext={`粗利率 ${fmtPct(d.currentGrossMarginRate)}`}
               delay={50}
             />
@@ -152,8 +157,8 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
               <DashboardKpiCard
                 label="今月の営業利益"
                 value={formatAmount(d.currentOperatingProfit)}
-                target={formatAmount(d.currentTarget * 0.2)}
-                progress={d.currentTarget > 0 ? (d.currentOperatingProfit / (d.currentTarget * 0.2)) * 100 : undefined}
+                target={formatAmount(currentBudget.operatingProfit)}
+                progress={currentBudget.operatingProfit > 0 ? (d.currentOperatingProfit / currentBudget.operatingProfit) * 100 : undefined}
                 subtext={`営業利益率 ${fmtPct(d.currentOperatingMarginRate ?? 0)}`}
                 delay={100}
               />
