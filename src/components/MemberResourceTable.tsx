@@ -184,7 +184,7 @@ export function MemberResourceTable({ months }: { months?: string[] } = {}) {
             <TableHead className="sticky left-0 bg-card z-10 min-w-[160px]">項目</TableHead>
             {fiscalMonths.map((ym) => (
               <TableHead key={ym} className="text-center whitespace-nowrap min-w-[90px]">
-                {getMonthLabel(ym)}
+                {fmtMonthShort(ym)}
               </TableHead>
             ))}
             <TableHead className="text-center whitespace-nowrap min-w-[90px] bg-muted/50 font-semibold">通期平均</TableHead>
