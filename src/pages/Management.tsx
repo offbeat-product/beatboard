@@ -39,8 +39,8 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
   const rangeMonths = React.useMemo(() => monthsInRange(startYm, endYm), [startYm, endYm]);
   const planMonths = React.useMemo(() => {
     const currentMonth = getCurrentMonth();
-    return rangeMonths.includes(currentMonth) ? rangeMonths : [...rangeMonths, currentMonth];
-  }, [rangeMonths]);
+    return Array.from(new Set([...rangeMonths, currentMonth, ...defaultFyMonths]));
+  }, [defaultFyMonths, rangeMonths]);
 
   const d = useManagementData(rangeMonths);
   const planBudget = usePlanBudget(planMonths);
@@ -85,9 +85,8 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
 
   const hasData = d.monthlyData.some((m) => m.revenue > 0);
   const currentBudget = planBudget.getBudget(d.currentMonth);
-  // Cumulative budget across the elapsed months in the selected range
-  const elapsedMonths = rangeMonths.slice(0, Math.max(0, d.monthsElapsed));
-  const cumulativeBudget = elapsedMonths.reduce(
+  // Cumulative KPI targets use the full-year totals from the business plan.
+  const fullYearBudget = defaultFyMonths.reduce(
     (acc, ym) => {
       const b = planBudget.getBudget(ym);
       acc.revenue += b.revenue;
@@ -199,23 +198,23 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
         <DashboardKpiCard
           label={`累計売上（${d.fyLabel}）`}
           value={formatAmount(totals.revenue)}
-          target={formatAmount(cumulativeBudget.revenue)}
-          progress={cumulativeBudget.revenue > 0 ? (totals.revenue / cumulativeBudget.revenue) * 100 : undefined}
+          target={formatAmount(fullYearBudget.revenue)}
+          progress={fullYearBudget.revenue > 0 ? (totals.revenue / fullYearBudget.revenue) * 100 : undefined}
           subtext={`${d.monthsElapsed}/12ヶ月経過`}
           delay={150}
         />
         <DashboardKpiCard
           label={`累計粗利（${d.fyLabel}）`}
           value={formatAmount(totals.grossProfit)}
-          target={formatAmount(cumulativeBudget.grossProfit)}
-          progress={cumulativeBudget.grossProfit > 0 ? (totals.grossProfit / cumulativeBudget.grossProfit) * 100 : undefined}
+          target={formatAmount(fullYearBudget.grossProfit)}
+          progress={fullYearBudget.grossProfit > 0 ? (totals.grossProfit / fullYearBudget.grossProfit) * 100 : undefined}
           delay={200}
         />
         <DashboardKpiCard
           label={`累計営業利益（${d.fyLabel}）`}
           value={formatAmount(totals.operatingProfit)}
-          target={formatAmount(cumulativeBudget.operatingProfit)}
-          progress={cumulativeBudget.operatingProfit > 0 ? (totals.operatingProfit / cumulativeBudget.operatingProfit) * 100 : undefined}
+          target={formatAmount(fullYearBudget.operatingProfit)}
+          progress={fullYearBudget.operatingProfit > 0 ? (totals.operatingProfit / fullYearBudget.operatingProfit) * 100 : undefined}
           delay={250}
         />
       </div>
