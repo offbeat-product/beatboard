@@ -300,7 +300,7 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
             <TableRow>
               <TableHead className="sticky left-0 bg-card z-10 min-w-[140px]">項目</TableHead>
               {editedMonthlyData.map((m) => (
-                <TableHead key={m.ym} className="text-center whitespace-nowrap min-w-[80px]">{m.month}</TableHead>
+                <TableHead key={m.ym} className="text-center whitespace-nowrap min-w-[80px]">{fmtMonthShort(m.ym)}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
