@@ -85,6 +85,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
     name: c.name,
     売上原価: toDisplayValue(c.売上原価),
     粗利: toDisplayValue(c.粗利),
+    売上: toDisplayValue(c.売上原価 + c.粗利),
     粗利率: c.粗利率,
   }));
 
