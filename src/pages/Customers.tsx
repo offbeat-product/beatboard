@@ -146,6 +146,9 @@ const Customers = ({ embedded }: { embedded?: boolean }) => {
         <EmptyState />
       ) : (
         <>
+          <div className="bg-card rounded-lg shadow-sm p-3 flex items-center justify-end animate-fade-in">
+            <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+          </div>
           {/* Section 3: Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* 顧客数推移 */}
