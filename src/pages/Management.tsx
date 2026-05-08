@@ -23,6 +23,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { RefreshButton } from "@/components/RefreshButton";
 import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
 import { getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
+import { usePlanBudget } from "@/hooks/usePlanBudget";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
