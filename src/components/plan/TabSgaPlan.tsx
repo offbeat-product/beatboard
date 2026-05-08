@@ -40,29 +40,13 @@ export function TabSgaPlan({ months, settings, update }: Props) {
   })();
 
   // --- Derive monthly SGA budget from monthly business plan ---
-  const getWeightedGpRate = (ym: string): number => {
-    const crp = settings.client_revenue_plan || [];
-    let totalRev = 0;
-    let weightedGp = 0;
-    for (const row of crp) {
-      const rev = row.monthly_revenue[ym] || 0;
-      if (rev > 0) {
-        const rate = row.gross_profit_rate ?? settings.gross_profit_rate;
-        totalRev += rev;
-        weightedGp += rev * (rate / 100);
-      }
-    }
-    if (totalRev <= 0) return settings.gross_profit_rate;
-    return (weightedGp / totalRev) * 100;
-  };
-
+  // 月次事業計画タブと一致させるため、経営目標の粗利率(固定)を使用する
   const getMonthlySgaBudget = (ym: string, monthIdx: number): number => {
     const dist = settings.monthly_revenue_distribution ?? [];
     const rev = settings.distribution_mode === "equal"
       ? settings.annual_revenue_target / (months.length || 12)
       : (dist[monthIdx] || 0);
-    const gpRate = getWeightedGpRate(ym);
-    const gpPlan = rev * (gpRate / 100);
+    const gpPlan = rev * (settings.gross_profit_rate / 100);
     const opPlan = rev * (settings.operating_profit_rate / 100);
     return gpPlan - opPlan;
   };
