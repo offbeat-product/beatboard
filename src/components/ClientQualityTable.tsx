@@ -53,7 +53,7 @@ function isJunkClientEntry(clientId: string | null, clientName: string | null): 
   return false;
 }
 
-const FISCAL_MONTHS = getFiscalYearMonths(2026);
+const DEFAULT_FISCAL_MONTHS = getFiscalYearMonths(getFiscalEndYear(getCurrentMonth()));
 
 type TabType = "onTimeRate" | "revisionRate" | "deliveries";
 type SortDirection = "desc" | "asc";
