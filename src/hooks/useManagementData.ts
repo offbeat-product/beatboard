@@ -38,17 +38,19 @@ function classifySgaDetails(sgaDetails: unknown): Record<string, number> {
   return result;
 }
 
-export function useManagementData() {
+export function useManagementData(months?: string[]) {
   const currentMonth = getCurrentMonth();
   const fyEndYear = getFiscalEndYear(currentMonth);
-  const fiscalMonths = getFiscalYearMonths(fyEndYear);
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(fyEndYear);
   const previousMonth = getPreviousMonth(currentMonth);
   const currentIdx = fiscalMonths.indexOf(currentMonth);
-  const monthsElapsed = getFiscalMonthNumber(currentMonth);
+  const monthsElapsed = currentIdx >= 0 ? currentIdx + 1 : fiscalMonths.length;
   const fyLabel = getFiscalYearLabel(currentMonth);
 
+  const rangeKey = fiscalMonths.join(",");
+
   const salesQuery = useQuery({
-    queryKey: ["monthly_sales", "management"],
+    queryKey: ["monthly_sales", "management", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("monthly_sales")
