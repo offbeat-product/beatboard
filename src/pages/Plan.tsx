@@ -19,7 +19,18 @@ import { TabMonthlyPlan } from "@/components/plan/TabMonthlyPlan";
 
 const Plan = () => {
   usePageTitle("事業計画");
-  const [fyTab, setFyTab] = useState("2026");
+  // JST現在月から当期(fyEndYear)を算出: 5月以降はその年が期首 → fyEndYear=year+1
+  const currentFyEndYear = useMemo(() => {
+    const jst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+    const y = jst.getFullYear();
+    const m = jst.getMonth() + 1;
+    return m >= 5 ? y + 1 : y;
+  }, []);
+  const fyOptions = useMemo(
+    () => Array.from({ length: 5 }, (_, i) => currentFyEndYear + i),
+    [currentFyEndYear]
+  );
+  const [fyTab, setFyTab] = useState(String(currentFyEndYear));
   const [categoryTab, setCategoryTab] = useState("targets");
   const fyEndYear = parseInt(fyTab);
   const months = useMemo(() => getFiscalYearMonths(fyEndYear), [fyEndYear]);
