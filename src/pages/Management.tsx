@@ -493,13 +493,15 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                   </TableBody>
                 </Table>
                 <div className="mt-4 text-[11px] text-muted-foreground space-y-0.5 leading-relaxed">
-                  <p className="font-medium text-foreground/70 mb-1">予算配分ルール:</p>
-                  <p>・粗利目標 = 売上目標 × 70%</p>
-                  <p>・営業利益目標 = 売上目標 × 20%</p>
-                  <p>・販管費予算 = 粗利目標 - 営業利益目標（= 売上目標 × 50%）</p>
-                  <p>・人件費 = 粗利目標 × 50%</p>
-                  <p>・残り予算（販管費 - 人件費）の配分: 採用費15%, オフィス費35%, 広告宣伝・営業活動費20%, IT・システム費15%, 専門家・税務費10%, その他5%</p>
+                  <p className="font-medium text-foreground/70 mb-1">予算ソース（事業計画と連動）:</p>
+                  <p>・売上予算 = 事業計画「売上計画」の月次配分</p>
+                  <p>・粗利予算 = 月次売上予算 × 事業計画の粗利率</p>
+                  <p>・原価予算 = 月次売上予算 × 事業計画の原価率</p>
+                  <p>・営業利益予算 = 月次売上予算 × 事業計画の営業利益率</p>
+                  <p>・販管費予算 = 粗利予算 - 営業利益予算</p>
+                  <p>・販管費カテゴリ = 月次オーバーライド優先、なければ「販管費計画」のカテゴリ配分率 × 販管費予算</p>
                 </div>
+
               </div>
             );
           })()}
