@@ -420,7 +420,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
             }, { revenue: 0, cost: 0, grossProfit: 0, sgaTotal: 0, operatingProfit: 0, sgaCats: {} as Record<string, number> });
 
 
-            type RowDef = { label: string; isRate?: boolean; isSgaHeader?: boolean; isSgaSub?: boolean; invertColor?: boolean; getBudget: (b: ReturnType<typeof calcBudget>) => number | null; getActual: (m: typeof d.monthlyData[0]) => number | null; getBudgetTotal: () => number | null; getActualTotal: () => number | null; };
+            type RowDef = { label: string; isRate?: boolean; isSgaHeader?: boolean; isSgaSub?: boolean; invertColor?: boolean; getBudget: (b: BudgetShape) => number | null; getActual: (m: typeof d.monthlyData[0]) => number | null; getBudgetTotal: () => number | null; getActualTotal: () => number | null; };
             const rows: RowDef[] = [
               { label: '売上', getBudget: (b) => b.revenue, getActual: (m) => m.revenue, getBudgetTotal: () => bTotals.revenue, getActualTotal: () => totals.revenue },
               { label: '原価', invertColor: true, getBudget: (b) => b.cost, getActual: (m) => m.cost, getBudgetTotal: () => bTotals.cost, getActualTotal: () => totals.cost },
