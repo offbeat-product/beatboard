@@ -468,7 +468,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                             {row.isSgaHeader ? <span className="flex items-center gap-1"><ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !budgetSgaOpen && "-rotate-90")} />{row.label}</span> : row.isSgaSub ? `└ ${row.label}` : row.label}
                           </TableCell>
                           {budgetMonths.map((bd) => {
-                            const bV = bd.target > 0 ? row.getBudget(bd.budget) : null;
+                            const bV = bd.budget.revenue > 0 ? row.getBudget(bd.budget) : null;
                             const aV = row.getActual(bd.actual);
                             const diff = bV !== null && aV !== null ? aV - bV : null;
                             return (
