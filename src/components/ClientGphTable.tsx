@@ -274,7 +274,7 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
                 }}
               >
                 <span className="inline-flex items-center gap-1 justify-end">
-                  {MONTH_LABELS[ym]}
+                  {fmtMonthShort(ym)}
                   {activeTab === "gph" && sortColumn === ym && sortOrder === "desc" && <ArrowDown className="h-3 w-3" />}
                   {activeTab === "gph" && sortColumn === ym && sortOrder === "asc" && <ArrowUp className="h-3 w-3" />}
                 </span>
