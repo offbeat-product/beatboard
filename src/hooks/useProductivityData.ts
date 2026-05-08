@@ -30,28 +30,30 @@ export interface MonthlyProductivityRow {
   grossProfitPerHead: number;
 }
 
-export function useProductivityData() {
-  const fiscalMonths = getFiscalYearMonths(2026);
+export function useProductivityData(months?: string[]) {
+  const fiscalMonths = months && months.length > 0 ? months : getFiscalYearMonths(2026);
   const currentMonth = CURRENT_MONTH;
   const previousMonth = "2026-02";
   const currentIdx = fiscalMonths.indexOf(currentMonth);
   const fyLabel = getFiscalYearLabel(currentMonth);
+  const fetchMonths = fiscalMonths.includes(currentMonth) ? fiscalMonths : [...fiscalMonths, currentMonth];
+  const rangeKey = fetchMonths.join(",");
 
   const salesQuery = useQuery({
-    queryKey: ["monthly_sales", "productivity"],
+    queryKey: ["monthly_sales", "productivity", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("monthly_sales")
         .select("year_month, revenue, gross_profit")
         .eq("org_id", ORG_ID)
-        .in("year_month", fiscalMonths);
+        .in("year_month", fetchMonths);
       if (error) throw error;
       return data;
     },
   });
 
   const kpiQuery = useQuery({
-    queryKey: ["kpi_snapshots", "productivity"],
+    queryKey: ["kpi_snapshots", "productivity", rangeKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("kpi_snapshots")
