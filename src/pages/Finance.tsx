@@ -271,6 +271,10 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
         <EmptyState />
       ) : (
         <>
+          {/* Period range picker */}
+          <div className="bg-card rounded-lg shadow-sm p-3 flex items-center justify-end animate-fade-in">
+            <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+          </div>
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Cash Chart */}
