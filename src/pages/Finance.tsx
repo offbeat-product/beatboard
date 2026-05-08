@@ -237,7 +237,7 @@ const Finance = ({ embedded }: { embedded?: boolean }) => {
         />
         <div className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow p-5 animate-fade-in" style={{ animationDelay: "50ms" }}>
           <p className="text-xs text-muted-foreground mb-1">運転資金月数</p>
-          <p className="text-[10px] text-muted-foreground mb-2">（月平均販管費ベース）</p>
+          <p className="text-[10px] text-muted-foreground mb-2">（月平均運転費用ベース）</p>
           <div className="flex items-baseline gap-2">
             <span className={cn("text-2xl font-bold font-mono-num tracking-tight", wcmColor)}>
               {c.workingCapitalMonths > 0 ? `${c.workingCapitalMonths.toFixed(1)}ヶ月` : "—"}
