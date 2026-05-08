@@ -183,10 +183,11 @@ function QualityInputModal({
 }
 
 // ── Main Component ──
-export function ClientQualityTable() {
+export function ClientQualityTable({ months }: { months?: string[] } = {}) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("deliveries"); // Default to deliveries (案件数)
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Default high to low
+  const displayMonths = months && months.length > 0 ? months : FISCAL_MONTHS;
 
   // Fetch ALL quality_monthly data for the org
   const qualityQuery = useQuery({
