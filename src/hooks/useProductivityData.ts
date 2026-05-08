@@ -241,8 +241,9 @@ export function useProductivityData(months?: string[]) {
   // Build monthly data with default hours
   const monthlyData = fiscalMonths.map((ym) => computeMonthlyRow(ym, defaultHoursMap[ym]));
 
-  const currentData = monthlyData.find((m) => m.ym === currentMonth);
-  const prevData = monthlyData.find((m) => m.ym === previousMonth);
+  // Compute current/prev directly so KPI cards work even when out of selected range
+  const currentData = computeMonthlyRow(currentMonth, getDefaultHoursForMonth(currentMonth));
+  const prevData = computeMonthlyRow(previousMonth, getDefaultHoursForMonth(previousMonth));
 
   const currentGPH = currentData?.gph ?? 0;
   const prevGPH = prevData?.gph ?? 0;
