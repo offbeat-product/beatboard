@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCustomersData } from "@/hooks/useCustomersData";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useCurrencyUnit } from "@/hooks/useCurrencyUnit";
