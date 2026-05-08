@@ -142,7 +142,7 @@ function QualityInputModal({
             <Select value={ym} onValueChange={setYm}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {displayMonths.map((m) => (
+                {FISCAL_MONTHS.map((m) => (
                   <SelectItem key={m} value={m}>{getMonthLabel(m)}</SelectItem>
                 ))}
               </SelectContent>
