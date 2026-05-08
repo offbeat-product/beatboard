@@ -226,6 +226,11 @@ const Quality = ({ embedded }: { embedded?: boolean }) => {
         </div>
       </div>
 
+      {/* Period range picker */}
+      <div className="bg-card rounded-lg shadow-sm p-3 flex items-center justify-end animate-fade-in">
+        <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
+      </div>
+
       {/* Section 2: Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
