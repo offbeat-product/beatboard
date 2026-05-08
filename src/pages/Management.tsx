@@ -220,7 +220,7 @@ const Management = ({ embedded }: { embedded?: boolean }) => {
                   axisLine={false}
                   tickFormatter={(v) => v.toLocaleString()}
                   domain={[0, yMax]}
-                  label={{ value: unitSuffix, position: "insideTopLeft", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  label={{ value: `(${unitSuffix})`, position: "top", offset: 12, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 />
                 <YAxis
                   yAxisId="right"
