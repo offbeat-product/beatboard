@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { ORG_ID, getCurrentMonth, getFiscalEndYear, getFiscalYearMonths } from "@/lib/fiscalYear";
+import { ORG_ID, getCurrentMonth, getFiscalEndYear, getFiscalYearMonths, getPreviousMonth } from "@/lib/fiscalYear";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { QualityCsvUpload } from "@/components/QualityCsvUpload";
