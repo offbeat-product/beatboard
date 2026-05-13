@@ -477,6 +477,9 @@ function ClientDrillRow({
   months: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const targetH = threshold > 0 ? client.gp / threshold : 0;
+  const diffH = totalH - targetH;
+  const overBudget = diffH > 0;
 
   return (
     <>
@@ -488,6 +491,10 @@ function ClientDrillRow({
           </div>
         </TableCell>
         <TableCell className="text-xs text-right font-mono-num text-destructive font-semibold">{fmtY(client.gph)}</TableCell>
+        <TableCell className="text-xs text-right font-mono-num text-muted-foreground">{fmtH(targetH)}</TableCell>
+        <TableCell className={cn("text-xs text-right font-mono-num font-semibold", overBudget ? "text-destructive" : "text-emerald-600")}>
+          {overBudget ? "+" : ""}{fmtH(diffH)}
+        </TableCell>
         <TableCell className="text-xs text-right font-mono-num">{fmtH(totalH)}</TableCell>
         {categories.map((cat) => {
           const h = inner?.get(cat) ?? 0;
