@@ -433,12 +433,13 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
             </TableRow>
           ))}
 
-          {/* Totals row */}
+          {/* Totals row — aligned with the resource-breakdown table
+              (gross profit from monthly_sales, project hours from kpi_snapshots). */}
           <TableRow className="border-t-2 border-border font-semibold">
             <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold">合計</TableCell>
             {DISPLAY_MONTHS.map((ym) => {
-              const gp = totals.monthlyGP[ym] ?? 0;
-              const h = totals.monthlyH[ym] ?? 0;
+              const gp = resourceTotals.gpByMonth[ym] ?? 0;
+              const h = resourceTotals.hoursByMonth[ym] ?? 0;
               return (
                 <TableCell key={ym} className={cn("text-right font-mono-num text-xs whitespace-nowrap", activeTab === "gph" && gphColor(gp, h))}>
                   {activeTab === "gph" ? gphCell(gp, h)
@@ -447,10 +448,10 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
                 </TableCell>
               );
             })}
-            <TableCell className={cn("text-right font-mono-num text-xs font-bold whitespace-nowrap", activeTab === "gph" && gphColor(totals.totalGP, totals.totalH))}>
-              {activeTab === "gph" ? gphCell(totals.totalGP, totals.totalH)
-                : activeTab === "grossProfit" ? formatAmount(totals.totalGP)
-                : `${totals.totalH.toFixed(1)}h`}
+            <TableCell className={cn("text-right font-mono-num text-xs font-bold whitespace-nowrap", activeTab === "gph" && gphColor(resourceTotals.totalGP, resourceTotals.totalH))}>
+              {activeTab === "gph" ? gphCell(resourceTotals.totalGP, resourceTotals.totalH)
+                : activeTab === "grossProfit" ? formatAmount(resourceTotals.totalGP)
+                : `${resourceTotals.totalH.toFixed(1)}h`}
             </TableCell>
           </TableRow>
         </TableBody>
