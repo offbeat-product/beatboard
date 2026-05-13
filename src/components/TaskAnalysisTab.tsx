@@ -173,7 +173,7 @@ export function TaskAnalysisTab({ months }: Props) {
       const inner = m.get(r.client_name)!;
       inner.set(cat, (inner.get(cat) ?? 0) + (r.hours ?? 0));
     }
-    const cats = Array.from(catSet).sort();
+    const cats = sortCategories(Array.from(catSet));
 
     // Self work aggregation across ALL logs (org-wide)
     const totalHours = taskLogs.reduce((s, r) => s + (r.hours ?? 0), 0);
