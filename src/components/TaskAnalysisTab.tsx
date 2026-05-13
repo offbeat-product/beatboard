@@ -191,32 +191,22 @@ export function TaskAnalysisTab({ months }: Props) {
     };
   }, [taskLogs, lowProfitClients]);
 
-  // Member × major category heatmap (across all logs) + drill-down by full task_category
+  // Member × major category heatmap (across all logs) + drill-down by task_category
   const memberMatrix = useMemo(() => {
     const m = new Map<string, Map<string, number>>();
-    const detailByMember = new Map<string, Map<string, { hours: number; details: Map<string, number> }>>();
     const catSet = new Set<string>();
     for (const r of taskLogs) {
       const cat = extractMajorCategory(r.task_category);
-      const fullCat = r.task_category || "未分類";
-      const detail = (r.task_detail && r.task_detail.trim()) || "(詳細なし)";
       catSet.add(cat);
       if (!m.has(r.member_name)) m.set(r.member_name, new Map());
       const inner = m.get(r.member_name)!;
       inner.set(cat, (inner.get(cat) ?? 0) + (r.hours ?? 0));
-
-      if (!detailByMember.has(r.member_name)) detailByMember.set(r.member_name, new Map());
-      const dInner = detailByMember.get(r.member_name)!;
-      if (!dInner.has(fullCat)) dInner.set(fullCat, { hours: 0, details: new Map() });
-      const fc = dInner.get(fullCat)!;
-      fc.hours += r.hours ?? 0;
-      fc.details.set(detail, (fc.details.get(detail) ?? 0) + (r.hours ?? 0));
     }
     const cats = sortCategories(Array.from(catSet));
     const rows = Array.from(m.entries())
       .map(([name, byCat]) => {
         const total = Array.from(byCat.values()).reduce((s, v) => s + v, 0);
-        return { name, byCat, total, detailMap: detailByMember.get(name) ?? new Map() };
+        return { name, byCat, total };
       })
       .sort((a, b) => b.total - a.total);
     return { rows, cats };
@@ -343,7 +333,7 @@ export function TaskAnalysisTab({ months }: Props) {
       {/* Member × task category heatmap */}
       <div className="bg-card rounded-lg shadow-sm p-5">
         <h3 className="text-sm font-semibold mb-3">メンバー × 業務カテゴリ ヒートマップ</h3>
-        <p className="text-xs text-muted-foreground mb-3">行をクリックすると、業務の具体的な内容（作業区分・作業詳細）を表示します</p>
+        <p className="text-xs text-muted-foreground mb-3">行をクリックすると、作業区分別の内訳を表示します</p>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -363,6 +353,7 @@ export function TaskAnalysisTab({ months }: Props) {
                   cats={memberMatrix.cats}
                   memberMax={memberMax}
                   heatColor={heatColor}
+                  taskLogs={taskLogs}
                 />
               ))}
             </TableBody>
@@ -378,25 +369,27 @@ function MemberDrillRow({
   cats,
   memberMax,
   heatColor,
+  taskLogs,
 }: {
-  row: { name: string; byCat: Map<string, number>; total: number; detailMap: Map<string, { hours: number; details: Map<string, number> }> };
+  row: { name: string; byCat: Map<string, number>; total: number };
   cats: string[];
   memberMax: number;
   heatColor: (h: number, max: number) => string;
+  taskLogs: TaskLogRow[];
 }) {
   const [open, setOpen] = useState(false);
 
-  const sortedFullCats = useMemo(() => {
-    return Array.from(row.detailMap.entries())
-      .map(([fullCat, v]) => ({
-        fullCat,
-        hours: v.hours,
-        details: Array.from(v.details.entries())
-          .map(([d, h]) => ({ detail: d, hours: h }))
-          .sort((a, b) => b.hours - a.hours),
-      }))
+  const sortedTaskCats = useMemo(() => {
+    const catMap = new Map<string, number>();
+    for (const r of taskLogs) {
+      if (r.member_name !== row.name) continue;
+      const tc = r.task_category || "未分類";
+      catMap.set(tc, (catMap.get(tc) ?? 0) + (r.hours ?? 0));
+    }
+    return Array.from(catMap.entries())
+      .map(([taskCat, hours]) => ({ taskCat, hours }))
       .sort((a, b) => b.hours - a.hours);
-  }, [row.detailMap]);
+  }, [taskLogs, row.name]);
 
   return (
     <>
@@ -421,32 +414,17 @@ function MemberDrillRow({
         <TableRow>
           <TableCell colSpan={2 + cats.length} className="bg-secondary/20 p-0">
             <div className="p-4">
-              <h4 className="text-xs font-semibold mb-2">{row.name} の業務内訳（作業区分 × 作業詳細）</h4>
-              <div className="space-y-3">
-                {sortedFullCats.map((fc) => {
-                  const pct = row.total > 0 ? (fc.hours / row.total) * 100 : 0;
+              <h4 className="text-xs font-semibold mb-2">{row.name} の作業区分別内訳</h4>
+              <div className="space-y-2">
+                {sortedTaskCats.map((tc) => {
+                  const pct = row.total > 0 ? (tc.hours / row.total) * 100 : 0;
                   return (
-                    <div key={fc.fullCat} className="bg-card rounded p-3 shadow-sm">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        <div className="text-xs font-semibold truncate" title={fc.fullCat}>{fc.fullCat}</div>
-                        <div className="text-xs font-mono-num text-muted-foreground whitespace-nowrap">
-                          {fmtH(fc.hours)}（{fmtPct(pct)}）
-                        </div>
+                    <div key={tc.taskCat} className="flex items-center gap-2 text-xs">
+                      <div className="w-56 truncate" title={tc.taskCat}>{tc.taskCat}</div>
+                      <div className="flex-1 bg-muted rounded h-2 overflow-hidden">
+                        <div className="bg-primary h-full" style={{ width: `${pct}%` }} />
                       </div>
-                      <div className="space-y-1">
-                        {fc.details.map((d) => {
-                          const dpct = fc.hours > 0 ? (d.hours / fc.hours) * 100 : 0;
-                          return (
-                            <div key={d.detail} className="flex items-center gap-2 text-xs">
-                              <div className="flex-1 truncate text-muted-foreground" title={d.detail}>{d.detail}</div>
-                              <div className="w-32 bg-muted rounded h-1.5 overflow-hidden">
-                                <div className="bg-primary h-full" style={{ width: `${dpct}%` }} />
-                              </div>
-                              <div className="w-16 text-right font-mono-num">{fmtH(d.hours)}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <div className="w-20 text-right font-mono-num">{fmtH(tc.hours)}</div>
                     </div>
                   );
                 })}
@@ -494,14 +472,13 @@ function ClientDrillRow({
   // Drill-down: detail by task_category (full string) and by member
   const { byDetail, byMember } = useMemo(() => {
     const detailMap = new Map<string, number>();
-    const memberMap = new Map<string, { total: number; self: number }>();
+    const memberMap = new Map<string, { total: number }>();
     for (const r of taskLogs) {
       const detail = r.task_category || "未分類";
       detailMap.set(detail, (detailMap.get(detail) ?? 0) + r.hours);
-      if (!memberMap.has(r.member_name)) memberMap.set(r.member_name, { total: 0, self: 0 });
+      if (!memberMap.has(r.member_name)) memberMap.set(r.member_name, { total: 0 });
       const mm = memberMap.get(r.member_name)!;
       mm.total += r.hours;
-      if (r.is_self_work) mm.self += r.hours;
     }
     return {
       byDetail: Array.from(detailMap.entries()).map(([k, v]) => ({ key: k, hours: v })).sort((a, b) => b.hours - a.hours),
@@ -557,8 +534,6 @@ function ClientDrillRow({
                     <TableRow>
                       <TableHead className="text-xs">メンバー</TableHead>
                       <TableHead className="text-xs text-right">合計</TableHead>
-                      <TableHead className="text-xs text-right">社内業務</TableHead>
-                      <TableHead className="text-xs text-right">社内率</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -566,8 +541,6 @@ function ClientDrillRow({
                       <TableRow key={m.name}>
                         <TableCell className="text-xs">{m.name}</TableCell>
                         <TableCell className="text-xs text-right font-mono-num">{fmtH(m.total)}</TableCell>
-                        <TableCell className="text-xs text-right font-mono-num">{fmtH(m.self)}</TableCell>
-                        <TableCell className="text-xs text-right font-mono-num">{m.total > 0 ? fmtPct((m.self / m.total) * 100) : "─"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
