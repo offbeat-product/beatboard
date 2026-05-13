@@ -369,20 +369,27 @@ function MemberDrillRow({
   cats,
   memberMax,
   heatColor,
+  taskLogs,
 }: {
   row: { name: string; byCat: Map<string, number>; total: number };
   cats: string[];
   memberMax: number;
   heatColor: (h: number, max: number) => string;
+  taskLogs: TaskLogRow[];
 }) {
   const [open, setOpen] = useState(false);
 
   const sortedTaskCats = useMemo(() => {
     const catMap = new Map<string, number>();
-    // We need raw taskLogs here but parent doesn't pass them; re-derive from member_name filter if needed.
-    // However we can pass taskLogs via props. Let's add taskLogs prop for simplicity in the replace.
-    return [] as { taskCat: string; hours: number }[];
-  }, []);
+    for (const r of taskLogs) {
+      if (r.member_name !== row.name) continue;
+      const tc = r.task_category || "未分類";
+      catMap.set(tc, (catMap.get(tc) ?? 0) + (r.hours ?? 0));
+    }
+    return Array.from(catMap.entries())
+      .map(([taskCat, hours]) => ({ taskCat, hours }))
+      .sort((a, b) => b.hours - a.hours);
+  }, [taskLogs, row.name]);
 
   return (
     <>
