@@ -367,6 +367,11 @@ export function PaceCsvUpload() {
       };
     }
 
+    const rawRowsByMonth: Record<string, ParsedRow[]> = {};
+    for (const ym of months) {
+      rawRowsByMonth[ym] = parsed.filter((r) => getYearMonth(r.date) === ym);
+    }
+
     setPreview({
       months,
       excludedMemberRows,
@@ -376,6 +381,7 @@ export function PaceCsvUpload() {
       memberSummaryByMonth,
       resourceSummaryByMonth,
       memberClientByMonth,
+      rawRowsByMonth,
     });
 
     if (fileInputRef.current) fileInputRef.current.value = "";
