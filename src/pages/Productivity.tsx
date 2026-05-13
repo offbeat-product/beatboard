@@ -26,6 +26,8 @@ import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
 import { MemberResourceTable } from "@/components/MemberResourceTable";
 import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TaskAnalysisTab } from "@/components/TaskAnalysisTab";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
