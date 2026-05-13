@@ -28,10 +28,24 @@ interface TaskLogRow {
   year_month: string;
 }
 
-interface MonthlySalesRow {
-  client_id: string | null;
+interface ProjectPlRow {
+  client_id: string | number | null;
+  client_name: string | null;
   gross_profit: number;
   year_month: string;
+}
+
+const CATEGORY_ORDER = ["マネージャー", "営業", "企画", "進行管理", "共通", "その他"];
+
+function sortCategories(cats: string[]): string[] {
+  const known = CATEGORY_ORDER.filter((c) => cats.includes(c));
+  const unknown = cats.filter((c) => !CATEGORY_ORDER.includes(c)).sort();
+  // Put unknown after 共通 but before その他 if "その他" was preset
+  if (known.includes("その他")) {
+    const idx = known.indexOf("その他");
+    return [...known.slice(0, idx), ...unknown, ...known.slice(idx)];
+  }
+  return [...known, ...unknown];
 }
 
 interface MemberClientHoursRow {
