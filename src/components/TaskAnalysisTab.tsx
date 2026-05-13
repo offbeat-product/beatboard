@@ -333,7 +333,7 @@ export function TaskAnalysisTab({ months }: Props) {
       {/* Member × task category heatmap */}
       <div className="bg-card rounded-lg shadow-sm p-5">
         <h3 className="text-sm font-semibold mb-3">メンバー × 業務カテゴリ ヒートマップ</h3>
-        <p className="text-xs text-muted-foreground mb-3">行をクリックすると、業務の具体的な内容（作業区分・作業詳細）を表示します</p>
+        <p className="text-xs text-muted-foreground mb-3">行をクリックすると、作業区分別の内訳を表示します</p>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -353,6 +353,7 @@ export function TaskAnalysisTab({ months }: Props) {
                   cats={memberMatrix.cats}
                   memberMax={memberMax}
                   heatColor={heatColor}
+                  taskLogs={taskLogs}
                 />
               ))}
             </TableBody>
