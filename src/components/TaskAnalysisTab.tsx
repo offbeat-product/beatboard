@@ -302,7 +302,7 @@ export function TaskAnalysisTab({ months }: Props) {
                 <TableRow>
                   <TableHead className="text-xs whitespace-nowrap">クライアント</TableHead>
                   <TableHead className="text-xs text-right">粗利工数単価</TableHead>
-                  <TableHead className="text-xs text-right">目標工数<div className="text-[10px] text-muted-foreground font-normal">(粗利÷{fmtY(threshold)})</div></TableHead>
+                  <TableHead className="text-xs text-right">目標工数<div className="text-[10px] text-muted-foreground font-normal">(粗利÷しきい値)</div></TableHead>
                   <TableHead className="text-xs text-right">差分工数</TableHead>
                   <TableHead className="text-xs text-right">合計工数</TableHead>
                   {categories.map((cat) => (
