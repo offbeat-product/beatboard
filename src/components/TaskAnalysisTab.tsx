@@ -123,9 +123,11 @@ export function TaskAnalysisTab({ months }: Props) {
   // Aggregate: per client → gross_profit, project_hours, gph
   const clientStats = useMemo(() => {
     const gpByClient = new Map<string, number>();
+    const nameByGp = new Map<string, string>();
     for (const s of sales) {
-      const key = s.client_id ? String(s.client_id) : "_unknown";
-      gpByClient.set(key, (gpByClient.get(key) ?? 0) + (s.gross_profit ?? 0));
+      const key = s.client_id != null ? String(s.client_id) : (s.client_name ?? "_unknown");
+      gpByClient.set(key, (gpByClient.get(key) ?? 0) + Number(s.gross_profit ?? 0));
+      if (s.client_name) nameByGp.set(key, s.client_name);
     }
     const hByClient = new Map<string, number>();
     const nameByClient = new Map<string, string>();
@@ -141,7 +143,7 @@ export function TaskAnalysisTab({ months }: Props) {
       const gph = hours > 0 ? gp / hours : 0;
       result.push({
         clientKey: key,
-        clientName: nameByClient.get(key) ?? key,
+        clientName: nameByClient.get(key) ?? nameByGp.get(key) ?? key,
         gp,
         hours,
         gph,
