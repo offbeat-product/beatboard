@@ -26,6 +26,8 @@ import { ClientGphTable } from "@/components/ClientGphTable";
 import { PaceCsvUpload } from "@/components/PaceCsvUpload";
 import { MemberResourceTable } from "@/components/MemberResourceTable";
 import { MonthRangePicker, monthsInRange } from "@/components/MonthRangePicker";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TaskAnalysisTab } from "@/components/TaskAnalysisTab";
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -325,6 +327,13 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
         <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
       </div>
 
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">生産性指標</TabsTrigger>
+          <TabsTrigger value="task">業務分析</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-6 mt-0">
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
@@ -547,6 +556,11 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
       {/* Client GPH Table */}
       <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
       <ClientGphTable months={rangeMonths} />
+        </TabsContent>
+        <TabsContent value="task" className="mt-0">
+          <TaskAnalysisTab months={rangeMonths} />
+        </TabsContent>
+      </Tabs>
 
       {/* AI Advisor */}
       <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">

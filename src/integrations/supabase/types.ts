@@ -494,6 +494,60 @@ export type Database = {
         }
         Relationships: []
       }
+      member_task_logs: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string
+          hours: number
+          id: string
+          is_self_work: boolean
+          member_name: string
+          org_id: string
+          project_category: string | null
+          project_name: string | null
+          project_no: string | null
+          task_category: string | null
+          task_detail: string | null
+          work_date: string | null
+          year_month: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          hours?: number
+          id?: string
+          is_self_work?: boolean
+          member_name: string
+          org_id?: string
+          project_category?: string | null
+          project_name?: string | null
+          project_no?: string | null
+          task_category?: string | null
+          task_detail?: string | null
+          work_date?: string | null
+          year_month: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          hours?: number
+          id?: string
+          is_self_work?: boolean
+          member_name?: string
+          org_id?: string
+          project_category?: string | null
+          project_name?: string | null
+          project_no?: string | null
+          task_category?: string | null
+          task_detail?: string | null
+          work_date?: string | null
+          year_month?: string
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           created_at: string
