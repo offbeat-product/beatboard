@@ -461,6 +461,8 @@ function ClientDrillRow({
   matrixMax,
   heatColor,
   taskLogs,
+  threshold,
+  months,
 }: {
   client: { clientKey: string; clientName: string; gp: number; hours: number; gph: number };
   totalH: number;
@@ -469,25 +471,10 @@ function ClientDrillRow({
   matrixMax: number;
   heatColor: (h: number, max: number) => string;
   taskLogs: TaskLogRow[];
+  threshold: number;
+  months: string[];
 }) {
   const [open, setOpen] = useState(false);
-
-  // Drill-down: detail by task_category (full string) and by member
-  const { byDetail, byMember } = useMemo(() => {
-    const detailMap = new Map<string, number>();
-    const memberMap = new Map<string, { total: number }>();
-    for (const r of taskLogs) {
-      const detail = r.task_category || "未分類";
-      detailMap.set(detail, (detailMap.get(detail) ?? 0) + r.hours);
-      if (!memberMap.has(r.member_name)) memberMap.set(r.member_name, { total: 0 });
-      const mm = memberMap.get(r.member_name)!;
-      mm.total += r.hours;
-    }
-    return {
-      byDetail: Array.from(detailMap.entries()).map(([k, v]) => ({ key: k, hours: v })).sort((a, b) => b.hours - a.hours),
-      byMember: Array.from(memberMap.entries()).map(([k, v]) => ({ name: k, ...v })).sort((a, b) => b.total - a.total),
-    };
-  }, [taskLogs]);
 
   return (
     <>
@@ -512,43 +499,18 @@ function ClientDrillRow({
       {open && (
         <TableRow>
           <TableCell colSpan={3 + categories.length} className="bg-secondary/20 p-0">
-            <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div>
-                <h4 className="text-xs font-semibold mb-2">作業区分別 内訳</h4>
-                <div className="space-y-1">
-                  {byDetail.slice(0, 15).map((d) => {
-                    const pct = totalH > 0 ? (d.hours / totalH) * 100 : 0;
-                    return (
-                      <div key={d.key} className="flex items-center gap-2 text-xs">
-                        <div className="w-56 truncate" title={d.key}>{d.key}</div>
-                        <div className="flex-1 bg-muted rounded h-2 overflow-hidden">
-                          <div className="bg-primary h-full" style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="w-20 text-right font-mono-num">{fmtH(d.hours)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold mb-2">担当メンバー別内訳</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">メンバー</TableHead>
-                      <TableHead className="text-xs text-right">合計</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {byMember.map((m) => (
-                      <TableRow key={m.name}>
-                        <TableCell className="text-xs">{m.name}</TableCell>
-                        <TableCell className="text-xs text-right font-mono-num">{fmtH(m.total)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+            <div className="p-4">
+              <BudgetAnalysisView
+                clientName={client.clientName}
+                yearMonths={months}
+                grossProfit={client.gp}
+                targetRate={threshold}
+                logs={taskLogs.map((r) => ({
+                  member_name: r.member_name,
+                  task_category: r.task_category,
+                  hours: r.hours,
+                }))}
+              />
             </div>
           </TableCell>
         </TableRow>
