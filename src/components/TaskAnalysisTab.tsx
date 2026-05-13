@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronRight, AlertTriangle, Briefcase, Clock, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TableSkeleton } from "@/components/PageSkeleton";
+import { BudgetAnalysisView } from "@/components/business-analysis/BudgetAnalysisView";
 
 interface Props {
   months: string[];
