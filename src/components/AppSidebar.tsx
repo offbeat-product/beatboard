@@ -1,4 +1,4 @@
-import { Home, Target, TrendingUp, Wallet, BarChart3, Users, CheckCircle, FileText, Settings, LogOut } from "lucide-react";
+import { Home, Target, TrendingUp, Wallet, BarChart3, Users, CheckCircle, FileText, Settings, LogOut, Briefcase } from "lucide-react";
 import offbeatIcon from "@/assets/offbeat-icon.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ const menuItems = [
   { title: "経営指標", url: "/management", icon: TrendingUp, minRole: "viewer" as const },
   { title: "財務指標", url: "/finance", icon: Wallet, minRole: "viewer" as const },
   { title: "生産性指標", url: "/productivity", icon: BarChart3, minRole: "viewer" as const },
+  { title: "業務分析", url: "/task-analysis", icon: Briefcase, minRole: "viewer" as const },
   { title: "顧客指標", url: "/customers", icon: Users, minRole: "viewer" as const },
   { title: "品質指標", url: "/quality", icon: CheckCircle, minRole: "viewer" as const },
   { title: "レポート", url: "/report", icon: FileText, minRole: "viewer" as const },
