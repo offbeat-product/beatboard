@@ -322,6 +322,8 @@ export function TaskAnalysisTab({ months }: Props) {
                       matrixMax={matrixMax}
                       heatColor={heatColor}
                       taskLogs={taskLogs.filter((r) => r.client_name === c.clientName)}
+                      threshold={threshold}
+                      months={months}
                     />
                   );
                 })}
