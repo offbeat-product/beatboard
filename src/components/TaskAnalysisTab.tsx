@@ -191,32 +191,22 @@ export function TaskAnalysisTab({ months }: Props) {
     };
   }, [taskLogs, lowProfitClients]);
 
-  // Member × major category heatmap (across all logs) + drill-down by full task_category
+  // Member × major category heatmap (across all logs) + drill-down by task_category
   const memberMatrix = useMemo(() => {
     const m = new Map<string, Map<string, number>>();
-    const detailByMember = new Map<string, Map<string, { hours: number; details: Map<string, number> }>>();
     const catSet = new Set<string>();
     for (const r of taskLogs) {
       const cat = extractMajorCategory(r.task_category);
-      const fullCat = r.task_category || "未分類";
-      const detail = (r.task_detail && r.task_detail.trim()) || "(詳細なし)";
       catSet.add(cat);
       if (!m.has(r.member_name)) m.set(r.member_name, new Map());
       const inner = m.get(r.member_name)!;
       inner.set(cat, (inner.get(cat) ?? 0) + (r.hours ?? 0));
-
-      if (!detailByMember.has(r.member_name)) detailByMember.set(r.member_name, new Map());
-      const dInner = detailByMember.get(r.member_name)!;
-      if (!dInner.has(fullCat)) dInner.set(fullCat, { hours: 0, details: new Map() });
-      const fc = dInner.get(fullCat)!;
-      fc.hours += r.hours ?? 0;
-      fc.details.set(detail, (fc.details.get(detail) ?? 0) + (r.hours ?? 0));
     }
     const cats = sortCategories(Array.from(catSet));
     const rows = Array.from(m.entries())
       .map(([name, byCat]) => {
         const total = Array.from(byCat.values()).reduce((s, v) => s + v, 0);
-        return { name, byCat, total, detailMap: detailByMember.get(name) ?? new Map() };
+        return { name, byCat, total };
       })
       .sort((a, b) => b.total - a.total);
     return { rows, cats };
