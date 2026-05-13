@@ -302,6 +302,8 @@ export function TaskAnalysisTab({ months }: Props) {
                 <TableRow>
                   <TableHead className="text-xs whitespace-nowrap">クライアント</TableHead>
                   <TableHead className="text-xs text-right">粗利工数単価</TableHead>
+                  <TableHead className="text-xs text-right">目標工数<div className="text-[10px] text-muted-foreground font-normal">(粗利÷{fmtY(threshold)})</div></TableHead>
+                  <TableHead className="text-xs text-right">差分工数</TableHead>
                   <TableHead className="text-xs text-right">合計工数</TableHead>
                   {categories.map((cat) => (
                     <TableHead key={cat} className="text-xs text-center">{cat}</TableHead>
@@ -475,6 +477,9 @@ function ClientDrillRow({
   months: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const targetH = threshold > 0 ? client.gp / threshold : 0;
+  const diffH = totalH - targetH;
+  const overBudget = diffH > 0;
 
   return (
     <>
@@ -486,6 +491,10 @@ function ClientDrillRow({
           </div>
         </TableCell>
         <TableCell className="text-xs text-right font-mono-num text-destructive font-semibold">{fmtY(client.gph)}</TableCell>
+        <TableCell className="text-xs text-right font-mono-num text-muted-foreground">{fmtH(targetH)}</TableCell>
+        <TableCell className={cn("text-xs text-right font-mono-num font-semibold", overBudget ? "text-destructive" : "text-emerald-600")}>
+          {overBudget ? "+" : ""}{fmtH(diffH)}
+        </TableCell>
         <TableCell className="text-xs text-right font-mono-num">{fmtH(totalH)}</TableCell>
         {categories.map((cat) => {
           const h = inner?.get(cat) ?? 0;
@@ -498,7 +507,7 @@ function ClientDrillRow({
       </TableRow>
       {open && (
         <TableRow>
-          <TableCell colSpan={3 + categories.length} className="bg-secondary/20 p-0">
+          <TableCell colSpan={5 + categories.length} className="bg-secondary/20 p-0">
             <div className="p-4">
               <BudgetAnalysisView
                 clientName={client.clientName}
