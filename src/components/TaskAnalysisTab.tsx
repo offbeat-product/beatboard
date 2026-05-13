@@ -534,8 +534,6 @@ function ClientDrillRow({
                     <TableRow>
                       <TableHead className="text-xs">メンバー</TableHead>
                       <TableHead className="text-xs text-right">合計</TableHead>
-                      <TableHead className="text-xs text-right">社内業務</TableHead>
-                      <TableHead className="text-xs text-right">社内率</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -543,8 +541,6 @@ function ClientDrillRow({
                       <TableRow key={m.name}>
                         <TableCell className="text-xs">{m.name}</TableCell>
                         <TableCell className="text-xs text-right font-mono-num">{fmtH(m.total)}</TableCell>
-                        <TableCell className="text-xs text-right font-mono-num">{fmtH(m.self)}</TableCell>
-                        <TableCell className="text-xs text-right font-mono-num">{m.total > 0 ? fmtPct((m.self / m.total) * 100) : "─"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
