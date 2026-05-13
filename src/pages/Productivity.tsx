@@ -556,6 +556,11 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
       {/* Client GPH Table */}
       <h3 className="text-sm font-semibold">顧客別案件工数単価</h3>
       <ClientGphTable months={rangeMonths} />
+        </TabsContent>
+        <TabsContent value="task" className="mt-0">
+          <TaskAnalysisTab months={rangeMonths} />
+        </TabsContent>
+      </Tabs>
 
       {/* AI Advisor */}
       <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in">
