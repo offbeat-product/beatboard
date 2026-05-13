@@ -69,6 +69,7 @@ interface PreviewData {
   memberSummaryByMonth: Record<string, MemberSummary[]>;
   resourceSummaryByMonth: Record<string, ResourceSummary>;
   memberClientByMonth: Record<string, MemberClientHours[]>;
+  rawRowsByMonth: Record<string, ParsedRow[]>;
 }
 
 interface MemberClassRow {
