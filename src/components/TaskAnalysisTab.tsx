@@ -290,7 +290,7 @@ export function TaskAnalysisTab({ months }: Props) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-sm font-semibold">低収益クライアント × 業務カテゴリ ヒートマップ</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">案件粗利工数単価が {fmtY(threshold)} 以下のクライアントの業務内訳</p>
+            <p className="text-xs text-muted-foreground mt-0.5">案件粗利工数単価がしきい値以下のクライアントの業務内訳</p>
           </div>
         </div>
         {lowProfitClients.length === 0 ? (
