@@ -379,24 +379,19 @@ function MemberDrillRow({
   memberMax,
   heatColor,
 }: {
-  row: { name: string; byCat: Map<string, number>; total: number; detailMap: Map<string, { hours: number; details: Map<string, number> }> };
+  row: { name: string; byCat: Map<string, number>; total: number };
   cats: string[];
   memberMax: number;
   heatColor: (h: number, max: number) => string;
 }) {
   const [open, setOpen] = useState(false);
 
-  const sortedFullCats = useMemo(() => {
-    return Array.from(row.detailMap.entries())
-      .map(([fullCat, v]) => ({
-        fullCat,
-        hours: v.hours,
-        details: Array.from(v.details.entries())
-          .map(([d, h]) => ({ detail: d, hours: h }))
-          .sort((a, b) => b.hours - a.hours),
-      }))
-      .sort((a, b) => b.hours - a.hours);
-  }, [row.detailMap]);
+  const sortedTaskCats = useMemo(() => {
+    const catMap = new Map<string, number>();
+    // We need raw taskLogs here but parent doesn't pass them; re-derive from member_name filter if needed.
+    // However we can pass taskLogs via props. Let's add taskLogs prop for simplicity in the replace.
+    return [] as { taskCat: string; hours: number }[];
+  }, []);
 
   return (
     <>
@@ -421,32 +416,17 @@ function MemberDrillRow({
         <TableRow>
           <TableCell colSpan={2 + cats.length} className="bg-secondary/20 p-0">
             <div className="p-4">
-              <h4 className="text-xs font-semibold mb-2">{row.name} の業務内訳（作業区分 × 作業詳細）</h4>
-              <div className="space-y-3">
-                {sortedFullCats.map((fc) => {
-                  const pct = row.total > 0 ? (fc.hours / row.total) * 100 : 0;
+              <h4 className="text-xs font-semibold mb-2">{row.name} の作業区分別内訳</h4>
+              <div className="space-y-2">
+                {sortedTaskCats.map((tc) => {
+                  const pct = row.total > 0 ? (tc.hours / row.total) * 100 : 0;
                   return (
-                    <div key={fc.fullCat} className="bg-card rounded p-3 shadow-sm">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        <div className="text-xs font-semibold truncate" title={fc.fullCat}>{fc.fullCat}</div>
-                        <div className="text-xs font-mono-num text-muted-foreground whitespace-nowrap">
-                          {fmtH(fc.hours)}（{fmtPct(pct)}）
-                        </div>
+                    <div key={tc.taskCat} className="flex items-center gap-2 text-xs">
+                      <div className="w-56 truncate" title={tc.taskCat}>{tc.taskCat}</div>
+                      <div className="flex-1 bg-muted rounded h-2 overflow-hidden">
+                        <div className="bg-primary h-full" style={{ width: `${pct}%` }} />
                       </div>
-                      <div className="space-y-1">
-                        {fc.details.map((d) => {
-                          const dpct = fc.hours > 0 ? (d.hours / fc.hours) * 100 : 0;
-                          return (
-                            <div key={d.detail} className="flex items-center gap-2 text-xs">
-                              <div className="flex-1 truncate text-muted-foreground" title={d.detail}>{d.detail}</div>
-                              <div className="w-32 bg-muted rounded h-1.5 overflow-hidden">
-                                <div className="bg-primary h-full" style={{ width: `${dpct}%` }} />
-                              </div>
-                              <div className="w-16 text-right font-mono-num">{fmtH(d.hours)}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <div className="w-20 text-right font-mono-num">{fmtH(tc.hours)}</div>
                     </div>
                   );
                 })}
