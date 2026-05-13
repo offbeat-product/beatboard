@@ -85,18 +85,18 @@ export function TaskAnalysisTab({ months }: Props) {
     enabled: months.length > 0,
   });
 
-  // Fetch monthly_sales for gross_profit per client
+  // Fetch project_pl for per-client gross_profit
   const salesQuery = useQuery({
-    queryKey: ["monthly_sales_task_analysis", months[0], months[months.length - 1]],
+    queryKey: ["project_pl_task_analysis", months[0], months[months.length - 1]],
     queryFn: async () => {
-      if (months.length === 0) return [] as MonthlySalesRow[];
+      if (months.length === 0) return [] as ProjectPlRow[];
       const { data, error } = await supabase
-        .from("monthly_sales")
-        .select("client_id, gross_profit, year_month")
+        .from("project_pl")
+        .select("client_id, client_name, gross_profit, year_month")
         .eq("org_id", ORG_ID)
         .in("year_month", months);
       if (error) throw error;
-      return (data ?? []) as MonthlySalesRow[];
+      return (data ?? []) as ProjectPlRow[];
     },
     enabled: months.length > 0,
   });
