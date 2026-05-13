@@ -327,6 +327,13 @@ const Productivity = ({ embedded = false }: { embedded?: boolean }) => {
         <MonthRangePicker startYm={startYm} endYm={endYm} onChange={(s, e) => { setStartYm(s); setEndYm(e); }} />
       </div>
 
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">生産性指標</TabsTrigger>
+          <TabsTrigger value="task">業務分析</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-6 mt-0">
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-card rounded-lg shadow-sm p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
