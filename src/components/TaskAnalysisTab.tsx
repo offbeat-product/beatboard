@@ -507,7 +507,7 @@ function ClientDrillRow({
       </TableRow>
       {open && (
         <TableRow>
-          <TableCell colSpan={3 + categories.length} className="bg-secondary/20 p-0">
+          <TableCell colSpan={5 + categories.length} className="bg-secondary/20 p-0">
             <div className="p-4">
               <BudgetAnalysisView
                 clientName={client.clientName}
