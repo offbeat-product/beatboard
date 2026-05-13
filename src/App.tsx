@@ -15,6 +15,7 @@ import Finance from "./pages/Finance";
 import Customers from "./pages/Customers";
 import Management from "./pages/Management";
 import Productivity from "./pages/Productivity";
+import TaskAnalysis from "./pages/TaskAnalysis";
 import Quality from "./pages/Quality";
 import Report from "./pages/Report";
 import Plan from "./pages/Plan";
@@ -52,6 +53,7 @@ const AppRoutes = () => {
         <Route path="/plan" element={<Plan />} />
         <Route path="/management" element={<Management />} />
         <Route path="/productivity" element={<Productivity />} />
+        <Route path="/task-analysis" element={<TaskAnalysis />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/quality" element={<Quality />} />
         <Route path="/report" element={<Report />} />
