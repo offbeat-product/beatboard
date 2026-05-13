@@ -69,6 +69,84 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
     },
   });
 
+  // Fetch the same data sources used by the resource-breakdown table so the
+  // totals row matches: monthly_sales for gross profit, kpi_snapshots for project hours.
+  const monthlySalesQuery = useQuery({
+    queryKey: ["monthly_sales", "client_gph_totals", rangeKey],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("monthly_sales")
+        .select("year_month, gross_profit")
+        .eq("org_id", ORG_ID)
+        .in("year_month", DISPLAY_MONTHS);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const projectHoursQuery = useQuery({
+    queryKey: ["kpi_snapshots", "client_gph_totals", rangeKey],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kpi_snapshots")
+        .select("snapshot_date, metric_name, actual_value")
+        .eq("org_id", ORG_ID)
+        .in("metric_name", [
+          "project_hours",
+          "employee_project_hours",
+          "parttimer_project_hours",
+        ]);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Resource-breakdown-aligned totals per month
+  const resourceTotals = useMemo(() => {
+    const gpByMonth: Record<string, number> = {};
+    const hoursByMonth: Record<string, number> = {};
+    for (const ym of DISPLAY_MONTHS) {
+      gpByMonth[ym] = 0;
+      hoursByMonth[ym] = 0;
+    }
+    for (const r of monthlySalesQuery.data ?? []) {
+      if (gpByMonth[r.year_month] !== undefined) {
+        gpByMonth[r.year_month] += Number(r.gross_profit ?? 0);
+      }
+    }
+    const snaps = projectHoursQuery.data ?? [];
+    const findSnap = (ym: string, metric: string) => {
+      const matches = snaps.filter(
+        (k) => k.snapshot_date.startsWith(ym) && k.metric_name === metric
+      );
+      return matches.length > 0 ? Number(matches[matches.length - 1].actual_value) : undefined;
+    };
+    const getStaffing = (ym: string) =>
+      ym >= "2026-02"
+        ? { employees: 2, partTimers: 3, employeeHours: 160, partTimerHoursEach: 140 }
+        : { employees: 3, partTimers: 0, employeeHours: 160, partTimerHoursEach: 140 };
+    for (const ym of DISPLAY_MONTHS) {
+      const proj = findSnap(ym, "project_hours");
+      const empProj = findSnap(ym, "employee_project_hours");
+      const ptProj = findSnap(ym, "parttimer_project_hours");
+      if (proj !== undefined) {
+        hoursByMonth[ym] = proj;
+      } else if (empProj !== undefined || ptProj !== undefined) {
+        hoursByMonth[ym] = (empProj ?? 0) + (ptProj ?? 0);
+      } else {
+        const s = getStaffing(ym);
+        const empTotal = s.employees * s.employeeHours;
+        const ptTotal = s.partTimers * s.partTimerHoursEach;
+        const empProjDefault = Math.max(0, empTotal - s.employees * 40);
+        const ptProjDefault = Math.max(0, ptTotal - s.partTimers * 20);
+        hoursByMonth[ym] = empProjDefault + ptProjDefault;
+      }
+    }
+    const totalGP = Object.values(gpByMonth).reduce((s, v) => s + v, 0);
+    const totalH = Object.values(hoursByMonth).reduce((s, v) => s + v, 0);
+    return { gpByMonth, hoursByMonth, totalGP, totalH };
+  }, [monthlySalesQuery.data, projectHoursQuery.data, rangeKey]);
+
   // Build client list from project_pl (revenue > 0 clients)
   const clients = useMemo(() => {
     if (!projectPlQuery.data) return [];
@@ -355,12 +433,13 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
             </TableRow>
           ))}
 
-          {/* Totals row */}
+          {/* Totals row — aligned with the resource-breakdown table
+              (gross profit from monthly_sales, project hours from kpi_snapshots). */}
           <TableRow className="border-t-2 border-border font-semibold">
             <TableCell className="sticky left-0 bg-card z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] font-semibold">合計</TableCell>
             {DISPLAY_MONTHS.map((ym) => {
-              const gp = totals.monthlyGP[ym] ?? 0;
-              const h = totals.monthlyH[ym] ?? 0;
+              const gp = resourceTotals.gpByMonth[ym] ?? 0;
+              const h = resourceTotals.hoursByMonth[ym] ?? 0;
               return (
                 <TableCell key={ym} className={cn("text-right font-mono-num text-xs whitespace-nowrap", activeTab === "gph" && gphColor(gp, h))}>
                   {activeTab === "gph" ? gphCell(gp, h)
@@ -369,10 +448,10 @@ export function ClientGphTable({ months }: { months?: string[] } = {}) {
                 </TableCell>
               );
             })}
-            <TableCell className={cn("text-right font-mono-num text-xs font-bold whitespace-nowrap", activeTab === "gph" && gphColor(totals.totalGP, totals.totalH))}>
-              {activeTab === "gph" ? gphCell(totals.totalGP, totals.totalH)
-                : activeTab === "grossProfit" ? formatAmount(totals.totalGP)
-                : `${totals.totalH.toFixed(1)}h`}
+            <TableCell className={cn("text-right font-mono-num text-xs font-bold whitespace-nowrap", activeTab === "gph" && gphColor(resourceTotals.totalGP, resourceTotals.totalH))}>
+              {activeTab === "gph" ? gphCell(resourceTotals.totalGP, resourceTotals.totalH)
+                : activeTab === "grossProfit" ? formatAmount(resourceTotals.totalGP)
+                : `${resourceTotals.totalH.toFixed(1)}h`}
             </TableCell>
           </TableRow>
         </TableBody>
