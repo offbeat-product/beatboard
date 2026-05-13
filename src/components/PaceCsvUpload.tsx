@@ -474,6 +474,35 @@ export function PaceCsvUpload() {
           }
         }
 
+        // 4. Save member_task_logs (delete existing month, then bulk insert)
+        await (supabase.from("member_task_logs" as any) as any)
+          .delete()
+          .eq("org_id", ORG_ID)
+          .eq("year_month", ym);
+        const rawRows = preview.rawRowsByMonth[ym] ?? [];
+        const taskLogRows = rawRows
+          .filter((r) => r.member && r.clientName && r.hours > 0)
+          .map((r) => ({
+            org_id: ORG_ID,
+            year_month: ym,
+            work_date: r.date || null,
+            member_name: r.member,
+            client_name: r.clientName,
+            client_id: clientMap.get(r.clientName) ?? null,
+            project_no: r.projectNo || null,
+            project_name: r.projectName || null,
+            project_category: r.projectType || null,
+            task_category: r.workType || null,
+            task_detail: r.detail || null,
+            hours: Math.round(r.hours * 100) / 100,
+            is_self_work: r.clientName.includes("Off Beat"),
+          }));
+        // Insert in batches of 500
+        for (let i = 0; i < taskLogRows.length; i += 500) {
+          const chunk = taskLogRows.slice(i, i + 500);
+          await (supabase.from("member_task_logs" as any) as any).insert(chunk);
+        }
+
         // Mark this month as having Pace data
         await supabase
           .from("kpi_snapshots")
@@ -490,6 +519,7 @@ export function PaceCsvUpload() {
       queryClient.invalidateQueries({ queryKey: ["kpi_snapshots"] });
       queryClient.invalidateQueries({ queryKey: ["member_client_monthly_hours"] });
       queryClient.invalidateQueries({ queryKey: ["member_classifications"] });
+      queryClient.invalidateQueries({ queryKey: ["member_task_logs"] });
       toast.success("Pace工数データを保存しました");
       setPreview(null);
       setOpen(false);
