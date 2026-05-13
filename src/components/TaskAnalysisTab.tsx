@@ -472,14 +472,13 @@ function ClientDrillRow({
   // Drill-down: detail by task_category (full string) and by member
   const { byDetail, byMember } = useMemo(() => {
     const detailMap = new Map<string, number>();
-    const memberMap = new Map<string, { total: number; self: number }>();
+    const memberMap = new Map<string, { total: number }>();
     for (const r of taskLogs) {
       const detail = r.task_category || "未分類";
       detailMap.set(detail, (detailMap.get(detail) ?? 0) + r.hours);
-      if (!memberMap.has(r.member_name)) memberMap.set(r.member_name, { total: 0, self: 0 });
+      if (!memberMap.has(r.member_name)) memberMap.set(r.member_name, { total: 0 });
       const mm = memberMap.get(r.member_name)!;
       mm.total += r.hours;
-      if (r.is_self_work) mm.self += r.hours;
     }
     return {
       byDetail: Array.from(detailMap.entries()).map(([k, v]) => ({ key: k, hours: v })).sort((a, b) => b.hours - a.hours),
